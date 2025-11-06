@@ -1,0 +1,89 @@
+
+import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { QRCodeCanvas } from 'qrcode.react';
+
+const animatedGradientStyle = { '--gradient-start': '#ec4899', '--gradient-end': '#8b5cf6' };
+
+const Modal = ({ isOpen, onClose, content }) => {
+    if (!isOpen) return null;
+
+    return (
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black/90 backdrop-blur-sm flex justify-center items-center z-50 p-4"
+                    onClick={onClose}
+                >
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.9, opacity: 0, y: 30 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        className="bg-gray-900 rounded-2xl shadow-2xl shadow-purple-500/10 w-full max-w-md border border-purple-500/20"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="p-6 border-b border-purple-500/20 flex justify-between items-center">
+                            <h3 className="text-xl font-bold text-white tracking-wider">{content?.title || 'Notification'}</h3>
+                            <motion.button
+                                whileHover={{ scale: 1.1, rotate: 90 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={onClose}
+                                className="text-gray-400 hover:text-white text-2xl"
+                            >
+                                &times;
+                            </motion.button>
+                        </div>
+                        <div className="p-6 text-center">
+                            <p className="text-gray-300 mb-6">{content.body}</p>
+                            {(content.type === 'qr-code' || content.type === 'setup-qr') && (
+                                <div className="flex justify-center bg-white p-4 rounded-lg">
+                                    <QRCodeCanvas value={content.qrValue} size={256} level={"H"} />
+                                </div>
+                            )}
+                            {content.type === 'alert' && (
+                                <div className="flex justify-center gap-4 mt-4">
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={onClose}
+                                        style={animatedGradientStyle}
+                                        className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
+                                    >
+                                        OK
+                                    </motion.button>
+                                </div>
+                            )}
+                            {content.type === 'confirm' && (
+                                <div className="flex justify-center gap-4 mt-4">
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={onClose}
+                                        className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg"
+                                    >
+                                        Cancel
+                                    </motion.button>
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={() => { content.onConfirm(); onClose(); }}
+                                        style={animatedGradientStyle}
+                                        className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
+                                    >
+                                        Confirm
+                                    </motion.button>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+};
+
+export default Modal;

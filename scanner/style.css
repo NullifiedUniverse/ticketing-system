@@ -1,0 +1,98 @@
+
+:root {
+    --gradient-start: #ec4899;
+    --gradient-end: #8b5cf6;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#reader {
+    border-radius: 1rem;
+    overflow: hidden;
+    width: 100%;
+    position: relative;
+    background-color: #111;
+}
+
+#reader__scan_region {
+    border-radius: 1rem;
+}
+
+#reader-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 250px;
+    height: 250px;
+    box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5);
+    border: 2px solid white;
+    border-radius: 1rem;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5), 0 0 0 0 rgba(255, 255, 255, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5), 0 0 0 20px rgba(255, 255, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.5), 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+}
+
+.animated-gradient-text {
+    background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 200% 200%;
+    animation: gradient-move 3s ease infinite;
+}
+
+.animated-gradient-bg {
+    background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+    background-size: 200% 200%;
+    animation: gradient-move 3s ease infinite;
+}
+
+@keyframes gradient-move {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.scan-result-popup {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.scanning-dots::after {
+    display: inline-block;
+    animation: dots 1.4s linear infinite;
+    content: '';
+    width: 20px;
+    text-align: left;
+}
+
+@keyframes dots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 100% { content: '...'; }
+}
+
+/* Toggle Switch Styles */
+.toggle-checkbox:checked {
+    right: 0;
+    border-color: #8b5cf6;
+}
+
+.toggle-checkbox:checked + .toggle-label {
+    background-color: #8b5cf6;
+}
