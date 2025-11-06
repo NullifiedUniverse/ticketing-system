@@ -13,5 +13,5 @@ export const firebaseConfig = {
     measurementId: "G-RP50S3LBJL"
 };
 
-export const API_BASE_URL = 'http://localhost:3001/api';
-export const API_KEY = "YOUR_SUPER_SECRET_API_KEY_HERE";
+export const API_BASE_URL = 'REPLACE_WITH_YOUR_BACKEND_URL';
+export const API_KEY = "93cb57c39dbf557434fd0bfb3c787f88";
