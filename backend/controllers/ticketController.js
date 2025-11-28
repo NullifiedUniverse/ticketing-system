@@ -20,8 +20,27 @@ const updateTicketSchema = Joi.object({
     attendeeEmail: Joi.string().email().required(),
 });
 
+const createEventSchema = Joi.object({
+    eventId: Joi.string().min(3).required(),
+});
+
 class TicketController {
     // --- EVENTS ---
+    async createEvent(req, res) {
+        try {
+            const { error, value } = createEventSchema.validate(req.body);
+            if (error) {
+                return res.status(400).json({ status: 'error', message: error.details[0].message });
+            }
+            
+            const event = await ticketService.createEvent(value.eventId);
+            res.status(201).json({ status: 'success', event });
+        } catch (error) {
+            console.error("Error creating event:", error);
+            res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+        }
+    }
+
     async getEvents(req, res) {
         try {
             const events = await ticketService.getEvents();

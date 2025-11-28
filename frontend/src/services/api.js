@@ -46,6 +46,15 @@ export const getEvents = async () => {
     return result.events;
 };
 
+export const createEvent = async (eventId) => {
+    const result = await callApi('/api/admin/create-event', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ eventId }),
+    });
+    return result.event;
+};
+
 // --- AUTH (login function kept for completeness, though UI is removed) ---
 export const login = async (username, password) => {
     const result = await callApi('/auth/login', {

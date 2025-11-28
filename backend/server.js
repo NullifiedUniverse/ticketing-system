@@ -20,8 +20,8 @@ app.use(express.json());
 // Security Headers for Camera Access
 app.use((req, res, next) => {
   res.setHeader('Permissions-Policy', 'camera=*');
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+  // res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  // res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
   console.log(`${req.method} ${req.originalUrl}`);
   next();
 });
@@ -44,6 +44,11 @@ app.get('/api/ngrok-url', (req, res) => {
 // --- SERVE SCANNER ---
 app.get('/scanner', (req, res) => {
     res.sendFile(path.join(__dirname, '../scanner/scanner.html'));
+});
+
+app.get('/html5-qrcode.min.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.sendFile(path.join(__dirname, '../scanner/html5-qrcode.min.js'));
 });
 
 // --- SERVE STATIC FRONTEND ---

@@ -3,6 +3,11 @@ const { v4: uuidv4 } = require('uuid');
 
 class TicketService {
     // --- EVENT MANAGEMENT ---
+    async createEvent(eventId) {
+        await this.createEventMetadata(eventId);
+        return { id: eventId, name: eventId, createdAt: new Date() };
+    }
+
     async getEvents() {
         const eventsRef = db.collection('events_meta');
         const snapshot = await eventsRef.get();

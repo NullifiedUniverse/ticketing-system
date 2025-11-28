@@ -7,6 +7,7 @@ const ticketController = require('../controllers/ticketController');
 
 // Events
 adminRouter.get('/events', ticketController.getEvents.bind(ticketController));
+adminRouter.post('/create-event', ticketController.createEvent.bind(ticketController));
 
 // Tickets
 adminRouter.post('/create-ticket/:eventId', ticketController.createTicket.bind(ticketController));

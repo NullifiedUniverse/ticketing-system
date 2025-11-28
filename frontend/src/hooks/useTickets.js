@@ -15,26 +15,36 @@ export const useTickets = (eventId, handleApiError) => {
             return;
         }
 
-        const fetchTickets = async () => {
-            setIsLoading(true);
-            setConnectionStatus('connecting');
-            setConnectionError(null);
+        const fetchTickets = async (isPolling = false) => {
+            if (!isPolling) {
+                setIsLoading(true);
+                setConnectionStatus('connecting');
+                setConnectionError(null);
+            }
 
             try {
                 const ticketsData = await getTickets(eventId);
                 setTickets(ticketsData);
-                setConnectionStatus('connected');
+                if (!isPolling) setConnectionStatus('connected');
             } catch (err) {
                 console.error("API Error:", err);
-                setConnectionStatus('error');
-                setConnectionError(err.message);
-                setTickets([]);
+                if (!isPolling) {
+                    setConnectionStatus('error');
+                    setConnectionError(err.message);
+                    setTickets([]);
+                }
             } finally {
-                setIsLoading(false);
+                if (!isPolling) setIsLoading(false);
             }
         };
 
         fetchTickets();
+
+        const intervalId = setInterval(() => {
+            fetchTickets(true);
+        }, 5000);
+
+        return () => clearInterval(intervalId);
     }, [eventId]);
 
     const handleTicketCreated = useCallback((result) => {

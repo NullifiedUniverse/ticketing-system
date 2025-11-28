@@ -7,7 +7,7 @@ import CreateTicket from './CreateTicket';
 import TicketList from './TicketList';
 import LiveIndicator from './LiveIndicator';
 import Modal from './Modal';
-import { getScannerToken, getNgrokUrl } from '../services/api';
+import { getScannerToken, getNgrokUrl, createEvent } from '../services/api';
 import { useTickets } from '../hooks/useTickets';
 import { useModal } from '../hooks/useModal';
 
@@ -73,10 +73,15 @@ const Dashboard = () => {
     };
 
     const handleNewEvent = () => {
-        showPromptModal('Create New Event', 'Enter a unique ID for the new event (e.g., concert-2025).', (newEventId) => {
+        showPromptModal('Create New Event', 'Enter a unique ID for the new event (e.g., concert-2025).', async (newEventId) => {
             if (newEventId) {
                 const formattedId = newEventId.trim().toLowerCase().replace(/\s+/g, '-');
-                handleEventChange(formattedId);
+                try {
+                    await createEvent(formattedId);
+                    handleEventChange(formattedId);
+                } catch (err) {
+                    showErrorModal(`Failed to create event: ${err.message}`);
+                }
             }
             hideModal();
         });

@@ -2,502 +2,529 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Ticket Scanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    
+    <!-- Library Loader with Redundancy -->
+    <script>
+        function loadScript(src, fallbackSrc) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = () => resolve('loaded');
+                script.onerror = () => {
+                    console.warn(`Failed to load ${src}, trying fallback...`);
+                    if (fallbackSrc) {
+                        const fallback = document.createElement('script');
+                        fallback.src = fallbackSrc;
+                        fallback.onload = () => resolve('fallback loaded');
+                        fallback.onerror = (e) => reject(new Error(`Both primary and fallback scripts failed. Last error: ${e.type}`));
+                        document.head.appendChild(fallback);
+                    } else {
+                        reject(new Error(`Failed to load ${src}`));
+                    }
+                };
+                document.head.appendChild(script);
+            });
+        }
+    </script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-
-        :root {
-            --primary: #6366f1;
-            --secondary: #ec4899;
-            --bg: #0f172a;
+        /* Reset & Base */
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; 
+            background-color: #000; color: white; 
+            font-family: 'Inter', sans-serif; overflow: hidden; 
         }
 
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg);
-            color: white;
-            height: 100dvh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+        /* Camera Layer */
+        #reader { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 0; background: #000; 
+        }
+        #reader video { 
+            object-fit: cover !important; width: 100% !important; height: 100% !important; 
         }
 
-        /* Glassmorphism */
-        .glass {
-            background: rgba(15, 23, 42, 0.7);
+        /* UI Overlay Layer */
+        .ui-layer {
+            position: fixed; inset: 0; z-index: 10;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            pointer-events: none;
+        }
+
+        .interactive { pointer-events: auto; }
+
+        /* Scan Frame */
+        .scan-frame {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 280px; height: 280px;
+            border-radius: 24px;
+            box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.6);
+        }
+        
+        .scan-corner {
+            position: absolute; width: 40px; height: 40px;
+            border-color: #6366f1; border-style: solid;
+            transition: all 0.3s ease;
+        }
+        
+        .tl { top: 0; left: 0; border-width: 4px 0 0 4px; border-radius: 20px 0 0 0; }
+        .tr { top: 0; right: 0; border-width: 4px 4px 0 0; border-radius: 0 20px 0 0; }
+        .bl { bottom: 0; left: 0; border-width: 0 0 4px 4px; border-radius: 0 0 0 20px; }
+        .br { bottom: 0; right: 0; border-width: 0 4px 4px 0; border-radius: 0 0 20px 0; }
+
+        .scanning .scan-corner { border-color: #22c55e; }
+        .error .scan-corner { border-color: #ef4444; }
+        .warning .scan-corner { border-color: #eab308; }
+
+        /* Animations */
+        @keyframes pulse-line {
+            0% { top: 10%; opacity: 0; }
+            50% { opacity: 1; }
+            100% { top: 90%; opacity: 0; }
+        }
+        .scan-laser {
+            position: absolute; left: 10%; right: 10%; height: 2px;
+            background: #6366f1; box-shadow: 0 0 10px #6366f1;
+            border-radius: 50%;
+            animation: pulse-line 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        /* Floating Controls */
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.8);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
-        .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-
-        /* Scanner Container */
-        #reader-container {
-            position: relative;
-            flex: 1;
-            width: 100%;
-            overflow: hidden;
-            border-radius: 0 0 1.5rem 1.5rem;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-            background: #000;
-        }
         
-        #reader {
-            width: 100%;
-            height: 100%;
-        }
-
-        #reader video {
-            object-fit: cover;
-            width: 100% !important;
-            height: 100% !important;
-            border-radius: 0 0 1.5rem 1.5rem;
-        }
-
-        /* Scan Overlay */
-        .scan-region {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 280px;
-            height: 280px;
-            border-radius: 24px;
-            box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.6);
-            pointer-events: none;
-        }
-
-        .scan-region::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 24px;
-        }
-
-        .scan-line {
-            position: absolute;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--primary), var(--secondary), transparent);
-            top: 0;
-            animation: scan 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-            opacity: 0.8;
-            box-shadow: 0 0 15px var(--primary);
-        }
-
-        @keyframes scan {
-            0% { top: 0; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 100%; opacity: 0; }
-        }
-
-        /* Status Badge */
-        .status-pill {
-            position: absolute;
-            top: 1rem;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 0.5rem 1.25rem;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            z-index: 20;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            white-space: nowrap;
-        }
-
-        /* Toggle Switch */
-        .mode-switch {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 4px;
-            border-radius: 9999px;
-            display: flex;
-            position: relative;
-            cursor: pointer;
-        }
-
-        .mode-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-            position: absolute;
-        }
-
-        .mode-option {
-            padding: 8px 20px;
-            border-radius: 9999px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            z-index: 1;
-            transition: all 0.3s ease;
-        }
-
-        .mode-switch input:not(:checked) ~ .check-in-label {
-            color: white;
-        }
-        .mode-switch input:checked ~ .check-in-label {
-            color: rgba(255,255,255,0.5);
-        }
-
-        .mode-switch input:checked ~ .check-out-label {
-            color: white;
-        }
-        .mode-switch input:not(:checked) ~ .check-out-label {
-            color: rgba(255,255,255,0.5);
-        }
-
-        .slider {
-            position: absolute;
-            top: 4px;
-            left: 4px;
-            bottom: 4px;
-            width: calc(50% - 4px);
-            background: var(--primary);
-            border-radius: 9999px;
-            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4);
-        }
-
-        .mode-switch input:checked ~ .slider {
-            transform: translateX(100%);
-            background: var(--secondary);
-            box-shadow: 0 2px 10px rgba(236, 72, 153, 0.4);
-        }
-
-        /* Big Action Button */
-        .fab-button {
-            background: linear-gradient(135deg, var(--primary), #818cf8);
-            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.5);
-        }
-        
-        .fab-button:active {
-            transform: scale(0.95);
-        }
-
-        /* Popups */
-        .popup-animate {
-            animation: fadeInScale 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        @keyframes fadeInScale {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
+        /* Debug Panel */
+        #debug-panel {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(0,0,0,0.9);
+            color: #0f0; font-family: monospace; font-size: 10px;
+            padding: 10px; height: 150px; overflow-y: auto;
+            z-index: 100; display: none;
         }
     </style>
 </head>
 <body>
 
-    <!-- Top Bar (Event Info) -->
-    <div class="absolute top-0 left-0 right-0 z-20 p-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-        <div class="glass rounded-2xl p-3 flex justify-between items-center pointer-events-auto">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-xl">🎫</div>
+    <div id="reader"></div>
+
+    <div class="ui-layer">
+        <!-- Top Bar -->
+        <div class="w-full p-4 flex justify-between items-start interactive z-20">
+            <div class="glass-panel rounded-xl p-3 flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-red-500 animate-pulse" id="status-dot"></div>
                 <div class="flex flex-col">
-                    <span class="text-xs text-gray-400 font-medium uppercase tracking-wider">Current Event</span>
-                    <span id="event-id-display" class="font-bold text-sm text-white truncate max-w-[150px]">Not Configured</span>
+                    <span class="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Current Event</span>
+                    <span id="event-name" class="text-sm font-bold text-white leading-tight">Not Configured</span>
                 </div>
             </div>
-            <button id="reset-btn" class="text-gray-400 hover:text-white p-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-            </button>
-        </div>
-    </div>
-
-    <!-- Scanner Area -->
-    <div id="reader-container">
-        <div id="reader"></div>
-        
-        <!-- Custom Overlay -->
-        <div id="scanner-overlay-ui" class="absolute inset-0 pointer-events-none hidden">
-            <div class="scan-region">
-                <div class="scan-line"></div>
-            </div>
             
-            <!-- Status Badge -->
-            <div id="scan-status-badge" class="status-pill glass text-white border-white/10">
-                <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                <span id="scan-status-text">Camera Ready</span>
+            <div class="flex gap-2">
+                <button onclick="toggleDebug()" class="glass-panel p-3 rounded-full text-white/70 hover:text-white">
+                    🐞
+                </button>
+                <button onclick="resetConfig()" class="glass-panel p-3 rounded-full text-white/70 hover:text-white active:scale-95 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                </button>
             </div>
         </div>
-        
-        <!-- Placeholder / Error UI -->
-        <div id="placeholder-ui" class="absolute inset-0 flex flex-col items-center justify-center text-center p-8 space-y-6 z-10">
-            <div class="w-20 h-20 rounded-3xl bg-gray-800 flex items-center justify-center shadow-2xl border border-gray-700">
-                <span class="text-4xl">📷</span>
+
+        <!-- Scan Area (Visual Only) -->
+        <div class="scan-frame hidden" id="scan-ui">
+            <div class="scan-corner tl"></div>
+            <div class="scan-corner tr"></div>
+            <div class="scan-corner bl"></div>
+            <div class="scan-corner br"></div>
+            <div class="scan-laser"></div>
+            <div class="absolute -bottom-12 left-0 right-0 text-center">
+                <span class="glass-panel px-4 py-2 rounded-full text-xs font-medium text-white/90" id="scan-msg">Align QR Code within frame</span>
             </div>
-            <div class="space-y-2">
-                <h2 class="text-2xl font-bold">Ready to Scan</h2>
-                <p class="text-gray-400 text-sm leading-relaxed">Point camera at a QR code.</p>
+        </div>
+
+        <!-- Bottom Controls -->
+        <div class="p-6 w-full space-y-4 interactive z-20">
+            
+            <!-- Toggle -->
+            <div id="mode-toggle" class="hidden glass-panel p-1 rounded-xl flex w-full max-w-xs mx-auto">
+                <button onclick="setMode('check-in')" id="btn-in" class="flex-1 py-3 rounded-lg text-sm font-bold transition-all bg-indigo-600 shadow-lg">Check In</button>
+                <button onclick="setMode('check-out')" id="btn-out" class="flex-1 py-3 rounded-lg text-sm font-bold text-gray-400 hover:text-white transition-all">Check Out</button>
+            </div>
+
+            <!-- Primary Action -->
+            <button id="action-btn" onclick="initCamera()" class="w-full bg-white text-black font-bold text-lg py-4 rounded-2xl shadow-xl active:scale-95 transition-transform" disabled>
+                Loading Library...
+            </button>
+            
+            <div id="status-text" class="text-center text-xs text-gray-500 h-4"></div>
+        </div>
+    </div>
+
+    <!-- Notification System -->
+    <div id="notification" class="fixed top-24 left-4 right-4 z-50 transform -translate-y-40 transition-transform duration-300 flex justify-center pointer-events-none">
+        <div class="glass-panel px-6 py-4 rounded-2xl shadow-2xl border-l-4 flex items-center gap-4 max-w-sm mx-auto" id="notif-body">
+            <span class="text-2xl" id="notif-icon"></span>
+            <div>
+                <h3 class="font-bold text-sm text-white" id="notif-title"></h3>
+                <p class="text-xs text-gray-300" id="notif-msg"></p>
             </div>
         </div>
     </div>
-
-    <!-- Bottom Controls -->
-    <div class="bg-slate-900 p-6 pb-8 rounded-t-3xl -mt-6 z-10 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] relative border-t border-white/5">
-        <div class="mx-auto w-12 h-1 bg-gray-700 rounded-full mb-6 opacity-50"></div>
-
-        <!-- Toggle Switch -->
-        <div id="mode-controls" class="hidden mb-6">
-            <div class="flex justify-center">
-                <label class="mode-switch">
-                    <input type="checkbox" id="scan-mode-toggle">
-                    <div class="slider"></div>
-                    <span class="mode-option check-in-label">Check In</span>
-                    <span class="mode-option check-out-label">Check Out</span>
-                </label>
-            </div>
-        </div>
-
-        <!-- Main Action Button -->
-        <button id="action-button" class="fab-button w-full py-4 rounded-2xl text-lg font-bold text-white transition-all transform active:scale-95 flex items-center justify-center gap-2">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-            <span>Scan Setup Code</span>
-        </button>
-        
-        <button id="troubleshoot-btn" class="w-full mt-4 text-xs text-gray-500 hover:text-gray-300">
-            Camera not working? Tap here.
-        </button>
-    </div>
-
-    <!-- Result Popup -->
-    <div id="result-popup" class="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none opacity-0 transition-opacity duration-300 bg-black/60 backdrop-blur-sm">
-        <div id="result-card" class="glass-panel w-full max-w-sm rounded-3xl p-8 text-center transform scale-95 transition-transform duration-300 shadow-2xl">
-            <div id="result-icon-container" class="w-20 h-20 mx-auto rounded-full bg-green-500/20 flex items-center justify-center mb-6 text-4xl shadow-[0_0_30px_rgba(74,222,128,0.3)]">
-                ✅
-            </div>
-            <h2 id="result-title" class="text-2xl font-bold text-white mb-2">Success</h2>
-            <p id="result-message" class="text-gray-400 text-sm leading-relaxed">Ticket validated successfully.</p>
-        </div>
-    </div>
+    
+    <!-- Debug Log Panel -->
+    <div id="debug-panel"></div>
 
     <script>
-        // --- DOM Elements ---
-        const els = {
-            reader: document.getElementById('reader'),
-            overlay: document.getElementById('scanner-overlay-ui'),
-            placeholder: document.getElementById('placeholder-ui'),
-            statusBadge: document.getElementById('scan-status-badge'),
-            statusText: document.getElementById('scan-status-text'),
-            actionBtn: document.getElementById('action-button'),
-            modeControls: document.getElementById('mode-controls'),
-            modeToggle: document.getElementById('scan-mode-toggle'),
-            popup: document.getElementById('result-popup'),
-            card: document.getElementById('result-card'),
-            icon: document.getElementById('result-icon-container'),
-            title: document.getElementById('result-title'),
-            message: document.getElementById('result-message'),
-            eventId: document.getElementById('event-id-display'),
-            resetBtn: document.getElementById('reset-btn'),
-            troubleshootBtn: document.getElementById('troubleshoot-btn')
-        };
+        // --- LOGGER ---
+        function debugLog(msg) {
+            const panel = document.getElementById('debug-panel');
+            const time = new Date().toLocaleTimeString();
+            panel.innerHTML += `[${time}] ${msg}<br>`;
+            panel.scrollTop = panel.scrollHeight;
+            console.log(`[Scanner] ${msg}`);
+        }
+        
+        function toggleDebug() {
+            const panel = document.getElementById('debug-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
 
-        // --- State ---
+        // --- LIBRARY LOADER ---
+        (async function initLibrary() {
+            debugLog("Initializing...");
+            try {
+                // Try Local First, then CDN
+                await loadScript('/html5-qrcode.min.js', 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js');
+                debugLog("Script Loaded. Checking globals...");
+                
+                // Manual Patch: If the library loaded but didn't expose the global, extract it.
+                if (typeof Html5QrCode === 'undefined') {
+                    debugLog("Global 'Html5QrCode' not found. Checking shim...");
+                    if (typeof __Html5QrcodeLibrary__ !== 'undefined') {
+                        window.Html5QrCode = __Html5QrcodeLibrary__.Html5Qrcode;
+                        window.Html5QrcodeScanner = __Html5QrcodeLibrary__.Html5QrcodeScanner;
+                        debugLog("Manually assigned globals from shim.");
+                    } else if (window.__Html5QrcodeLibrary__) {
+                        window.Html5QrCode = window.__Html5QrcodeLibrary__.Html5Qrcode;
+                        window.Html5QrcodeScanner = window.__Html5QrcodeLibrary__.Html5QrcodeScanner;
+                        debugLog("Manually assigned globals from window shim.");
+                    }
+                }
+
+                // Check if class exists now
+                if (typeof Html5QrCode === 'undefined') {
+                    throw new Error("Html5QrCode class is undefined after load.");
+                }
+                
+                debugLog("Library Ready.");
+                document.getElementById('action-btn').disabled = false;
+                loadConfig();
+            } catch (e) {
+                debugLog(`CRITICAL ERROR: ${e.message}`);
+                showNotif('error', 'Load Error', 'Scanner library failed. Check Debug Log.');
+                document.getElementById('action-btn').innerText = "Library Load Failed";
+            }
+        })();
+
+        // --- GLOBALS ---
         let html5QrCode;
         let config = null;
+        let currentMode = 'check-in';
         let isScanning = false;
-        let isSetupMode = true;
-        let scanMode = 'check-in';
-        let isProcessing = false;
+        let isProcessing = false; // Lock for API calls
 
-        // --- Initialization ---
-        function init() {
-            // Secure Context Check
-            if (!window.isSecureContext) {
-                alert("Security Error: You are using HTTP. Camera requires HTTPS (Ngrok).");
-            }
+        // --- ELEMENTS ---
+        const els = {
+            eventName: document.getElementById('event-name'),
+            statusDot: document.getElementById('status-dot'),
+            scanUi: document.getElementById('scan-ui'),
+            scanMsg: document.getElementById('scan-msg'),
+            modeToggle: document.getElementById('mode-toggle'),
+            btnIn: document.getElementById('btn-in'),
+            btnOut: document.getElementById('btn-out'),
+            actionBtn: document.getElementById('action-btn'),
+            statusText: document.getElementById('status-text'),
+            notif: document.getElementById('notification'),
+            notifBody: document.getElementById('notif-body'),
+            notifIcon: document.getElementById('notif-icon'),
+            notifTitle: document.getElementById('notif-title'),
+            notifMsg: document.getElementById('notif-msg'),
+        };
 
-            // Load Config
-            try {
-                const saved = localStorage.getItem('scannerConfig');
-                if (saved) {
+        function loadConfig() {
+            const saved = localStorage.getItem('ticketScannerConfig');
+            if (saved) {
+                try {
                     config = JSON.parse(saved);
-                    isSetupMode = false;
-                    updateUIState();
+                    els.eventName.innerText = config.eventId;
+                    els.statusDot.classList.replace('bg-red-500', 'bg-yellow-500');
+                    els.modeToggle.classList.remove('hidden');
+                    els.actionBtn.innerText = "Start Scanning";
+                    els.scanMsg.innerText = "Scan Attendee Ticket";
+                    debugLog("Config loaded for event: " + config.eventId);
+                } catch (e) {
+                    debugLog("Config parse error. Clearing.");
+                    localStorage.removeItem('ticketScannerConfig');
                 }
-            } catch (e) { console.error(e); }
-
-            html5QrCode = new Html5QrCode("reader");
-
-            // Event Listeners
-            els.actionBtn.addEventListener('click', toggleScanner);
-            els.modeToggle.addEventListener('change', (e) => {
-                scanMode = e.target.checked ? 'check-out' : 'check-in';
-            });
-            els.resetBtn.addEventListener('click', resetConfig);
-            els.troubleshootBtn.addEventListener('click', forcePermission);
-        }
-
-        // --- Actions ---
-        function updateUIState() {
-            if (config) {
-                els.eventId.textContent = config.eventId;
-                els.modeControls.classList.remove('hidden');
-                els.actionBtn.innerHTML = isScanning 
-                    ? '<span class="text-red-200">Stop Scanning</span>'
-                    : '<span>Start Scanning</span>';
-                els.actionBtn.style.background = isScanning 
-                    ? 'rgba(239, 68, 68, 0.2)' 
-                    : 'linear-gradient(135deg, var(--primary), #818cf8)';
             } else {
-                els.eventId.textContent = 'Not Configured';
-                els.modeControls.classList.add('hidden');
-                els.actionBtn.textContent = 'Scan Setup Code';
-                els.actionBtn.style.background = 'linear-gradient(135deg, var(--secondary), #f472b6)';
+                els.eventName.innerText = "Setup Required";
+                els.scanMsg.innerText = "Scan Setup QR Code";
+                els.actionBtn.innerText = "Start Setup";
+                debugLog("No config found. Setup mode.");
             }
         }
 
-        async function toggleScanner() {
-            if (isScanning) {
-                stopScanner();
-            } else {
-                startScanner();
-            }
-        }
-
-        // --- CRITICAL: Permission & Start Logic ---
-        async function startScanner() {
-            // 1. UI Feedback
-            els.placeholder.classList.add('hidden');
+        // --- CAMERA PIPELINE ---
+        async function initCamera() {
+            els.actionBtn.disabled = true;
+            els.actionBtn.innerText = "Requesting Access...";
+            debugLog("Starting Camera Pipeline...");
             
             try {
-                // 2. FORCE PERMISSION REQUEST (The Fix)
-                // We explicitly call this to trigger the browser prompt
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                // Step 1: Force Permission via Native API
+                debugLog("Requesting getUserMedia...");
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" } 
+                });
                 
-                // 3. If successful, stop the raw stream so Html5Qrcode can take over
+                // Step 2: Clean up stream immediately
+                debugLog("Permission Granted. Stopping temp stream.");
                 stream.getTracks().forEach(track => track.stop());
 
-                // 4. Start Library
+                // Step 3: Brief cooldown for OS
+                await new Promise(r => setTimeout(r, 300));
+
+                // Step 4: Start Library
+                debugLog("Instantiating Html5QrCode...");
+                html5QrCode = new Html5QrCode("reader");
+                
+                const ratio = window.innerWidth / window.innerHeight;
+                debugLog(`Starting scanner with ratio ${ratio.toFixed(2)}`);
+
                 await html5QrCode.start(
                     { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 250 } },
-                    onScanSuccess,
-                    (err) => { /* ignore frame errors */ }
+                    { 
+                        fps: 10,
+                        qrbox: (viewfinderWidth, viewfinderHeight) => {
+                            return { width: 250, height: 250 };
+                        },
+                        aspectRatio: ratio
+                    },
+                    onScan,
+                    onScanError
                 );
-                
+
+                // Step 5: UI Success State
+                debugLog("Scanner Started!");
                 isScanning = true;
-                els.overlay.classList.remove('hidden');
-                updateUIState();
+                els.scanUi.classList.remove('hidden');
+                els.actionBtn.classList.add('hidden');
+                els.statusDot.className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
+                els.statusText.innerText = "";
 
             } catch (err) {
                 console.error(err);
-                let msg = "Error starting camera.";
-                if (err.name === 'NotAllowedError') msg = "Permission Denied. Please Reset Permissions in browser settings.";
-                if (err.name === 'NotFoundError') msg = "No camera found.";
-                
-                showPopup('error', 'Camera Error', msg);
-                stopScanner();
+                debugLog(`CAMERA FAIL: ${err.name} - ${err.message}`);
+                els.actionBtn.disabled = false;
+                els.actionBtn.innerText = "Retry Camera";
+                handleCameraError(err);
             }
         }
 
-        async function forcePermission() {
-             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                alert("Permission Granted! Try scanning now.");
-                stream.getTracks().forEach(t => t.stop());
-            } catch (err) {
-                alert(`Error: ${err.name}. Please check browser Site Settings.`);
-            }
-        }
-
-        async function stopScanner() {
-            if (isScanning) {
-                try { await html5QrCode.stop(); } catch(e){}
-                isScanning = false;
-                els.overlay.classList.add('hidden');
-                els.placeholder.classList.remove('hidden');
-                updateUIState();
-            }
-        }
-
-        async function onScanSuccess(decodedText) {
+        async function onScan(text, result) {
             if (isProcessing) return;
             isProcessing = true;
-            if (navigator.vibrate) navigator.vibrate(50);
-
-            if (isSetupMode) {
-                handleSetupScan(decodedText);
-            } else {
-                handleTicketScan(decodedText);
-            }
-        }
-
-        function handleSetupScan(text) {
-            try {
-                const data = JSON.parse(text);
-                if (data.eventId && data.token) {
-                    config = data;
-                    localStorage.setItem('scannerConfig', JSON.stringify(config));
-                    isSetupMode = false;
-                    stopScanner();
-                    showPopup('success', 'Setup Complete', `Connected to ${config.eventId}`);
-                    setTimeout(() => updateUIState(), 500);
-                } else { throw new Error("Invalid QR"); }
-            } catch (e) {
-                showPopup('error', 'Invalid Setup', 'Not a valid setup code.');
-                setTimeout(() => { isProcessing = false; }, 2000);
-            }
-        }
-
-        async function handleTicketScan(ticketId) {
-            try {
-                const response = await fetch(`${config.apiBaseUrl}/api/scanner/update-ticket-status/${config.eventId}/${ticketId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.token}` },
-                    body: JSON.stringify({ action: scanMode })
-                });
-                const result = await response.json();
-
-                if (!response.ok) throw new Error(result.message || 'Scan failed');
-                showPopup('success', result.data.message, ticketId);
-            } catch (error) {
-                showPopup('error', 'Scan Failed', error.message);
-            } finally {
-                setTimeout(() => { isProcessing = false; }, 2000); 
-            }
-        }
-
-        function showPopup(type, title, message) {
-            els.title.textContent = title;
-            els.message.textContent = message;
+            debugLog(`Scanned: ${text}`);
             
-            const isSuccess = type === 'success';
-            els.icon.className = `w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-6 text-4xl ${isSuccess ? 'bg-green-500/20' : 'bg-red-500/20'}`;
-            els.icon.textContent = isSuccess ? '✅' : '⚠️';
+            // Visual Feedback
+            document.querySelector('.scan-frame').classList.add('scanning');
+            if(navigator.vibrate) navigator.vibrate(50);
 
-            els.popup.classList.remove('opacity-0', 'pointer-events-none');
-            els.card.classList.remove('scale-95');
-            els.card.classList.add('popup-animate');
+            if (!config) {
+                await processSetup(text);
+            } else {
+                await processTicket(text);
+            }
 
+            // Reset Visuals
             setTimeout(() => {
-                els.popup.classList.add('opacity-0', 'pointer-events-none');
-                els.card.classList.add('scale-95');
+                isProcessing = false;
+                document.querySelector('.scan-frame').classList.remove('scanning', 'error', 'warning');
             }, 2000);
         }
 
-        function resetConfig() {
-            if (confirm('Reset scanner configuration?')) {
-                localStorage.removeItem('scannerConfig');
-                config = null;
-                isSetupMode = true;
-                stopScanner();
-                updateUIState();
+        function onScanError(err) {
+            // Too noisy to log every frame error
+        }
+
+        // --- BUSINESS LOGIC ---
+
+        async function processSetup(text) {
+            try {
+                const data = JSON.parse(text);
+                if (!data.eventId || !data.token) throw new Error("Invalid QR Data");
+
+                config = data;
+                localStorage.setItem('ticketScannerConfig', JSON.stringify(config));
+                
+                showNotif('success', 'Setup Complete', `Connected to ${config.eventId}`);
+                debugLog("Setup Success");
+                
+                // Update UI
+                els.eventName.innerText = config.eventId;
+                els.modeToggle.classList.remove('hidden');
+                els.scanMsg.innerText = "Scan Attendee Ticket";
+                els.statusDot.className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
+
+            } catch (e) {
+                debugLog(`Setup Error: ${e.message}`);
+                showNotif('error', 'Setup Failed', 'Invalid setup QR code.');
+                document.querySelector('.scan-frame').classList.add('error');
             }
         }
 
-        init();
+        // --- AUDIO ENGINE ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        function playSuccess() { playTone(880, 'sine', 0.1); setTimeout(() => playTone(1760, 'sine', 0.1), 100); }
+        function playWarning() { playTone(440, 'square', 0.1); setTimeout(() => playTone(440, 'square', 0.1), 150); }
+        function playError() { playTone(150, 'sawtooth', 0.4); }
+
+        async function processTicket(ticketId) {
+            showNotif('loading', 'Verifying...', 'Checking with server...');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+            try {
+                const res = await fetch(`${config.apiBaseUrl}/api/scanner/update-ticket-status/${config.eventId}/${ticketId}`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${config.token}` 
+                    },
+                    body: JSON.stringify({ action: currentMode }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    // Handle Business Logic Errors (400) differently from System Errors (500)
+                    if (res.status === 400) {
+                        throw new Error(`WARN:${data.message}`);
+                    }
+                    throw new Error(data.message || 'Scan failed');
+                }
+
+                showNotif('success', 'Valid Ticket', data.message);
+                playSuccess();
+                debugLog(`Ticket OK: ${ticketId}`);
+                
+            } catch (err) {
+                clearTimeout(timeoutId);
+                
+                let isWarning = false;
+                let msg = err.message;
+
+                if (msg.startsWith('WARN:')) {
+                    isWarning = true;
+                    msg = msg.replace('WARN:', '');
+                } else if (err.name === 'AbortError') {
+                    msg = "Network timeout. Try again.";
+                }
+
+                if (isWarning) {
+                    showNotif('warning', 'Check Status', msg);
+                    playWarning();
+                    document.querySelector('.scan-frame').classList.add('warning');
+                } else {
+                    showNotif('error', 'Access Denied', msg);
+                    playError();
+                    document.querySelector('.scan-frame').classList.add('error');
+                    if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                }
+                
+                debugLog(`Ticket Fail: ${msg}`);
+            }
+        }
+
+        // --- HELPERS ---
+
+        function setMode(mode) {
+            currentMode = mode;
+            debugLog(`Mode: ${mode}`);
+            if (mode === 'check-in') {
+                els.btnIn.className = "flex-1 py-3 rounded-lg text-sm font-bold transition-all bg-indigo-600 shadow-lg text-white";
+                els.btnOut.className = "flex-1 py-3 rounded-lg text-sm font-bold text-gray-400 hover:text-white transition-all";
+            } else {
+                els.btnIn.className = "flex-1 py-3 rounded-lg text-sm font-bold text-gray-400 hover:text-white transition-all";
+                els.btnOut.className = "flex-1 py-3 rounded-lg text-sm font-bold transition-all bg-pink-600 shadow-lg text-white";
+            }
+        }
+
+        function resetConfig() {
+            if(confirm("Reset scanner configuration?")) {
+                localStorage.removeItem('ticketScannerConfig');
+                location.reload();
+            }
+        }
+
+        function handleCameraError(err) {
+            let msg = "Camera failed to start.";
+            if (err.name === 'NotAllowedError') msg = "Permission denied. Reset browser permissions.";
+            if (err.name === 'NotFoundError') msg = "No camera found.";
+            if (err.name === 'NotReadableError') msg = "Camera in use by another app.";
+            showNotif('error', 'Camera Error', msg);
+            els.statusText.innerText = msg;
+        }
+
+        let notifTimeout;
+        function showNotif(type, title, msg) {
+            clearTimeout(notifTimeout);
+            
+            els.notif.style.transform = 'translateY(0)';
+            els.notifTitle.innerText = title;
+            els.notifMsg.innerText = msg;
+
+            const colors = {
+                success: 'border-green-500',
+                error: 'border-red-500',
+                loading: 'border-blue-500',
+                warning: 'border-yellow-500'
+            };
+            
+            const icons = {
+                success: '✅', error: '⛔', loading: '⏳', warning: '⚠️'
+            };
+
+            els.notifBody.className = `glass-panel px-6 py-4 rounded-2xl shadow-2xl border-l-4 flex items-center gap-4 max-w-sm mx-auto ${colors[type] || 'border-white'}`;
+            els.notifIcon.innerText = icons[type] || 'ℹ️';
+
+            if (type !== 'loading') {
+                notifTimeout = setTimeout(() => {
+                    els.notif.style.transform = 'translateY(-10rem)';
+                }, 3000);
+            }
+        }
 
     </script>
 </body>
