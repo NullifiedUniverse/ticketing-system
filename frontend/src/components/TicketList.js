@@ -2,39 +2,78 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TicketRow from './TicketRow';
+import TicketCard from './TicketCard';
 
 const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 
-const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onCheckIn, onShowQR }) => (
-    <motion.div layout variants={itemVariants} className="bg-gray-900 border border-purple-500/20 p-6 rounded-2xl shadow-lg">
-        <input
-            type="text"
-            placeholder="Search by name, email, or ticket ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 mb-4 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
-        />
-        <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[600px]">
-                <thead className="border-b border-gray-800">
+const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onCheckIn, onShowQR, onEdit, onDelete }) => (
+    <motion.div layout variants={itemVariants} className="glass-panel p-6 rounded-2xl">
+        {/* Search Bar */}
+        <div className="relative mb-6">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            <input
+                type="text"
+                placeholder="Search attendees..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-gray-950/50 border border-gray-700 rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+            />
+        </div>
+
+        {/* Desktop View (Table) */}
+        <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left">
+                <thead className="border-b border-gray-700/50 text-gray-400 text-sm uppercase tracking-wider">
                     <tr>
-                        <th className="p-4">Status</th>
-                        <th className="p-4">Attendee</th>
-                        <th className="p-4">Ticket ID</th>
-                        <th className="p-4 text-right">Actions</th>
+                        <th className="p-4 font-semibold">Status</th>
+                        <th className="p-4 font-semibold">Attendee</th>
+                        <th className="p-4 font-semibold">Ticket ID</th>
+                        <th className="p-4 text-right font-semibold">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <AnimatePresence>
+                <tbody className="divide-y divide-gray-800">
+                    <AnimatePresence mode='popLayout'>
                         {filteredTickets.map((ticket) => (
-                            <TicketRow key={ticket.id} ticket={ticket} onCheckIn={onCheckIn} onShowQR={onShowQR} />
+                            <TicketRow 
+                                key={ticket.id} 
+                                ticket={ticket} 
+                                onCheckIn={onCheckIn} 
+                                onShowQR={onShowQR} 
+                                onEdit={onEdit} 
+                                onDelete={onDelete} 
+                            />
                         ))}
                     </AnimatePresence>
                 </tbody>
             </table>
         </div>
+
+        {/* Mobile View (Cards) */}
+        <div className="md:hidden space-y-4">
+            <AnimatePresence mode='popLayout'>
+                {filteredTickets.map((ticket) => (
+                    <TicketCard
+                        key={ticket.id}
+                        ticket={ticket}
+                        onCheckIn={onCheckIn}
+                        onShowQR={onShowQR}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                    />
+                ))}
+            </AnimatePresence>
+        </div>
+
         {!isLoading && filteredTickets.length === 0 && (
-            <p className="text-center text-gray-500 py-8">No tickets found.</p>
+            <div className="text-center py-12">
+                <div className="text-4xl mb-3">🔍</div>
+                <h3 className="text-lg font-medium text-white">No tickets found</h3>
+                <p className="text-gray-500">Try adjusting your search terms.</p>
+            </div>
         )}
     </motion.div>
 );

@@ -1,17 +1,21 @@
-
-// WARNING: Credentials are hardcoded for this experiment.
-// DO NOT use this in a production environment.
 // It is recommended to use environment variables to store sensitive information.
+// Create a .env file in the frontend directory and add the following:
+// REACT_APP_FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY
+// REACT_APP_FIREBASE_AUTH_DOMAIN=YOUR_FIREBASE_AUTH_DOMAIN
+// REACT_APP_FIREBASE_PROJECT_ID=YOUR_FIREBASE_PROJECT_ID
+// REACT_APP_FIREBASE_STORAGE_BUCKET=YOUR_FIREBASE_STORAGE_BUCKET
+// REACT_APP_FIREBASE_MESSAGING_SENDER_ID=YOUR_FIREBASE_MESSAGING_SENDER_ID
+// REACT_APP_FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID
+// REACT_APP_API_BASE_URL=YOUR_BACKEND_URL
+// REACT_APP_API_KEY=YOUR_API_KEY
 
 export const firebaseConfig = {
-    apiKey: "AIzaSyDR_A-Klh7XMTLLU23sQpkT53hVvFpThR8",
-    authDomain: "ticketingsystem-e3a29.firebaseapp.com",
-    projectId: "ticketingsystem-e3a29",
-    storageBucket: "ticketingsystem-e3a29.appspot.com",
-    messagingSenderId: "300776042507",
-    appId: "1:300776042507:web:3d7cedb3528f93acf5970e",
-    measurementId: "G-RP50S3LBJL"
+    apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.REACT_APP_FIREBASE_APP_ID,
 };
 
-export const API_BASE_URL = 'REPLACE_WITH_YOUR_BACKEND_URL';
-export const API_KEY = "93cb57c39dbf557434fd0bfb3c787f88";
+export const API_BASE_URL = '';

@@ -5,7 +5,7 @@ import StatusBadge from './StatusBadge';
 
 const animatedGradientStyle = { '--gradient-start': '#ec4899', '--gradient-end': '#8b5cf6' };
 
-const TicketRow = ({ ticket, onCheckIn, onShowQR }) => (
+const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => (
     <motion.tr
         layout
         key={ticket.id}
@@ -40,6 +40,22 @@ const TicketRow = ({ ticket, onCheckIn, onShowQR }) => (
                     Check In
                 </motion.button>
             )}
+            <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => onEdit(ticket)}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-lg text-sm"
+            >
+                Edit
+            </motion.button>
+            <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => onDelete(ticket)}
+                className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg text-sm"
+            >
+                Delete
+            </motion.button>
         </td>
     </motion.tr>
 );

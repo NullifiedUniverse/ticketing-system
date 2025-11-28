@@ -20,8 +20,11 @@ const Header = ({ eventId, connectionStatus, connectionError }) => (
                 <p className="text-gray-500 mt-1">No event selected.</p>
             )}
         </div>
-        <LiveIndicator status={connectionStatus} error={connectionError} />
+        <div className="flex items-center space-x-4">
+            <LiveIndicator status={connectionStatus} error={connectionError} />
+        </div>
     </motion.header>
 );
 
 export default Header;
+

@@ -1,14 +1,32 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-const EventSelector = ({ onEventSelect, eventHistory, onShowSetupQR }) => {
+const EventSelector = ({ onEventIdChange, onShowSetupQR, onNewEvent }) => {
     const [eventIdInput, setEventIdInput] = useState('');
+    const [eventHistory, setEventHistory] = useState(() => {
+        try {
+            const saved = localStorage.getItem('eventHistory');
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            return [];
+        }
+    });
 
-    const handleSelect = (e) => {
+    useEffect(() => {
+        localStorage.setItem('eventHistory', JSON.stringify(eventHistory));
+    }, [eventHistory]);
+
+    const handleSelect = (newEventId) => {
+        onEventIdChange(newEventId);
+        if (newEventId) {
+            setEventHistory((prev) => [newEventId, ...prev.filter((id) => id !== newEventId)].slice(0, 5));
+        }
+    };
+
+    const handleSubmit = (e) => {
         e.preventDefault();
         if (eventIdInput.trim()) {
-            onEventSelect(eventIdInput.trim().toLowerCase().replace(/\s+/g, '-'));
+            handleSelect(eventIdInput.trim().toLowerCase().replace(/\s+/g, '-'));
             setEventIdInput('');
         }
     };
@@ -22,16 +40,26 @@ const EventSelector = ({ onEventSelect, eventHistory, onShowSetupQR }) => {
         >
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                 <h2 className="text-2xl font-bold text-white">Select or Create Event</h2>
-                <motion.button
-                    onClick={onShowSetupQR}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="bg-gray-700 text-sm hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-lg flex-shrink-0"
-                >
-                    Show Setup QR
-                </motion.button>
+                <div className="flex items-center space-x-4">
+                    <motion.button
+                        onClick={onNewEvent}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-3 rounded-lg text-sm"
+                    >
+                        New Event
+                    </motion.button>
+                    <motion.button
+                        onClick={onShowSetupQR}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="bg-gray-700 text-sm hover:bg-gray-600 text-white font-bold py-2 px-3 rounded-lg flex-shrink-0"
+                    >
+                        Show Setup QR
+                    </motion.button>
+                </div>
             </div>
-            <form onSubmit={handleSelect} className="flex flex-col sm:flex-row gap-4">
+            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4">
                 <input
                     type="text"
                     placeholder="Enter Event ID (e.g., concert-2025)"
@@ -56,7 +84,7 @@ const EventSelector = ({ onEventSelect, eventHistory, onShowSetupQR }) => {
                         {eventHistory.map((id) => (
                             <motion.button
                                 key={id}
-                                onClick={() => onEventSelect(id)}
+                                onClick={() => handleSelect(id)}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 className="bg-gray-700 hover:bg-gray-600 text-white font-mono text-sm py-1 px-3 rounded-lg"

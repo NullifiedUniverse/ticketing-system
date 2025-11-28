@@ -1,4 +1,3 @@
-
 # Dependencies
 /backend/node_modules
 /frontend/node_modules
@@ -104,3 +103,4 @@ public
 
 # TernJS port file
 .tern-port
+backend/serviceAccountKey.json

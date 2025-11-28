@@ -1,137 +1,79 @@
+require('dotenv').config();
 // --- LIBRARIES ---
 const express = require('express');
-const admin = require('firebase-admin');
 const cors = require('cors');
-const { v4: uuidv4 } = require('uuid');
-const morgan = require('morgan');
-const Joi = require('joi');
+const { db } = require('./firebase');
 const config = require('./config');
+const scannerAuthMiddleware = require('./middleware/scannerAuthMiddleware');
+const { adminRouter, scannerRouter } = require('./routes/tickets');
+const scannerTokenRoutes = require('./routes/scannerToken');
+const ngrok = require('./ngrok');
+const path = require('path');
 
 // --- INITIALIZATION ---
-admin.initializeApp({
-  credential: admin.credential.cert(config.serviceAccount)
-});
-const db = admin.firestore();
 const app = express();
 
 // --- MIDDLEWARE ---
-app.use(cors());
+app.use(cors({ origin: '*' }));
 app.use(express.json());
-app.use(morgan('dev'));
 
-// --- SECURITY MIDDLEWARE ---
-const apiKeyMiddleware = (req, res, next) => {
-  const providedKey = req.headers['x-api-key'];
-  if (!providedKey || providedKey !== config.apiKey) {
-    return res.status(403).json({ status: 'error', message: 'Forbidden: Invalid API Key' });
-  }
+// Security Headers for Camera Access
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=*');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+  console.log(`${req.method} ${req.originalUrl}`);
   next();
-};
-
-app.use(apiKeyMiddleware); // Apply security to all routes
-
-// --- VALIDATION SCHEMAS ---
-const createTicketSchema = Joi.object({
-    attendeeName: Joi.string().min(1).required(),
-    attendeeEmail: Joi.string().email().required(),
-});
-
-const updateTicketStatusSchema = Joi.object({
-    action: Joi.string().valid('check-in', 'check-out').required(),
 });
 
 // --- API ROUTES ---
+app.use('/api/admin', adminRouter);
+app.use('/api/scanner', scannerAuthMiddleware, scannerRouter);
+app.use('/auth', scannerTokenRoutes);
 
-// 1. Create a new ticket
-app.post('/api/create-ticket/:eventId', async (req, res) => {
-    try {
-        const { eventId } = req.params;
-        const { error, value } = createTicketSchema.validate(req.body);
-        if (error) {
-            return res.status(400).json({ status: 'error', message: error.details[0].message });
-        }
-        const { attendeeName, attendeeEmail } = value;
-        const ticketId = uuidv4();
-        const ticketRef = db.collection(`events/${eventId}/tickets`).doc(ticketId);
-        
-        const newTicket = {
-            attendeeName,
-            attendeeEmail,
-            status: 'valid', // valid, checked-in, on-leave
-            createdAt: new Date(),
-            checkInHistory: [], // To log all check-in/out events
-        };
-        
-        await ticketRef.set(newTicket);
-        res.status(201).json({ status: 'success', ticket: { id: ticketId, ...newTicket } });
-    } catch (error) {
-        console.error("Error creating ticket:", error);
-        res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+app.get('/api/ngrok-url', (req, res) => {
+    const url = ngrok.getUrl();
+    const type = ngrok.getUrlType();
+    if (url) {
+        res.json({ status: 'success', url, type });
+    } else {
+        res.status(503).json({ status: 'error', message: 'Tunnel is not active.' });
     }
 });
 
-// 2. Update a ticket's status (for scanning)
-app.post('/api/update-ticket-status/:eventId/:ticketId', async (req, res) => {
-    const { eventId, ticketId } = req.params;
-    const { error, value } = updateTicketStatusSchema.validate(req.body);
-    if (error) {
-        return res.status(400).json({ status: 'error', message: error.details[0].message });
-    }
-    const { action } = value;
-    const ticketRef = db.doc(`events/${eventId}/tickets/${ticketId}`);
-    
-    try {
-        const result = await db.runTransaction(async (transaction) => {
-            const ticketDoc = await transaction.get(ticketRef);
-            
-            if (!ticketDoc.exists) {
-                throw new Error("Ticket not found.");
-            }
-            
-            const ticketData = ticketDoc.data();
-            const now = new Date();
-            let newStatus = ticketData.status;
-            let message = '';
-
-            if (action === 'check-in') {
-                if (ticketData.status === 'checked-in') {
-                    throw new Error('Ticket already checked in.');
-                }
-                newStatus = 'checked-in';
-                message = `Checked In: ${ticketData.attendeeName}`;
-            } else if (action === 'check-out') {
-                if (ticketData.status !== 'checked-in') {
-                    throw new Error('Can only check out an already checked-in ticket.');
-                }
-                newStatus = 'on-leave';
-                message = `On Leave: ${ticketData.attendeeName}`;
-            }
-            
-            const historyEntry = {
-                action,
-                timestamp: now,
-                scannedBy: 'qr-scanner'
-            };
-
-            transaction.update(ticketRef, { 
-                status: newStatus,
-                checkInHistory: admin.firestore.FieldValue.arrayUnion(historyEntry)
-            });
-            
-            return { ...ticketData, status: newStatus, message };
-        });
-        
-        res.json({ status: 'success', data: result });
-    } catch (error) {
-        console.error("Status update error:", error.message);
-        res.status(400).json({ status: 'error', message: error.message });
-    }
+// --- SERVE SCANNER ---
+app.get('/scanner', (req, res) => {
+    res.sendFile(path.join(__dirname, '../scanner/scanner.html'));
 });
 
+// --- SERVE STATIC FRONTEND ---
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../frontend/build')));
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+});
 
 // --- START SERVER ---
 const PORT = config.port || 3001;
-app.listen(PORT, '0.0.0.0', () => { // Listen on all network interfaces
+const server = app.listen(PORT, '0.0.0.0', async () => { // Listen on all network interfaces
   console.log(`Server is running on http://0.0.0.0:${PORT}`);
+  if (process.env.NODE_ENV !== 'production') {
+    await ngrok.start();
+  }
 });
+
+// --- GRACEFUL SHUTDOWN ---
+process.on('SIGINT', async () => {
+    console.log('SIGINT signal received: closing HTTP server');
+    if (process.env.NODE_ENV === 'development') {
+        await ngrok.stop();
+    }
+    server.close(() => {
+        console.log('HTTP server closed');
+    });
+});
+
 

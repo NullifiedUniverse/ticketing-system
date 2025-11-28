@@ -78,6 +78,82 @@ const Modal = ({ isOpen, onClose, content }) => {
                                     </motion.button>
                                 </div>
                             )}
+                            {content.type === 'prompt' && (
+                                <div className="flex flex-col items-center gap-4 mt-4">
+                                    <input
+                                        type="text"
+                                        id="prompt-input"
+                                        className="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
+                                    />
+                                    <div className="flex justify-center gap-4 mt-4">
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={onClose}
+                                            className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg"
+                                        >
+                                            Cancel
+                                        </motion.button>
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => {
+                                                const input = document.getElementById('prompt-input');
+                                                content.onConfirm(input.value);
+                                                onClose();
+                                            }}
+                                            style={animatedGradientStyle}
+                                            className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
+                                        >
+                                            Confirm
+                                        </motion.button>
+                                    </div>
+                                </div>
+                            )}
+                            {content.type === 'edit-ticket' && (
+                                <div className="flex flex-col items-center gap-4 mt-4">
+                                    <input
+                                        type="text"
+                                        id="edit-name-input"
+                                        defaultValue={content.ticket.attendeeName}
+                                        className="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
+                                    />
+                                    <input
+                                        type="email"
+                                        id="edit-email-input"
+                                        defaultValue={content.ticket.attendeeEmail}
+                                        className="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
+                                    />
+                                    <div className="flex justify-center gap-4 mt-4">
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={onClose}
+                                            className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg"
+                                        >
+                                            Cancel
+                                        </motion.button>
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => {
+                                                const nameInput = document.getElementById('edit-name-input');
+                                                const emailInput = document.getElementById('edit-email-input');
+                                                content.onConfirm({
+                                                    ...content.ticket,
+                                                    attendeeName: nameInput.value,
+                                                    attendeeEmail: emailInput.value,
+                                                });
+                                                onClose();
+                                            }}
+                                            style={animatedGradientStyle}
+                                            className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
+                                        >
+                                            Save
+                                        </motion.button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </motion.div>
                 </motion.div>

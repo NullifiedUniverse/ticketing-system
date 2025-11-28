@@ -1,0 +1,13 @@
+{
+  "name": "ticket-system-root",
+  "version": "1.0.0",
+  "description": "Root script to manage backend and frontend",
+  "scripts": {
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently \"npm run start --prefix backend\" \"npm run start --prefix frontend\"",
+    "test": "npm test --prefix backend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  }
+}
