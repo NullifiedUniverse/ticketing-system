@@ -4,17 +4,38 @@ const { v4: uuidv4 } = require('uuid');
 class TicketService {
     // --- EVENT MANAGEMENT ---
     async createEvent(eventId) {
+        console.log(`[TicketService] Creating event: ${eventId}`);
         await this.createEventMetadata(eventId);
         return { id: eventId, name: eventId, createdAt: new Date() };
     }
 
+    async deleteEvent(eventId) {
+        // 1. Delete metadata
+        await db.collection('events_meta').doc(eventId).delete();
+
+        // 2. Delete all tickets in the event (subcollection)
+        const ticketsRef = db.collection('events').doc(eventId).collection('tickets');
+        const snapshot = await ticketsRef.get();
+        
+        const batch = db.batch();
+        snapshot.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+
+        // 3. Delete the event document itself
+        await db.collection('events').doc(eventId).delete();
+    }
+
     async getEvents() {
+        console.log("[TicketService] Getting events...");
         const eventsRef = db.collection('events_meta');
         const snapshot = await eventsRef.get();
         let events = [];
         snapshot.forEach(doc => {
             events.push(doc.data());
         });
+        console.log(`[TicketService] Found ${events.length} events in events_meta.`);
 
         // Fallback: if no metadata found, try to discover from 'events' collection
         // Note: listCollections is an admin SDK method

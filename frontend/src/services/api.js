@@ -55,6 +55,14 @@ export const createEvent = async (eventId) => {
     return result.event;
 };
 
+export const deleteEvent = async (eventId) => {
+    const result = await callApi(`/api/admin/delete-event/${eventId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+    });
+    return result;
+};
+
 // --- AUTH (login function kept for completeness, though UI is removed) ---
 export const login = async (username, password) => {
     const result = await callApi('/auth/login', {

@@ -1,24 +1,50 @@
 import React, { useState, useEffect } from 'react';
-import { getEvents } from '../services/api';
+import { getEvents, deleteEvent } from '../services/api';
 
-const Sidebar = ({ currentEventId, onSelectEvent, onNewEvent }) => {
+const Sidebar = ({ currentEventId, onSelectEvent, onNewEvent, refreshTrigger }) => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     useEffect(() => {
         fetchEvents();
-    }, [currentEventId]); 
+    }, [currentEventId, refreshTrigger]); 
 
     const fetchEvents = async () => {
         setLoading(true);
         try {
             const fetchedEvents = await getEvents();
-            setEvents(fetchedEvents);
+            // Sort by most recent
+            const sorted = fetchedEvents.sort((a, b) => {
+                 const getTime = (t) => {
+                     if (!t) return 0;
+                     if (t._seconds) return t._seconds * 1000;
+                     if (t.seconds) return t.seconds * 1000; // Firebase timestamp standard
+                     return new Date(t).getTime();
+                 };
+                 return getTime(b.createdAt) - getTime(a.createdAt);
+            });
+            setEvents(sorted);
         } catch (error) {
             console.error("Failed to load events", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (e, eventId) => {
+        e.stopPropagation();
+        if (window.confirm(`Are you sure you want to delete event "${eventId}"? This action cannot be undone.`)) {
+            try {
+                await deleteEvent(eventId);
+                if (currentEventId === eventId) {
+                    onSelectEvent(null);
+                }
+                // Force a small delay to ensure backend consistency
+                setTimeout(fetchEvents, 500);
+            } catch (error) {
+                alert("Failed to delete event: " + error.message);
+            }
         }
     };
 
@@ -66,22 +92,37 @@ const Sidebar = ({ currentEventId, onSelectEvent, onNewEvent }) => {
 
                         <div className="space-y-1">
                             {events.map((event) => (
-                                <button
+                                <div 
                                     key={event.id}
-                                    onClick={() => { onSelectEvent(event.id); setIsMobileOpen(false); }}
-                                    className={`w-full text-left px-4 py-3.5 rounded-xl transition-all duration-200 group relative ${
-                                        currentEventId === event.id 
-                                        ? 'bg-white/10 text-white font-semibold shadow-lg ring-1 ring-white/10' 
-                                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                                    }`}
+                                    className="relative group flex items-center"
                                 >
-                                    {currentEventId === event.id && (
-                                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-pink-500 to-purple-500 rounded-r-full"></div>
-                                    )}
-                                    <span className="truncate block pl-2">
-                                        {event.name || event.id}
-                                    </span>
-                                </button>
+                                    <button
+                                        onClick={() => { onSelectEvent(event.id); setIsMobileOpen(false); }}
+                                        className={`flex-grow text-left px-4 py-3.5 rounded-xl transition-all duration-200 relative ${
+                                            currentEventId === event.id 
+                                            ? 'bg-white/10 text-white font-semibold shadow-lg ring-1 ring-white/10' 
+                                            : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                                        }`}
+                                    >
+                                        {currentEventId === event.id && (
+                                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-pink-500 to-purple-500 rounded-r-full"></div>
+                                        )}
+                                        <span className="truncate block pl-2 pr-8">
+                                            {event.name || event.id}
+                                        </span>
+                                    </button>
+
+                                    {/* Delete Button */}
+                                    <button
+                                        onClick={(e) => handleDelete(e, event.id)}
+                                        className="absolute right-2 z-20 p-2 text-gray-400 hover:text-white hover:bg-red-600/80 rounded-lg transition-colors"
+                                        title="Delete Event"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
                             ))}
                         </div>
                     </div>

@@ -352,12 +352,6 @@
             } else {
                 await processTicket(text);
             }
-
-            // Reset Visuals
-            setTimeout(() => {
-                isProcessing = false;
-                document.querySelector('.scan-frame').classList.remove('scanning', 'error', 'warning');
-            }, 2000);
         }
 
         function onScanError(err) {
@@ -387,26 +381,13 @@
                 debugLog(`Setup Error: ${e.message}`);
                 showNotif('error', 'Setup Failed', 'Invalid setup QR code.');
                 document.querySelector('.scan-frame').classList.add('error');
+            } finally {
+                setTimeout(() => {
+                    isProcessing = false;
+                    document.querySelector('.scan-frame').classList.remove('scanning', 'error');
+                }, 1000);
             }
         }
-
-        // --- AUDIO ENGINE ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playTone(freq, type, duration) {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.value = freq;
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
-            osc.stop(audioCtx.currentTime + duration);
-        }
-
-        function playSuccess() { playTone(880, 'sine', 0.1); setTimeout(() => playTone(1760, 'sine', 0.1), 100); }
-        function playWarning() { playTone(440, 'square', 0.1); setTimeout(() => playTone(440, 'square', 0.1), 150); }
-        function playError() { playTone(150, 'sawtooth', 0.4); }
 
         async function processTicket(ticketId) {
             showNotif('loading', 'Verifying...', 'Checking with server...');
@@ -435,8 +416,9 @@
                     throw new Error(data.message || 'Scan failed');
                 }
 
-                showNotif('success', 'Valid Ticket', data.message);
-                playSuccess();
+                // API returns { status: 'success', message: 'Checked In: ...', data: { ... } }
+                const successMsg = data.message || data.data?.message || 'Access Granted';
+                showNotif('success', 'Valid Ticket', successMsg);
                 debugLog(`Ticket OK: ${ticketId}`);
                 
             } catch (err) {
@@ -454,16 +436,20 @@
 
                 if (isWarning) {
                     showNotif('warning', 'Check Status', msg);
-                    playWarning();
                     document.querySelector('.scan-frame').classList.add('warning');
                 } else {
                     showNotif('error', 'Access Denied', msg);
-                    playError();
                     document.querySelector('.scan-frame').classList.add('error');
                     if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
                 }
                 
                 debugLog(`Ticket Fail: ${msg}`);
+            } finally {
+                 // Reset Visuals Quicker (1000ms instead of 2000ms)
+                setTimeout(() => {
+                    isProcessing = false;
+                    document.querySelector('.scan-frame').classList.remove('scanning', 'error', 'warning');
+                }, 1000);
             }
         }
 

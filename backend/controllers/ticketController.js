@@ -82,15 +82,26 @@ class TicketController {
         }
         const { action } = value;
 
-        // Determine who scanned: 'qr-scanner' if the request came from the scanner (identified by req.user.scanner), otherwise 'admin'
         const scannedBy = (req.user && req.user.scanner) ? 'qr-scanner' : 'admin';
 
         try {
             const result = await ticketService.updateTicketStatus(eventId, ticketId, action, scannedBy);
-            res.json({ status: 'success', data: result });
+            // Return message at top level for easier client access
+            res.json({ status: 'success', message: result.message, data: result });
         } catch (error) {
             console.error("Status update error:", error.message);
             res.status(400).json({ status: 'error', message: error.message });
+        }
+    }
+
+    async deleteEvent(req, res) {
+        try {
+            const { eventId } = req.params;
+            await ticketService.deleteEvent(eventId);
+            res.json({ status: 'success', message: 'Event deleted successfully' });
+        } catch (error) {
+            console.error("Error deleting event:", error);
+            res.status(500).json({ status: 'error', message: 'Internal Server Error' });
         }
     }
 

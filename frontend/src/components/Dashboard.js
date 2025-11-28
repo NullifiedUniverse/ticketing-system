@@ -14,6 +14,7 @@ import { useModal } from '../hooks/useModal';
 const Dashboard = () => {
     const { modalContent, showModal, hideModal, showErrorModal, showConfirmModal, showPromptModal, showQrCodeModal } = useModal();
     const [eventId, setEventId] = useState(null);
+    const [sidebarRefreshTrigger, setSidebarRefreshTrigger] = useState(0);
     
     const {
         tickets,
@@ -38,7 +39,11 @@ const Dashboard = () => {
     const handleEventChange = (newEventId) => {
         setEventId(newEventId);
         localStorage.setItem('lastEventId', newEventId);
+        // No need to trigger refresh here as Sidebar updates on currentEventId change, 
+        // but if we delete an event and setEventId(null), we might want to ensure list is fresh.
     };
+
+    const triggerSidebarRefresh = () => setSidebarRefreshTrigger(prev => prev + 1);
 
     const handleTicketCreatedAndShowQR = (result) => {
         handleTicketCreated(result);
@@ -79,6 +84,7 @@ const Dashboard = () => {
                 try {
                     await createEvent(formattedId);
                     handleEventChange(formattedId);
+                    triggerSidebarRefresh();
                 } catch (err) {
                     showErrorModal(`Failed to create event: ${err.message}`);
                 }
@@ -128,7 +134,8 @@ const Dashboard = () => {
             <Sidebar 
                 currentEventId={eventId} 
                 onSelectEvent={handleEventChange} 
-                onNewEvent={handleNewEvent} 
+                onNewEvent={handleNewEvent}
+                refreshTrigger={sidebarRefreshTrigger}
             />
 
             {/* 2. Main Content Area */}
