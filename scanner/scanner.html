@@ -5,31 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Ticket Scanner</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Library Loader with Redundancy -->
-    <script>
-        function loadScript(src, fallbackSrc) {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = src;
-                script.onload = () => resolve('loaded');
-                script.onerror = () => {
-                    console.warn(`Failed to load ${src}, trying fallback...`);
-                    if (fallbackSrc) {
-                        const fallback = document.createElement('script');
-                        fallback.src = fallbackSrc;
-                        fallback.onload = () => resolve('fallback loaded');
-                        fallback.onerror = (e) => reject(new Error(`Both primary and fallback scripts failed. Last error: ${e.type}`));
-                        document.head.appendChild(fallback);
-                    } else {
-                        reject(new Error(`Failed to load ${src}`));
-                    }
-                };
-                document.head.appendChild(script);
-            });
-        }
-    </script>
-
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         /* Base & Reset */
@@ -223,13 +198,19 @@
     
     <div id="debug-panel" class="fixed bottom-0 left-0 right-0 h-32 p-2 text-green-400 overflow-y-auto z-50 hidden border-t border-gray-800"></div>
 
+    <!-- Scripts -->
+    <script src="/html5-qrcode.min.js" 
+            onload="onLibLoaded()" 
+            onerror="console.warn('Local lib failed, trying CDN...'); this.onerror=null; this.src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';">
+    </script>
+
     <script>
         // --- LOGGER ---
         function debugLog(msg) {
             const panel = document.getElementById('debug-panel');
+            if (!panel) return;
             const time = new Date().toLocaleTimeString().split(' ')[0];
             panel.innerHTML = `> <span class="text-gray-500">[${time}]</span> ${msg}<br>` + panel.innerHTML;
-            // console.log(`[Scanner] ${msg}`);
         }
         
         function toggleDebug() {
@@ -237,35 +218,29 @@
             panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
         }
 
-        // --- LIBRARY LOADER ---
-        (async function initLibrary() {
-            debugLog("Initializing...");
-            try {
-                // Try Local First, then CDN
-                await loadScript('/html5-qrcode.min.js', 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js');
-                debugLog("Script Loaded.");
-                
-                // Manual Patch
-                if (typeof Html5QrCode === 'undefined') {
-                    if (typeof __Html5QrcodeLibrary__ !== 'undefined') {
-                        window.Html5QrCode = __Html5QrcodeLibrary__.Html5Qrcode;
-                    } else if (window.__Html5QrcodeLibrary__) {
-                        window.Html5QrCode = window.__Html5QrcodeLibrary__.Html5Qrcode;
-                    }
+        // --- APP STARTUP ---
+        function onLibLoaded() {
+            debugLog("Library Loaded.");
+            
+            // Manual Patch for some CDN versions wrapping the class
+            if (typeof Html5QrCode === 'undefined') {
+                if (typeof __Html5QrcodeLibrary__ !== 'undefined') {
+                    window.Html5QrCode = __Html5QrcodeLibrary__.Html5Qrcode;
+                } else if (window.__Html5QrcodeLibrary__) {
+                    window.Html5QrCode = window.__Html5QrcodeLibrary__.Html5Qrcode;
                 }
-
-                if (typeof Html5QrCode === 'undefined') throw new Error("Html5QrCode undefined.");
-                
-                debugLog("Library Ready.");
-                document.getElementById('action-btn').disabled = false;
-                document.getElementById('action-btn').innerText = "Start Camera";
-                loadConfig();
-            } catch (e) {
-                debugLog(`CRITICAL: ${e.message}`);
-                showNotif('error', 'Load Error', 'Scanner library failed.');
-                document.getElementById('action-btn').innerText = "Library Failed";
             }
-        })();
+
+            if (typeof Html5QrCode === 'undefined') {
+                showNotif('error', 'Critical Error', 'Scanner Engine Failed');
+                document.getElementById('action-btn').innerText = "Engine Failed";
+                return;
+            }
+
+            document.getElementById('action-btn').disabled = false;
+            document.getElementById('action-btn').innerText = "Start Camera";
+            loadConfig();
+        }
 
         // --- GLOBALS ---
         let html5QrCode;
