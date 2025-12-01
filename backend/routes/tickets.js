@@ -2,6 +2,7 @@ const express = require('express');
 const adminRouter = express.Router();
 const scannerRouter = express.Router();
 const ticketController = require('../controllers/ticketController');
+const raffleController = require('../controllers/raffleController');
 
 // --- ADMIN ROUTES ---
 
@@ -16,6 +17,9 @@ adminRouter.put('/update-ticket/:eventId/:ticketId', ticketController.updateTick
 adminRouter.delete('/delete-ticket/:eventId/:ticketId', ticketController.deleteTicket.bind(ticketController));
 adminRouter.get('/tickets/:eventId', ticketController.getTickets.bind(ticketController));
 adminRouter.post('/update-ticket-status/:eventId/:ticketId', ticketController.updateTicketStatus.bind(ticketController));
+
+// Raffle
+adminRouter.get('/raffle/draw/:eventId', raffleController.drawWinner.bind(raffleController));
 
 
 // --- SCANNER ROUTES ---

@@ -402,7 +402,8 @@
                         'Authorization': `Bearer ${config.token}` 
                     },
                     body: JSON.stringify({ action: currentMode }),
-                    signal: controller.signal
+                    signal: controller.signal,
+                    keepalive: true
                 });
                 clearTimeout(timeoutId);
 
