@@ -43,10 +43,15 @@
         /* Camera Layer */
         #reader { 
             position: fixed; inset: 0; z-index: 0; background: #000; 
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
         }
         #reader video { 
-            object-fit: cover !important; width: 100% !important; height: 100% !important; 
-            transform: scale(1.02); /* Slight zoom to avoid black edges */
+            /* Force video to cover the screen while maintaining aspect ratio (center-cropped) */
+            min-width: 100%; min-height: 100%; 
+            width: auto !important; height: auto !important; 
+            object-fit: cover !important;
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
         }
 
         /* UI Layer */
@@ -304,17 +309,18 @@
 
                 html5QrCode = new Html5QrCode("reader");
                 
-                const ratio = window.innerWidth / window.innerHeight;
+                // Note: We do NOT pass aspectRatio here. We let the camera provide its native ratio (usually 4:3 or 16:9).
+                // Our CSS 'object-fit: cover' ensures it fills the screen visually.
+                // The 'qrbox' logic automatically centers on the sensor feed.
                 await html5QrCode.start(
                     { facingMode: "environment" },
                     { 
-                        fps: 25, // High FPS for fluid feel
+                        fps: 25, 
                         qrbox: (viewfinderWidth, viewfinderHeight) => {
-                            // Alignment Fix: Match CSS (min of 70% width/height)
+                            // Dynamic Box: 70% of the smaller dimension
                             const side = Math.min(viewfinderWidth, viewfinderHeight) * 0.7;
                             return { width: side, height: side };
-                        },
-                        aspectRatio: ratio
+                        }
                     },
                     onScan,
                     () => {}
