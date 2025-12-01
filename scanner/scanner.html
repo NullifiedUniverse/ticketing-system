@@ -272,10 +272,10 @@
         </div>
 
         <!-- Bottom Controls -->
-        <div class="w-full space-y-4 interactive">
+        <div class="w-full interactive" style="display: flex; flex-direction: column; gap: 1rem; padding-bottom: 1rem;">
             
             <!-- Mode Toggle -->
-            <div id="mode-toggle" class="hidden glass p-1.5 rounded-2xl flex w-full max-w-xs mx-auto mb-2">
+            <div id="mode-toggle" class="hidden glass p-1.5 rounded-2xl flex w-full max-w-xs mx-auto">
                 <button onclick="setMode('check-in')" id="btn-in" class="flex-1 py-3 rounded-xl text-sm font-bold transition-all shadow-lg relative overflow-hidden group">
                     <span class="relative z-10">Check In</span>
                 </button>
@@ -289,11 +289,11 @@
                 Loading Library...
             </button>
             
-            <div id="status-text" class="text-center text-[10px] font-mono text-gray-500 h-4">v2.2 • Ultra Low Latency</div>
+            <div id="status-text" class="text-center text-[10px] font-mono text-gray-500" style="height: 1rem;">v2.3 • System Ready</div>
         </div>
     </div>
     
-    <div id="debug-panel" class="fixed bottom-0 left-0 right-0 h-32 p-2 text-green-400 overflow-y-auto z-50 hidden border-t border-gray-800"></div>
+    <div id="debug-panel" class="fixed bottom-0 left-0 right-0 h-32 p-2 text-green-400 overflow-y-auto z-50 hidden border-t border-gray-800 bg-black/90 font-mono text-xs"></div>
 
     <script>
         // --- GLOBALS ---
@@ -323,12 +323,13 @@
 
         // --- APP STARTUP & LOADING ---
         function boot() {
-            debugLog("Booting...");
+            debugLog("Booting v2.3...");
             
             // 1. Create Script
             const script = document.createElement('script');
             // Try local first
             script.src = '/html5-qrcode.min.js'; 
+            script.async = true;
             
             // 2. Handlers
             script.onload = () => {
@@ -338,55 +339,65 @@
             
             script.onerror = () => {
                 debugLog("Local lib failed. Trying CDN...");
-                const fallback = document.createElement('script');
-                fallback.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
-                fallback.onload = () => {
-                    debugLog("CDN lib loaded.");
-                    checkAndInit();
-                };
-                fallback.onerror = () => {
-                    debugLog("CRITICAL: All lib loads failed.");
-                    showNotif('error', 'Error', 'Library Load Failed. Check Connection.');
-                    els.actionBtn.innerText = "Load Failed - Retry?";
-                    els.actionBtn.disabled = false;
-                    els.actionBtn.onclick = () => location.reload();
-                };
-                document.body.appendChild(fallback);
+                loadCDN();
             };
 
-            // 3. Timeout Failsafe
+            // 3. Timeout Failsafe (3s)
             setTimeout(() => {
-                if (typeof Html5QrCode === 'undefined' && els.actionBtn.innerText.includes('Loading')) {
-                    debugLog("Load Timeout.");
+                if (els.actionBtn.disabled) {
+                    debugLog("Load slow. Enabling Manual Retry.");
                     els.actionBtn.disabled = false;
-                    els.actionBtn.innerText = "Slow Network? Retry";
+                    els.actionBtn.innerText = "Tap to Retry Load";
                     els.actionBtn.onclick = () => location.reload();
                 }
-            }, 5000);
+            }, 3000);
 
             document.body.appendChild(script);
         }
 
+        function loadCDN() {
+            const fallback = document.createElement('script');
+            fallback.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+            fallback.onload = () => {
+                debugLog("CDN lib loaded.");
+                checkAndInit();
+            };
+            fallback.onerror = () => {
+                debugLog("CRITICAL: All lib loads failed.");
+                showNotif('error', 'Network Error', 'Could not load scanner engine.');
+                els.actionBtn.innerText = "Load Failed - Retry";
+                els.actionBtn.disabled = false;
+                els.actionBtn.onclick = () => location.reload();
+            };
+            document.body.appendChild(fallback);
+        }
+
         function checkAndInit() {
-            // Manual Patch for shim
-            if (typeof Html5QrCode === 'undefined') {
-                if (typeof __Html5QrcodeLibrary__ !== 'undefined') {
-                    window.Html5QrCode = __Html5QrcodeLibrary__.Html5Qrcode;
-                } else if (window.__Html5QrcodeLibrary__) {
-                    window.Html5QrCode = window.__Html5QrcodeLibrary__.Html5Qrcode;
+            // Wait a tick for global scope to populate
+            setTimeout(() => {
+                // Manual Patch for shim
+                if (typeof Html5QrCode === 'undefined') {
+                    if (typeof __Html5QrcodeLibrary__ !== 'undefined') {
+                        window.Html5QrCode = __Html5QrcodeLibrary__.Html5Qrcode;
+                    } else if (window.__Html5QrcodeLibrary__) {
+                        window.Html5QrCode = window.__Html5QrcodeLibrary__.Html5Qrcode;
+                    }
                 }
-            }
 
-            if (typeof Html5QrCode === 'undefined') {
-                debugLog("Lib loaded but class undefined.");
-                return;
-            }
+                if (typeof Html5QrCode === 'undefined') {
+                    debugLog("Lib loaded but class undefined.");
+                    els.actionBtn.innerText = "Engine Error - Retry";
+                    els.actionBtn.disabled = false;
+                    els.actionBtn.onclick = () => location.reload();
+                    return;
+                }
 
-            debugLog("Engine Ready.");
-            els.actionBtn.disabled = false;
-            els.actionBtn.innerText = "Start Camera";
-            els.actionBtn.onclick = initCamera; // Rebind click to camera start
-            loadConfig();
+                debugLog("Engine Ready.");
+                els.actionBtn.disabled = false;
+                els.actionBtn.innerText = "Start Camera";
+                els.actionBtn.onclick = initCamera; 
+                loadConfig();
+            }, 100);
         }
 
         // --- LOGIC ---
