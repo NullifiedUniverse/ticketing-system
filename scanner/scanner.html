@@ -43,15 +43,19 @@
         /* Camera Layer */
         #reader { 
             position: fixed; inset: 0; z-index: 0; background: #000; 
-            display: flex; align-items: center; justify-content: center;
-            overflow: hidden;
+            overflow: hidden; /* Removed flex to prevent layout conflicts with library */
         }
         #reader video { 
-            /* Force video to cover the screen while maintaining aspect ratio (center-cropped) */
+            /* Force video to cover the screen */
+            position: absolute; 
+            top: 50%; left: 50%; 
+            transform: translate(-50%, -50%);
+            
             min-width: 100%; min-height: 100%; 
             width: auto !important; height: auto !important; 
+            
             object-fit: cover !important;
-            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            display: block !important;
         }
 
         /* UI Layer */
