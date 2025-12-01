@@ -10,7 +10,7 @@ const config = require('./config');
 const scannerTokenRoutes = require('./routes/scannerToken');
 const { adminRouter, scannerRouter } = require('./routes/tickets');
 const scannerAuthMiddleware = require('./middleware/scannerAuthMiddleware');
-const { connect, getPublicUrl, getLocalIp, getUrl } = require('./ngrok'); // Import ngrok module
+const ngrok = require('./ngrok'); // Import entire ngrok module
 
 const app = express();
 const PORT = process.env.PORT || 3001;
