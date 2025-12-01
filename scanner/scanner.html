@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Ticket Scanner</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Removed heavy Tailwind CDN for speed -->
     
     <!-- Library Loader with Redundancy -->
     <script>
@@ -32,12 +32,72 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Reset & Base */
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background-color: #000; color: white; 
-            font-family: 'Inter', sans-serif; overflow: hidden; 
-        }
+        /* --- Mini Utility CSS (Replacing Tailwind) --- */
+        :root { --primary: #6366f1; --success: #22c55e; --error: #ef4444; --warn: #eab308; }
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; color: white; font-family: 'Inter', sans-serif; overflow: hidden; }
+        
+        .w-full { width: 100%; }
+        .h-full { height: 100%; }
+        .fixed { position: fixed; }
+        .absolute { position: absolute; }
+        .relative { position: relative; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .z-0 { z-index: 0; } .z-10 { z-index: 10; } .z-20 { z-index: 20; } .z-50 { z-index: 50; } .z-100 { z-index: 100; }
+        
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .items-center { align-items: center; }
+        .items-start { align-items: flex-start; }
+        .gap-2 { gap: 0.5rem; } .gap-3 { gap: 0.75rem; } .gap-4 { gap: 1rem; } .gap-6 { gap: 1.5rem; }
+        
+        .p-1 { padding: 0.25rem; } .p-3 { padding: 0.75rem; } .p-4 { padding: 1rem; } .p-6 { padding: 1.5rem; }
+        .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; } .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; } .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; } .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; } .px-8 { padding-left: 2rem; padding-right: 2rem; }
+        
+        .text-xs { font-size: 0.75rem; } .text-sm { font-size: 0.875rem; } .text-lg { font-size: 1.125rem; } .text-2xl { font-size: 1.5rem; }
+        .font-bold { font-weight: 700; } .font-medium { font-weight: 500; }
+        .uppercase { text-transform: uppercase; } .tracking-wider { letter-spacing: 0.05em; } .leading-tight { line-height: 1.25; }
+        .text-center { text-align: center; }
+        
+        .text-white { color: #fff; } .text-gray-300 { color: #d1d5db; } .text-gray-400 { color: #9ca3af; } .text-gray-500 { color: #6b7280; } .text-black { color: #000; }
+        .bg-white { background-color: #fff; } .bg-black { background-color: #000; }
+        
+        .rounded-xl { border-radius: 0.75rem; } .rounded-2xl { border-radius: 1rem; } .rounded-3xl { border-radius: 1.5rem; } .rounded-full { border-radius: 9999px; }
+        .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); } .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        
+        .transition-all { transition: all 0.2s; } .transition-transform { transition: transform 0.2s; }
+        .hidden { display: none !important; }
+        
+        /* Specific Logic Classes */
+        .bg-indigo-600 { background-color: #4f46e5; color: white; }
+        .bg-pink-600 { background-color: #db2777; color: white; }
+        .bg-red-500 { background-color: #ef4444; }
+        .bg-yellow-500 { background-color: #eab308; }
+        .bg-green-500 { background-color: #22c55e; }
+        
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+        
+        .max-w-xs { max-width: 20rem; } .max-w-sm { max-width: 24rem; } .max-w-md { max-width: 28rem; } .mx-auto { margin-left: auto; margin-right: auto; }
+        .flex-1 { flex: 1 1 0%; }
+        
+        /* Borders */
+        .border-l-4 { border-left-width: 4px; } .border-l-8 { border-left-width: 8px; }
+        .border-white { border-color: white; }
+        .border-green-500 { border-color: var(--success); }
+        .border-red-500 { border-color: var(--error); }
+        .border-blue-500 { border-color: #3b82f6; }
+        .border-yellow-500 { border-color: var(--warn); }
+        
+        /* Backgrounds with Opacity */
+        .bg-green-900\/90 { background-color: rgb(20 83 45 / 0.9); }
+        .bg-red-900\/90 { background-color: rgb(127 29 29 / 0.9); }
+        .bg-blue-900\/90 { background-color: rgb(30 58 138 / 0.9); }
+        .bg-yellow-900\/90 { background-color: rgb(113 63 18 / 0.9); }
+        .bg-gray-900\/90 { background-color: rgb(17 24 39 / 0.9); }
 
         /* Camera Layer */
         #reader { 
@@ -434,7 +494,9 @@
                 const tFetchEnd = performance.now();
                 clearTimeout(timeoutId);
 
+                const tParseStart = performance.now();
                 const data = await res.json();
+                const tParseEnd = performance.now();
 
                 if (!res.ok) {
                     // Handle Business Logic Errors (400) differently from System Errors (500)
@@ -446,8 +508,16 @@
 
                 // API returns { status: 'success', message: 'Checked In: ...', data: { ... } }
                 const successMsg = data.message || data.data?.message || 'Access Granted';
+                const tUIStart = performance.now();
                 showNotif('success', 'Valid Ticket', successMsg);
-                debugLog(`Ticket OK: ${ticketId} (Net: ${(tFetchEnd - tFetchStart).toFixed(0)}ms)`);
+                const tUIEnd = performance.now();
+                
+                const totalTime = (tUIEnd - tStart).toFixed(0);
+                const netTime = (tFetchEnd - tFetchStart).toFixed(0);
+                const parseTime = (tParseEnd - tParseStart).toFixed(0);
+                const uiTime = (tUIEnd - tUIStart).toFixed(0);
+                
+                debugLog(`OK:${ticketId} | Tot:${totalTime}ms | Net:${netTime}ms | Parse:${parseTime}ms | UI:${uiTime}ms`);
                 
             } catch (err) {
                 clearTimeout(timeoutId);
