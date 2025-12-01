@@ -4,7 +4,6 @@ const { v4: uuidv4 } = require('uuid');
 class TicketService {
     // --- EVENT MANAGEMENT ---
     async createEvent(eventId) {
-        console.log(`[TicketService] Creating event: ${eventId}`);
         await this.createEventMetadata(eventId);
         return { id: eventId, name: eventId, createdAt: new Date() };
     }
@@ -28,14 +27,12 @@ class TicketService {
     }
 
     async getEvents() {
-        console.log("[TicketService] Getting events...");
         const eventsRef = db.collection('events_meta');
         const snapshot = await eventsRef.get();
         let events = [];
         snapshot.forEach(doc => {
             events.push(doc.data());
         });
-        console.log(`[TicketService] Found ${events.length} events in events_meta.`);
 
         // Fallback: if no metadata found, try to discover from 'events' collection
         // Note: listCollections is an admin SDK method

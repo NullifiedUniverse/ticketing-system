@@ -61,21 +61,21 @@
         /* Scan Frame */
         .scan-frame {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 280px; height: 280px;
+            width: 80%; max-width: 400px; aspect-ratio: 1;
             border-radius: 24px;
             box-shadow: 0 0 0 4000px rgba(0, 0, 0, 0.6);
         }
         
         .scan-corner {
-            position: absolute; width: 40px; height: 40px;
+            position: absolute; width: 60px; height: 60px;
             border-color: #6366f1; border-style: solid;
             transition: all 0.3s ease;
         }
         
-        .tl { top: 0; left: 0; border-width: 4px 0 0 4px; border-radius: 20px 0 0 0; }
-        .tr { top: 0; right: 0; border-width: 4px 4px 0 0; border-radius: 0 20px 0 0; }
-        .bl { bottom: 0; left: 0; border-width: 0 0 4px 4px; border-radius: 0 0 0 20px; }
-        .br { bottom: 0; right: 0; border-width: 0 4px 4px 0; border-radius: 0 0 20px 0; }
+        .tl { top: 0; left: 0; border-width: 6px 0 0 6px; border-radius: 24px 0 0 0; }
+        .tr { top: 0; right: 0; border-width: 6px 6px 0 0; border-radius: 0 24px 0 0; }
+        .bl { bottom: 0; left: 0; border-width: 0 0 6px 6px; border-radius: 0 0 0 24px; }
+        .br { bottom: 0; right: 0; border-width: 0 6px 6px 0; border-radius: 0 0 24px 0; }
 
         .scanning .scan-corner { border-color: #22c55e; }
         .error .scan-corner { border-color: #ef4444; }
@@ -83,13 +83,13 @@
 
         /* Animations */
         @keyframes pulse-line {
-            0% { top: 10%; opacity: 0; }
+            0% { top: 5%; opacity: 0; }
             50% { opacity: 1; }
-            100% { top: 90%; opacity: 0; }
+            100% { top: 95%; opacity: 0; }
         }
         .scan-laser {
-            position: absolute; left: 10%; right: 10%; height: 2px;
-            background: #6366f1; box-shadow: 0 0 10px #6366f1;
+            position: absolute; left: 5%; right: 5%; height: 4px;
+            background: #6366f1; box-shadow: 0 0 15px #6366f1;
             border-radius: 50%;
             animation: pulse-line 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
@@ -311,7 +311,7 @@
                 await html5QrCode.start(
                     { facingMode: "environment" },
                     { 
-                        fps: 10,
+                        fps: 20, // Faster scanning
                         qrbox: (viewfinderWidth, viewfinderHeight) => {
                             return { width: 250, height: 250 };
                         },
@@ -445,11 +445,11 @@
                 
                 debugLog(`Ticket Fail: ${msg}`);
             } finally {
-                 // Reset Visuals Quicker (1000ms instead of 2000ms)
+                 // Reset Visuals Quicker (750ms for snappier feel)
                 setTimeout(() => {
                     isProcessing = false;
                     document.querySelector('.scan-frame').classList.remove('scanning', 'error', 'warning');
-                }, 1000);
+                }, 750);
             }
         }
 
@@ -485,29 +485,40 @@
 
         let notifTimeout;
         function showNotif(type, title, msg) {
-            clearTimeout(notifTimeout);
+            // 1. Cancel any pending dismissal
+            if (notifTimeout) {
+                clearTimeout(notifTimeout);
+                notifTimeout = null;
+            }
             
+            // 2. Show the notification immediately
             els.notif.style.transform = 'translateY(0)';
             els.notifTitle.innerText = title;
+            els.notifTitle.style.fontSize = '1.1rem';
+            
             els.notifMsg.innerText = msg;
+            els.notifMsg.style.fontSize = '1rem';
 
             const colors = {
-                success: 'border-green-500',
-                error: 'border-red-500',
-                loading: 'border-blue-500',
-                warning: 'border-yellow-500'
+                success: 'border-green-500 bg-green-900/90',
+                error: 'border-red-500 bg-red-900/90',
+                loading: 'border-blue-500 bg-blue-900/90',
+                warning: 'border-yellow-500 bg-yellow-900/90'
             };
             
             const icons = {
                 success: '✅', error: '⛔', loading: '⏳', warning: '⚠️'
             };
 
-            els.notifBody.className = `glass-panel px-6 py-4 rounded-2xl shadow-2xl border-l-4 flex items-center gap-4 max-w-sm mx-auto ${colors[type] || 'border-white'}`;
+            // 3. Apply styles (larger padding, better background)
+            els.notifBody.className = `backdrop-blur-xl px-8 py-6 rounded-3xl shadow-2xl border-l-8 flex items-center gap-6 max-w-md mx-auto w-full ${colors[type] || 'border-white bg-gray-900/90'}`;
             els.notifIcon.innerText = icons[type] || 'ℹ️';
+            els.notifIcon.style.fontSize = '2.5rem';
 
+            // 4. Auto-dismiss after 3 seconds (unless loading)
             if (type !== 'loading') {
                 notifTimeout = setTimeout(() => {
-                    els.notif.style.transform = 'translateY(-10rem)';
+                    els.notif.style.transform = 'translateY(-15rem)';
                 }, 3000);
             }
         }

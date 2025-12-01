@@ -8,7 +8,7 @@ const StatusBadge = ({ status }) => {
         'valid': 'bg-blue-500/20 text-blue-300 ring-blue-500/30',
     };
     const text = status.replace('-', ' ').toUpperCase();
-    return <span className={`px-3 py-1 text-xs font-semibold rounded-full ring-1 ${statusStyles[status] || ''}`}>{text}</span>;
+    return <span className={`px-3 py-1 text-xs font-semibold rounded-full ring-1 whitespace-nowrap ${statusStyles[status] || ''}`}>{text}</span>;
 }
 
 export default StatusBadge;

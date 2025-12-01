@@ -86,8 +86,14 @@ class TicketController {
 
         try {
             const result = await ticketService.updateTicketStatus(eventId, ticketId, action, scannedBy);
-            // Return message at top level for easier client access
-            res.json({ status: 'success', message: result.message, data: result });
+            // Optimize Payload: Only return essential data to speed up mobile networks
+            const optimizedData = {
+                id: result.id,
+                attendeeName: result.attendeeName,
+                status: result.status,
+                message: result.message
+            };
+            res.json({ status: 'success', message: result.message, data: optimizedData });
         } catch (error) {
             console.error("Status update error:", error.message);
             res.status(400).json({ status: 'error', message: error.message });
