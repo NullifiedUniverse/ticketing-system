@@ -70,6 +70,7 @@ class TicketController {
     }
 
     async updateTicketStatus(req, res) {
+        const start = performance.now();
         const { error: paramsError, value: paramsValue } = updateTicketStatusParamsSchema.validate(req.params);
         if (paramsError) {
             return res.status(400).json({ status: 'error', message: paramsError.details[0].message });
@@ -85,7 +86,10 @@ class TicketController {
         const scannedBy = (req.user && req.user.scanner) ? 'qr-scanner' : 'admin';
 
         try {
+            const dbStart = performance.now();
             const result = await ticketService.updateTicketStatus(eventId, ticketId, action, scannedBy);
+            const dbEnd = performance.now();
+
             // Optimize Payload: Only return essential data to speed up mobile networks
             const optimizedData = {
                 id: result.id,
@@ -93,6 +97,10 @@ class TicketController {
                 status: result.status,
                 message: result.message
             };
+            
+            const end = performance.now();
+            console.log(`[Perf] Total: ${(end - start).toFixed(2)}ms | Logic: ${(dbEnd - dbStart).toFixed(2)}ms | Ticket: ${ticketId}`);
+            
             res.json({ status: 'success', message: result.message, data: optimizedData });
         } catch (error) {
             console.error("Status update error:", error.message);

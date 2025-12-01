@@ -117,12 +117,15 @@ class TicketService {
 
     async updateTicketStatus(eventId, ticketId, action, scannedBy) {
         // 1. Ensure Cache Loaded
+        const startLoad = performance.now();
         await this.loadCacheForEvent(eventId);
+        const endLoad = performance.now();
 
         // 2. Get from Cache (Fast)
         const ticketData = this.getCachedTicket(eventId, ticketId);
         
         if (!ticketData) {
+            console.warn(`[Perf] Cache miss for ${ticketId}. Fallback to DB.`);
             // Fallback to DB if somehow missing (e.g. created externally)
              const ticketRef = db.collection('events').doc(eventId).collection('tickets').doc(ticketId);
              const doc = await ticketRef.get();
@@ -163,6 +166,11 @@ class TicketService {
             checkInHistory: admin.firestore.FieldValue.arrayUnion(historyEntry)
         }).catch(err => console.error(`[Background Write Error] Ticket ${ticketId}:`, err));
 
+        const endLogic = performance.now();
+        if (endLoad - startLoad > 100) {
+             console.log(`[Perf Warning] Cache Load took ${(endLoad - startLoad).toFixed(2)}ms`);
+        }
+        
         return { ...updatedTicket, message };
     }
 

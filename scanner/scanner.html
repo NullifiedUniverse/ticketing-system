@@ -398,11 +398,13 @@
         }
 
         async function processTicket(ticketId) {
+            const tStart = performance.now();
             showNotif('loading', 'Verifying...', 'Checking with server...');
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
 
             try {
+                const tFetchStart = performance.now();
                 const res = await fetch(`${config.apiBaseUrl}/api/scanner/update-ticket-status/${config.eventId}/${ticketId}`, {
                     method: 'POST',
                     headers: { 
@@ -413,6 +415,7 @@
                     signal: controller.signal,
                     keepalive: true
                 });
+                const tFetchEnd = performance.now();
                 clearTimeout(timeoutId);
 
                 const data = await res.json();
@@ -428,7 +431,7 @@
                 // API returns { status: 'success', message: 'Checked In: ...', data: { ... } }
                 const successMsg = data.message || data.data?.message || 'Access Granted';
                 showNotif('success', 'Valid Ticket', successMsg);
-                debugLog(`Ticket OK: ${ticketId}`);
+                debugLog(`Ticket OK: ${ticketId} (Net: ${(tFetchEnd - tFetchStart).toFixed(0)}ms)`);
                 
             } catch (err) {
                 clearTimeout(timeoutId);
