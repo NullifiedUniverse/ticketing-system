@@ -153,6 +153,18 @@ class TicketController {
             res.status(500).json({ error: error.message });
         }
     }
+
+    async warmupCache(req, res) {
+        const { eventId } = req.params;
+        try {
+            console.log(`[Warmup] Triggered for event: ${eventId}`);
+            await ticketService.loadCacheForEvent(eventId);
+            res.json({ status: 'success', message: 'Cache warmed' });
+        } catch (error) {
+            console.error("Warmup error:", error);
+            res.status(500).json({ status: 'error', message: 'Warmup failed' });
+        }
+    }
 }
 
 module.exports = new TicketController();

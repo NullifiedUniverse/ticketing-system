@@ -377,6 +377,14 @@
                 els.scanMsg.innerText = "Scan Attendee Ticket";
                 els.statusDot.className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
 
+                // --- PERFORMANCE OPTIMIZATION ---
+                // Trigger backend cache warmup immediately so the first ticket scan is fast
+                debugLog("Triggering cache warmup...");
+                fetch(`${config.apiBaseUrl}/api/scanner/warmup/${config.eventId}`, {
+                    headers: { 'Authorization': `Bearer ${config.token}` }
+                }).then(() => debugLog("Cache Warmup: Sent"))
+                  .catch(e => debugLog("Cache Warmup: Failed (Non-critical)"));
+
             } catch (e) {
                 debugLog(`Setup Error: ${e.message}`);
                 showNotif('error', 'Setup Failed', 'Invalid setup QR code.');
