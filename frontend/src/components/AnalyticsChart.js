@@ -4,6 +4,14 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 
 const AnalyticsChart = ({ tickets }) => {
     // 1. Process Data
+    if (!tickets || !Array.isArray(tickets)) {
+        return (
+             <div className="h-64 flex items-center justify-center text-gray-500 bg-white/5 rounded-2xl border border-white/5">
+                No data available
+            </div>
+        );
+    }
+    
     // Get all check-in timestamps
     const checkIns = tickets.flatMap(t => {
         if (!t.checkInHistory || t.checkInHistory.length === 0) return [];

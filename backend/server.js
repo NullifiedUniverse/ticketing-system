@@ -3,26 +3,31 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
+const path = require('path');
+const config = require('./config');
+
+// --- ROUTES & MODULES ---
 const scannerTokenRoutes = require('./routes/scannerToken');
-const ticketRoutes = require('./routes/tickets');
-const { connect, getPublicUrl } = require('./ngrok'); // Import ngrok module
+const { adminRouter, scannerRouter } = require('./routes/tickets');
+const scannerAuthMiddleware = require('./middleware/scannerAuthMiddleware');
+const ngrok = require('./ngrok'); 
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// --- MIDDLEWARE ---
 app.use(compression()); // Compress all responses
 app.use(cors({
-    origin: '*', // Allow all origins (for now, to support local & ngrok)
-
+    origin: '*' // Allow all origins (for now, to support local & ngrok)
+}));
 app.use(express.json());
 
-// Security Headers for Camera Access
+// Security Headers for Camera Access (Important for Scanner)
 app.use((req, res, next) => {
   res.setHeader('Permissions-Policy', 'camera=*');
   // res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   // res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-  console.log(`${req.method} ${req.originalUrl}`);
+  // console.log(`${req.method} ${req.originalUrl}`); // Optional logging
   next();
 });
 
@@ -37,11 +42,13 @@ app.get('/api/ngrok-url', (req, res) => {
     if (url) {
         res.json({ status: 'success', url, type });
     } else {
+        // Even if tunnel isn't active (e.g. using localhost), return something useful if possible,
+        // or just 503. The frontend handles this by showing 'local' status.
         res.status(503).json({ status: 'error', message: 'Tunnel is not active.' });
     }
 });
 
-// --- SERVE SCANNER ---
+// --- SERVE SCANNER (Standalone) ---
 app.get('/scanner', (req, res) => {
     res.sendFile(path.join(__dirname, '../scanner/scanner.html'));
 });
@@ -51,8 +58,8 @@ app.get('/html5-qrcode.min.js', (req, res) => {
     res.sendFile(path.join(__dirname, '../scanner/html5-qrcode.min.js'));
 });
 
-// --- SERVE STATIC FRONTEND ---
-// Serve static files from the React app
+// --- SERVE STATIC FRONTEND (Production) ---
+// Serve static files from the React app build directory
 app.use(express.static(path.join(__dirname, '../frontend/build')));
 
 // The "catchall" handler: for any request that doesn't
@@ -62,10 +69,10 @@ app.get('*', (req, res) => {
 });
 
 // --- START SERVER ---
-const PORT = config.port || 3001;
 const server = app.listen(PORT, '0.0.0.0', async () => { // Listen on all network interfaces
   console.log(`Server is running on http://0.0.0.0:${PORT}`);
   if (process.env.NODE_ENV !== 'production') {
+    // Start Ngrok/Local tunnel
     await ngrok.start();
   }
 });
@@ -73,12 +80,10 @@ const server = app.listen(PORT, '0.0.0.0', async () => { // Listen on all networ
 // --- GRACEFUL SHUTDOWN ---
 process.on('SIGINT', async () => {
     console.log('SIGINT signal received: closing HTTP server');
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV !== 'production') {
         await ngrok.stop();
     }
     server.close(() => {
         console.log('HTTP server closed');
     });
 });
-
-

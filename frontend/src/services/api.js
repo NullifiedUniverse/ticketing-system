@@ -78,7 +78,8 @@ export const login = async (username, password) => {
 // --- TICKETS ---
 export const getTickets = async (eventId) => {
     const result = await callApi(`/api/admin/tickets/${eventId}`, { headers: getAuthHeaders() });
-    return result.tickets;
+    // Backend returns the array directly
+    return result;
 };
 
 export const updateTicket = async (eventId, ticketId, ticket) => {

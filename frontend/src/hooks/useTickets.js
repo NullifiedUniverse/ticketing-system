@@ -24,7 +24,8 @@ export const useTickets = (eventId, handleApiError) => {
 
             try {
                 const ticketsData = await getTickets(eventId);
-                setTickets(ticketsData);
+                // Safety check
+                setTickets(Array.isArray(ticketsData) ? ticketsData : []);
                 if (!isPolling) setConnectionStatus('connected');
             } catch (err) {
                 console.error("API Error:", err);
