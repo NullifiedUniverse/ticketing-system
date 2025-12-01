@@ -125,6 +125,31 @@ const Sidebar = ({ currentEventId, onSelectEvent, onNewEvent, refreshTrigger }) 
                                 </div>
                             ))}
                         </div>
+
+                        {/* Quick Tools Section */}
+                        {currentEventId && (
+                            <div className="mt-8 mb-4 px-1">
+                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
+                                    Quick Tools
+                                </h3>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button 
+                                        onClick={() => alert("Raffle Winner feature coming soon to UI! (Backend ready)")}
+                                        className="p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-center transition-all group"
+                                    >
+                                        <div className="text-xl mb-1 group-hover:scale-110 transition-transform">🎲</div>
+                                        <div className="text-[10px] text-gray-400 font-medium">Raffle</div>
+                                    </button>
+                                    <button 
+                                        onClick={() => alert("Email Service: Configure SMTP in backend/.env to enable.")}
+                                        className="p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-center transition-all group"
+                                    >
+                                        <div className="text-xl mb-1 group-hover:scale-110 transition-transform">✉️</div>
+                                        <div className="text-[10px] text-gray-400 font-medium">Email</div>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="mt-auto pt-6 border-t border-white/5">
