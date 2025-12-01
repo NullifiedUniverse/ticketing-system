@@ -324,13 +324,9 @@
                 html5QrCode = new Html5QrCode("reader");
                 
                 // Note: We do NOT pass aspectRatio here. We let the camera provide its native ratio.
-                // We use a flat constraints object.
+                // Reverting to simple config to fix "broken" camera on some devices.
                 await html5QrCode.start(
-                    { 
-                        facingMode: "environment",
-                        width: { ideal: 1280 }, 
-                        height: { ideal: 720 }
-                    },
+                    { facingMode: "environment" },
                     { 
                         fps: 25, 
                         qrbox: (viewfinderWidth, viewfinderHeight) => {
