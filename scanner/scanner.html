@@ -302,11 +302,23 @@
                     els.actionBtn.innerText = "Start Scanning";
                     els.scanMsg.innerText = "Scan Attendee Ticket";
                     debugLog("Config loaded: " + config.eventId);
+                    
+                    // OPTIMIZATION: Trigger warmup immediately on load
+                    fetch(`${config.apiBaseUrl}/api/scanner/warmup/${config.eventId}`, {
+                        headers: { 'Authorization': `Bearer ${config.token}` },
+                        keepalive: true
+                    }).catch(() => {});
+                    
                     startHeartbeat();
                 } catch (e) {
                     debugLog("Config error. Clearing.");
                     localStorage.removeItem('ticketScannerConfig');
                 }
+            } else {
+                els.eventName.innerText = "Setup Required";
+                els.scanMsg.innerText = "Scan Setup QR Code";
+                els.actionBtn.innerText = "Start Setup";
+                debugLog("No config found. Setup mode.");
             }
         }
 
@@ -323,10 +335,15 @@
 
                 html5QrCode = new Html5QrCode("reader");
                 
-                // Note: We do NOT pass aspectRatio here. We let the camera provide its native ratio.
-                // Reverting to simple config to fix "broken" camera on some devices.
+                // CONFIG: Request HD resolution (720p+) for better quality, falling back to SD if needed.
+                const constraints = { 
+                    facingMode: "environment",
+                    width: { min: 640, ideal: 1280, max: 1920 },
+                    height: { min: 480, ideal: 720, max: 1080 }
+                };
+
                 await html5QrCode.start(
-                    { facingMode: "environment" },
+                    constraints, 
                     { 
                         fps: 25, 
                         qrbox: (viewfinderWidth, viewfinderHeight) => {
