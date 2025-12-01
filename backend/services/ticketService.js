@@ -133,10 +133,11 @@ class TicketService {
             scannedBy
         };
 
-        await ticketRef.update({
+        // Background Write: Don't await this. Return success immediately.
+        ticketRef.update({
             status: newStatus,
             checkInHistory: admin.firestore.FieldValue.arrayUnion(historyEntry)
-        });
+        }).catch(err => console.error(`[Background Write Error] Ticket ${ticketId}:`, err));
 
         return { ...ticketData, status: newStatus, message };
     }
