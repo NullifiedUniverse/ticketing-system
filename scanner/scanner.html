@@ -205,24 +205,170 @@
     </script>
 
     <script>
-        // --- LOGGER ---
-        function debugLog(msg) {
+        // --- LOGGER (Early Init) ---
+        window.debugLog = function(msg) {
             const panel = document.getElementById('debug-panel');
-            if (!panel) return;
+            if (!panel) { console.log(msg); return; }
             const time = new Date().toLocaleTimeString().split(' ')[0];
             panel.innerHTML = `> <span class="text-gray-500">[${time}]</span> ${msg}<br>` + panel.innerHTML;
         }
         
-        function toggleDebug() {
+        window.toggleDebug = function() {
             const panel = document.getElementById('debug-panel');
             panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
         }
+    </script>
+</head>
+<body>
 
-        // --- APP STARTUP ---
-        function onLibLoaded() {
-            debugLog("Library Loaded.");
+    <div id="reader"></div>
+
+    <div class="ui-layer">
+        <!-- ... (Header and UI kept exactly as is) ... -->
+        
+        <!-- Header -->
+        <div class="w-full flex justify-between items-start interactive">
+            <div class="glass px-4 py-3 rounded-2xl flex items-center gap-3 transition-all hover:bg-white/10">
+                <div class="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.6)] transition-colors duration-500" id="status-dot"></div>
+                <div class="flex flex-col">
+                    <span class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Event</span>
+                    <span id="event-name" class="text-sm font-bold text-white leading-none tracking-tight">Setup Required</span>
+                </div>
+            </div>
             
-            // Manual Patch for some CDN versions wrapping the class
+            <div class="flex gap-2">
+                <button onclick="toggleDebug()" class="glass w-10 h-10 flex items-center justify-center rounded-full text-white/60 hover:text-white transition-colors active:scale-95">
+                    <span class="text-xs font-mono">BUG</span>
+                </button>
+                <button onclick="resetConfig()" class="glass w-10 h-10 flex items-center justify-center rounded-full text-white/60 hover:text-white transition-colors active:scale-95">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Notification Container -->
+        <div id="notification" class="absolute top-24 left-4 right-4 z-50 flex justify-center pointer-events-none -translate-y-40 transition-transform duration-300">
+            <div class="glass px-6 py-4 rounded-2xl border-l-4 flex items-center gap-4 max-w-sm w-full shadow-2xl transform transition-all" id="notif-body">
+                <div class="text-3xl filter drop-shadow-lg" id="notif-icon"></div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-bold text-white text-base leading-snug truncate" id="notif-title"></h3>
+                    <p class="text-xs text-gray-300 truncate" id="notif-msg"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Viewfinder -->
+        <div class="scan-frame hidden" id="scan-ui">
+            <div class="scan-corner tl"></div>
+            <div class="scan-corner tr"></div>
+            <div class="scan-corner bl"></div>
+            <div class="scan-corner br"></div>
+            <div class="scan-laser"></div>
+            <div class="absolute -bottom-16 left-0 right-0 text-center">
+                <div class="glass inline-block px-4 py-2 rounded-full">
+                    <span class="text-xs font-semibold text-white/90 tracking-wide" id="scan-msg">Align QR Code</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Controls -->
+        <div class="w-full space-y-4 interactive">
+            
+            <!-- Mode Toggle -->
+            <div id="mode-toggle" class="hidden glass p-1.5 rounded-2xl flex w-full max-w-xs mx-auto mb-2">
+                <button onclick="setMode('check-in')" id="btn-in" class="flex-1 py-3 rounded-xl text-sm font-bold transition-all shadow-lg relative overflow-hidden group">
+                    <span class="relative z-10">Check In</span>
+                </button>
+                <button onclick="setMode('check-out')" id="btn-out" class="flex-1 py-3 rounded-xl text-sm font-bold text-gray-400 hover:text-white transition-all">
+                    Check Out
+                </button>
+            </div>
+
+            <!-- Main Action -->
+            <button id="action-btn" onclick="initCamera()" class="w-full bg-white text-black font-bold text-lg py-4 rounded-2xl shadow-[0_0_30px_rgba(255,255,255,0.3)] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100" disabled>
+                Loading Library...
+            </button>
+            
+            <div id="status-text" class="text-center text-[10px] font-mono text-gray-500 h-4">v2.2 • Ultra Low Latency</div>
+        </div>
+    </div>
+    
+    <div id="debug-panel" class="fixed bottom-0 left-0 right-0 h-32 p-2 text-green-400 overflow-y-auto z-50 hidden border-t border-gray-800"></div>
+
+    <script>
+        // --- GLOBALS ---
+        let html5QrCode;
+        let config = null;
+        let currentMode = 'check-in';
+        let isProcessing = false;
+        let notifTimeout;
+
+        // --- ELEMENTS ---
+        const els = {
+            eventName: document.getElementById('event-name'),
+            statusDot: document.getElementById('status-dot'),
+            scanUi: document.getElementById('scan-ui'),
+            scanMsg: document.getElementById('scan-msg'),
+            modeToggle: document.getElementById('mode-toggle'),
+            btnIn: document.getElementById('btn-in'),
+            btnOut: document.getElementById('btn-out'),
+            actionBtn: document.getElementById('action-btn'),
+            statusText: document.getElementById('status-text'),
+            notif: document.getElementById('notification'),
+            notifBody: document.getElementById('notif-body'),
+            notifIcon: document.getElementById('notif-icon'),
+            notifTitle: document.getElementById('notif-title'),
+            notifMsg: document.getElementById('notif-msg'),
+        };
+
+        // --- APP STARTUP & LOADING ---
+        function boot() {
+            debugLog("Booting...");
+            
+            // 1. Create Script
+            const script = document.createElement('script');
+            // Try local first
+            script.src = '/html5-qrcode.min.js'; 
+            
+            // 2. Handlers
+            script.onload = () => {
+                debugLog("Local lib loaded.");
+                checkAndInit();
+            };
+            
+            script.onerror = () => {
+                debugLog("Local lib failed. Trying CDN...");
+                const fallback = document.createElement('script');
+                fallback.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+                fallback.onload = () => {
+                    debugLog("CDN lib loaded.");
+                    checkAndInit();
+                };
+                fallback.onerror = () => {
+                    debugLog("CRITICAL: All lib loads failed.");
+                    showNotif('error', 'Error', 'Library Load Failed. Check Connection.');
+                    els.actionBtn.innerText = "Load Failed - Retry?";
+                    els.actionBtn.disabled = false;
+                    els.actionBtn.onclick = () => location.reload();
+                };
+                document.body.appendChild(fallback);
+            };
+
+            // 3. Timeout Failsafe
+            setTimeout(() => {
+                if (typeof Html5QrCode === 'undefined' && els.actionBtn.innerText.includes('Loading')) {
+                    debugLog("Load Timeout.");
+                    els.actionBtn.disabled = false;
+                    els.actionBtn.innerText = "Slow Network? Retry";
+                    els.actionBtn.onclick = () => location.reload();
+                }
+            }, 5000);
+
+            document.body.appendChild(script);
+        }
+
+        function checkAndInit() {
+            // Manual Patch for shim
             if (typeof Html5QrCode === 'undefined') {
                 if (typeof __Html5QrcodeLibrary__ !== 'undefined') {
                     window.Html5QrCode = __Html5QrcodeLibrary__.Html5Qrcode;
@@ -232,17 +378,237 @@
             }
 
             if (typeof Html5QrCode === 'undefined') {
-                showNotif('error', 'Critical Error', 'Scanner Engine Failed');
-                document.getElementById('action-btn').innerText = "Engine Failed";
+                debugLog("Lib loaded but class undefined.");
                 return;
             }
 
-            document.getElementById('action-btn').disabled = false;
-            document.getElementById('action-btn').innerText = "Start Camera";
+            debugLog("Engine Ready.");
+            els.actionBtn.disabled = false;
+            els.actionBtn.innerText = "Start Camera";
+            els.actionBtn.onclick = initCamera; // Rebind click to camera start
             loadConfig();
         }
 
-        // --- GLOBALS ---
+        // --- LOGIC ---
+
+        function loadConfig() {
+            const saved = localStorage.getItem('ticketScannerConfig');
+            if (saved) {
+                try {
+                    config = JSON.parse(saved);
+                    els.eventName.innerText = config.eventId;
+                    els.statusDot.classList.replace('bg-red-500', 'bg-yellow-500');
+                    els.modeToggle.classList.remove('hidden');
+                    els.actionBtn.innerText = "Start Scanning";
+                    els.scanMsg.innerText = "Scan Attendee Ticket";
+                    debugLog("Config loaded: " + config.eventId);
+                    
+                    // Warmup
+                    fetch(`${config.apiBaseUrl}/api/scanner/warmup/${config.eventId}`, {
+                        headers: { 'Authorization': `Bearer ${config.token}` },
+                        keepalive: true
+                    }).catch(() => {});
+                    
+                    startHeartbeat();
+                } catch (e) {
+                    debugLog("Config corrupt.");
+                    localStorage.removeItem('ticketScannerConfig');
+                }
+            } else {
+                els.eventName.innerText = "Setup Required";
+                els.scanMsg.innerText = "Scan Setup QR Code";
+                els.actionBtn.innerText = "Start Setup";
+            }
+        }
+
+        async function initCamera() {
+            els.actionBtn.disabled = true;
+            els.actionBtn.innerText = "Requesting Access...";
+            
+            try {
+                // Force Wakeup
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                stream.getTracks().forEach(track => track.stop());
+                
+                html5QrCode = new Html5QrCode("reader");
+                
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    { 
+                        fps: 25, 
+                        qrbox: (viewfinderWidth, viewfinderHeight) => {
+                            const side = Math.min(viewfinderWidth, viewfinderHeight) * 0.7;
+                            return { width: side, height: side };
+                        }
+                    },
+                    onScan,
+                    () => {}
+                );
+
+                els.scanUi.classList.remove('hidden');
+                els.actionBtn.classList.add('hidden');
+                els.statusDot.className = "w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]";
+                els.statusText.innerText = "";
+
+            } catch (err) {
+                console.error(err);
+                els.actionBtn.disabled = false;
+                els.actionBtn.innerText = "Retry Camera";
+                showNotif('error', 'Camera Error', err.name || err.message);
+            }
+        }
+
+        async function onScan(text, result) {
+            if (isProcessing) return;
+            isProcessing = true;
+            
+            try { if (html5QrCode.getState() === 2) html5QrCode.pause(true); } catch(e) {}
+
+            document.querySelector('.scan-frame').classList.add('scanning');
+            if(navigator.vibrate) navigator.vibrate(50);
+
+            if (!config) {
+                await processSetup(text);
+            } else {
+                await processTicket(text);
+            }
+        }
+
+        async function processSetup(text) {
+            try {
+                const data = JSON.parse(text);
+                if (!data.eventId || !data.token) throw new Error("Invalid QR");
+
+                config = data;
+                localStorage.setItem('ticketScannerConfig', JSON.stringify(config));
+                
+                showNotif('success', 'Setup Complete', `Connected to ${config.eventId}`);
+                els.eventName.innerText = config.eventId;
+                els.modeToggle.classList.remove('hidden');
+                els.statusDot.className = "w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]";
+
+                fetch(`${config.apiBaseUrl}/api/scanner/warmup/${config.eventId}`, {
+                    headers: { 'Authorization': `Bearer ${config.token}` }
+                }).catch(() => {});
+
+            } catch (e) {
+                showNotif('error', 'Setup Failed', 'Invalid Setup QR');
+                document.querySelector('.scan-frame').classList.add('error');
+            } finally {
+                setTimeout(resetScannerState, 1000);
+            }
+        }
+
+        async function processTicket(ticketId) {
+            const tStart = performance.now();
+            showNotif('loading', 'Verifying...', 'Checking server...');
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+            try {
+                const tNetStart = performance.now();
+                const res = await fetch(`${config.apiBaseUrl}/api/scanner/update-ticket-status/${config.eventId}/${ticketId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.token}` },
+                    body: JSON.stringify({ action: currentMode }),
+                    signal: controller.signal,
+                    keepalive: true
+                });
+                const tNetEnd = performance.now();
+                clearTimeout(timeoutId);
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    if (res.status === 400) throw new Error(`WARN:${data.message}`);
+                    throw new Error(data.message || 'Scan failed');
+                }
+
+                showNotif('success', 'Valid Ticket', data.message || 'Access Granted');
+                debugLog(`OK (${(tNetEnd - tNetStart).toFixed(0)}ms)`);
+                
+            } catch (err) {
+                clearTimeout(timeoutId);
+                let msg = err.message;
+                let type = 'error';
+                
+                if (msg.startsWith('WARN:')) {
+                    type = 'warning';
+                    msg = msg.replace('WARN:', '');
+                    document.querySelector('.scan-frame').classList.add('warning');
+                } else {
+                    document.querySelector('.scan-frame').classList.add('error');
+                    if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                }
+                
+                showNotif(type, type === 'warning' ? 'Check Status' : 'Access Denied', msg);
+            } finally {
+                setTimeout(resetScannerState, 500);
+            }
+        }
+
+        function resetScannerState() {
+            isProcessing = false;
+            document.querySelector('.scan-frame').classList.remove('scanning', 'error', 'warning');
+            try { if (html5QrCode.getState() === 3) html5QrCode.resume(); } catch(e) {}
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            const activeClass = "bg-indigo-600 text-white shadow-lg";
+            const inactiveClass = "text-gray-400 hover:text-white";
+            
+            if (mode === 'check-in') {
+                els.btnIn.className = `flex-1 py-3 rounded-xl text-sm font-bold transition-all ${activeClass}`;
+                els.btnOut.className = `flex-1 py-3 rounded-xl text-sm font-bold transition-all ${inactiveClass}`;
+            } else {
+                els.btnIn.className = `flex-1 py-3 rounded-xl text-sm font-bold transition-all ${inactiveClass}`;
+                els.btnOut.className = `flex-1 py-3 rounded-xl text-sm font-bold transition-all bg-pink-600 text-white shadow-lg`;
+            }
+        }
+
+        function resetConfig() {
+            if(confirm("Reset configuration?")) {
+                localStorage.removeItem('ticketScannerConfig');
+                location.reload();
+            }
+        }
+
+        function showNotif(type, title, msg) {
+            if (notifTimeout) { clearTimeout(notifTimeout); notifTimeout = null; }
+            els.notif.style.transform = 'translateY(0)';
+            els.notifTitle.innerText = title;
+            els.notifMsg.innerText = msg;
+
+            const styles = {
+                success: { border: 'border-green-500', icon: '✅', bg: 'bg-green-900/90' },
+                error: { border: 'border-red-500', icon: '⛔', bg: 'bg-red-900/90' },
+                loading: { border: 'border-blue-500', icon: '⏳', bg: 'bg-gray-900/90' },
+                warning: { border: 'border-yellow-500', icon: '⚠️', bg: 'bg-yellow-900/90' }
+            };
+            const s = styles[type] || styles.loading;
+            els.notifBody.className = `glass px-6 py-4 rounded-2xl border-l-4 flex items-center gap-4 max-w-sm w-full shadow-2xl ${s.border} ${s.bg}`;
+            els.notifIcon.innerText = s.icon;
+
+            if (type !== 'loading') {
+                notifTimeout = setTimeout(() => {
+                    els.notif.style.transform = 'translateY(-15rem)';
+                }, 1500);
+            }
+        }
+
+        function startHeartbeat() {
+            if (!config) return;
+            setInterval(() => fetch(`${config.apiBaseUrl}/api/ping`, { keepalive: true }).catch(()=>{}), 20000);
+        }
+
+        // Start Boot
+        boot();
+
+    </script>
+</body>
+</html>
         let html5QrCode;
         let config = null;
         let currentMode = 'check-in';
