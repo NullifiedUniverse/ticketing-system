@@ -269,6 +269,7 @@
                     els.actionBtn.innerText = "Start Scanning";
                     els.scanMsg.innerText = "Scan Attendee Ticket";
                     debugLog("Config loaded for event: " + config.eventId);
+                    startHeartbeat(); // Keep connection alive
                 } catch (e) {
                     debugLog("Config parse error. Clearing.");
                     localStorage.removeItem('ticketScannerConfig');
@@ -341,6 +342,15 @@
         async function onScan(text, result) {
             if (isProcessing) return;
             isProcessing = true;
+            
+            // OPTIMIZATION: Pause scanner immediately to free CPU and freeze UI
+            // This significantly improves UI responsiveness and network performance on mobile
+            try {
+                if (html5QrCode.getState() === 2) { // 2 = SCANNING
+                    html5QrCode.pause(true); 
+                }
+            } catch(e) { console.warn("Failed to pause", e); }
+
             debugLog(`Scanned: ${text}`);
             
             // Visual Feedback
@@ -393,6 +403,12 @@
                 setTimeout(() => {
                     isProcessing = false;
                     document.querySelector('.scan-frame').classList.remove('scanning', 'error');
+                     // Resume Scanning
+                    try {
+                        if (html5QrCode.getState() === 3) { // 3 = PAUSED
+                            html5QrCode.resume();
+                        }
+                    } catch(e) { console.warn("Failed to resume", e); }
                 }, 1000);
             }
         }
@@ -461,6 +477,13 @@
                 setTimeout(() => {
                     isProcessing = false;
                     document.querySelector('.scan-frame').classList.remove('scanning', 'error', 'warning');
+                    
+                    // Resume Scanning
+                    try {
+                        if (html5QrCode.getState() === 3) { // 3 = PAUSED
+                            html5QrCode.resume();
+                        }
+                    } catch(e) { console.warn("Failed to resume", e); }
                 }, 500);
             }
         }
@@ -533,6 +556,16 @@
                     els.notif.style.transform = 'translateY(-15rem)';
                 }, 1500);
             }
+        }
+
+        // --- NETWORK OPTIMIZATION ---
+        function startHeartbeat() {
+            if (!config) return;
+            // Ping every 20 seconds to keep TCP/Ngrok tunnel alive
+            setInterval(() => {
+                fetch(`${config.apiBaseUrl}/api/ping`, { keepalive: true })
+                    .catch(() => { /* Ignore errors, just best effort */ });
+            }, 20000);
         }
 
     </script>

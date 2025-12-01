@@ -36,6 +36,8 @@ app.use('/api/admin', adminRouter);
 app.use('/api/scanner', scannerAuthMiddleware, scannerRouter);
 app.use('/auth', scannerTokenRoutes);
 
+app.get('/api/ping', (req, res) => res.send('pong'));
+
 app.get('/api/ngrok-url', (req, res) => {
     const url = ngrok.getUrl();
     const type = ngrok.getUrlType();
