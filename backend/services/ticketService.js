@@ -1,4 +1,4 @@
-const { db } = require('../firebase');
+const { db, admin } = require('../firebase');
 const { v4: uuidv4 } = require('uuid');
 
 class TicketService {
@@ -135,7 +135,7 @@ class TicketService {
 
         await ticketRef.update({
             status: newStatus,
-            checkInHistory: [...ticketData.checkInHistory, historyEntry]
+            checkInHistory: admin.firestore.FieldValue.arrayUnion(historyEntry)
         });
 
         return { ...ticketData, status: newStatus, message };

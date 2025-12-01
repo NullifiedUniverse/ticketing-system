@@ -445,11 +445,11 @@
                 
                 debugLog(`Ticket Fail: ${msg}`);
             } finally {
-                 // Reset Visuals Quicker (750ms for snappier feel)
+                 // Reset Visuals Quicker (500ms for snappier feel)
                 setTimeout(() => {
                     isProcessing = false;
                     document.querySelector('.scan-frame').classList.remove('scanning', 'error', 'warning');
-                }, 750);
+                }, 500);
             }
         }
 
@@ -515,11 +515,11 @@
             els.notifIcon.innerText = icons[type] || 'ℹ️';
             els.notifIcon.style.fontSize = '2.5rem';
 
-            // 4. Auto-dismiss after 3 seconds (unless loading)
+            // 4. Auto-dismiss after 1.5 seconds (unless loading)
             if (type !== 'loading') {
                 notifTimeout = setTimeout(() => {
                     els.notif.style.transform = 'translateY(-15rem)';
-                }, 3000);
+                }, 1500);
             }
         }
 
