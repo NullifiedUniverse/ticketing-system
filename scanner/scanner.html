@@ -40,11 +40,18 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Camera Layer */
+        /* Camera Layer - Aggressive Reset */
         #reader { 
             position: fixed; inset: 0; z-index: 0; background: #000; 
-            overflow: hidden; /* Removed flex to prevent layout conflicts with library */
+            width: 100% !important; height: 100% !important;
+            overflow: hidden;
         }
+        
+        /* Force all library-generated wrappers to be full screen */
+        #reader div {
+            width: 100% !important; height: 100% !important;
+        }
+
         #reader video { 
             /* Force video to cover the screen */
             position: absolute; 
