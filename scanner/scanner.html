@@ -323,23 +323,17 @@
 
                 html5QrCode = new Html5QrCode("reader");
                 
-                // Note: We do NOT pass aspectRatio here. We let the camera provide its native ratio (usually 4:3 or 16:9).
-                // Our CSS 'object-fit: cover' ensures it fills the screen visually.
-                // The 'qrbox' logic automatically centers on the sensor feed.
+                // Note: We do NOT pass aspectRatio here. We let the camera provide its native ratio.
+                // We use a flat constraints object.
                 await html5QrCode.start(
                     { 
                         facingMode: "environment",
-                        // PERF: Limit resolution to 720p to avoid 4K processing lag
-                        videoConstraints: { 
-                            width: { ideal: 1280 }, 
-                            height: { ideal: 720 },
-                            facingMode: "environment" 
-                        } 
+                        width: { ideal: 1280 }, 
+                        height: { ideal: 720 }
                     },
                     { 
                         fps: 25, 
                         qrbox: (viewfinderWidth, viewfinderHeight) => {
-                            // Dynamic Box: 70% of the smaller dimension
                             const side = Math.min(viewfinderWidth, viewfinderHeight) * 0.7;
                             return { width: side, height: side };
                         }
@@ -357,7 +351,7 @@
                 console.error(err);
                 els.actionBtn.disabled = false;
                 els.actionBtn.innerText = "Retry Camera";
-                showNotif('error', 'Camera Error', err.name);
+                handleCameraError(err);
             }
         }
 
