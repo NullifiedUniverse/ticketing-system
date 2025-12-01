@@ -47,9 +47,11 @@
             overflow: hidden;
         }
         
-        /* Force all library-generated wrappers to be full screen */
-        #reader div {
-            width: 100% !important; height: 100% !important;
+        /* Hide library artifacts (white box/canvas) */
+        #reader canvas, 
+        #reader div[style*="position: absolute"] { 
+            display: none !important; 
+            opacity: 0 !important; 
         }
 
         #reader video { 
@@ -63,6 +65,7 @@
             
             object-fit: cover !important;
             display: block !important;
+            z-index: 10; /* Ensure video is above artifacts */
         }
 
         /* UI Layer */
@@ -324,7 +327,15 @@
                 // Our CSS 'object-fit: cover' ensures it fills the screen visually.
                 // The 'qrbox' logic automatically centers on the sensor feed.
                 await html5QrCode.start(
-                    { facingMode: "environment" },
+                    { 
+                        facingMode: "environment",
+                        // PERF: Limit resolution to 720p to avoid 4K processing lag
+                        videoConstraints: { 
+                            width: { ideal: 1280 }, 
+                            height: { ideal: 720 },
+                            facingMode: "environment" 
+                        } 
+                    },
                     { 
                         fps: 25, 
                         qrbox: (viewfinderWidth, viewfinderHeight) => {
