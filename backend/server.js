@@ -10,7 +10,7 @@ const config = require('./config');
 const scannerTokenRoutes = require('./routes/scannerToken');
 const { adminRouter, scannerRouter } = require('./routes/tickets');
 const scannerAuthMiddleware = require('./middleware/scannerAuthMiddleware');
-const ngrok = require('./ngrok'); 
+const { connect, getPublicUrl, getLocalIp, getUrl } = require('./ngrok'); // Import ngrok module
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -41,12 +41,14 @@ app.get('/api/ping', (req, res) => res.send('pong'));
 app.get('/api/ngrok-url', (req, res) => {
     const url = ngrok.getUrl();
     const type = ngrok.getUrlType();
+    const localIp = ngrok.getLocalIp();
+    const localUrl = `http://${localIp}:${config.port}`;
+    
     if (url) {
-        res.json({ status: 'success', url, type });
+        res.json({ status: 'success', url, type, localUrl });
     } else {
-        // Even if tunnel isn't active (e.g. using localhost), return something useful if possible,
-        // or just 503. The frontend handles this by showing 'local' status.
-        res.status(503).json({ status: 'error', message: 'Tunnel is not active.' });
+        // If ngrok failed or not running, return local at least
+        res.json({ status: 'success', url: localUrl, type: 'local', localUrl });
     }
 });
 

@@ -100,4 +100,4 @@ const stop = async () => {
 const getUrl = () => url;
 const getUrlType = () => urlType;
 
-module.exports = { start, stop, getUrl, getUrlType };
+module.exports = { start, stop, getUrl, getUrlType, getLocalIp };

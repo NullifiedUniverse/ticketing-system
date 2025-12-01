@@ -100,18 +100,34 @@ const Dashboard = () => {
         }
         try {
             const scannerToken = await getScannerToken();
-            const { url: apiBaseUrl, type } = await getNgrokUrl();
+            const { url: publicUrl, localUrl, type } = await getNgrokUrl();
             
-            if (!apiBaseUrl) {
+            let selectedUrl = publicUrl;
+            let modeMessage = "";
+
+            if (localUrl && publicUrl && localUrl !== publicUrl) {
+                // Ask user preference
+                const useLocal = window.confirm(
+                    `🚀 Optimize Speed?\n\nUse Local Network IP (${localUrl})?\n\n✅ YES: Fast (Phone must be on same Wi-Fi)\n❌ NO: Slower (Public Internet / 4G)`
+                );
+                if (useLocal) {
+                    selectedUrl = localUrl;
+                    modeMessage = " [LOCAL MODE - FAST]";
+                } else {
+                    modeMessage = " [PUBLIC MODE]";
+                }
+            } else if (!publicUrl && localUrl) {
+                selectedUrl = localUrl;
+                modeMessage = " [LOCAL ONLY]";
+            }
+
+            if (!selectedUrl) {
                  throw new Error("Could not retrieve backend URL.");
             }
 
-            let message = `Event: ${eventId}. Volunteers scan this to configure their device.`;
-            if (type === 'local') {
-                message += ' WARNING: Using Local Network IP. Scanner must be on same Wi-Fi.';
-            }
-
-            const config = { eventId, apiBaseUrl, token: scannerToken };
+            const message = `Event: ${eventId}${modeMessage}. Scan to configure.`;
+            const config = { eventId, apiBaseUrl: selectedUrl, token: scannerToken };
+            
             showQrCodeModal('Scanner Setup Code', message, JSON.stringify(config));
         } catch (error) {
             console.error(error);
