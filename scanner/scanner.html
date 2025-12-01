@@ -335,15 +335,10 @@
 
                 html5QrCode = new Html5QrCode("reader");
                 
-                // CONFIG: Request HD resolution (720p+) for better quality, falling back to SD if needed.
-                const constraints = { 
-                    facingMode: "environment",
-                    width: { min: 640, ideal: 1280, max: 1920 },
-                    height: { min: 480, ideal: 720, max: 1080 }
-                };
-
+                // REVERT: Complex constraints caused crashes on some devices.
+                // We fallback to the browser's default (usually safe) resolution.
                 await html5QrCode.start(
-                    constraints, 
+                    { facingMode: "environment" },
                     { 
                         fps: 25, 
                         qrbox: (viewfinderWidth, viewfinderHeight) => {
@@ -354,6 +349,20 @@
                     onScan,
                     () => {}
                 );
+
+                els.scanUi.classList.remove('hidden');
+                els.actionBtn.classList.add('hidden');
+                els.statusDot.className = "w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]";
+                els.statusText.innerText = "";
+
+            } catch (err) {
+                console.error(err);
+                debugLog(`Cam Start Fail: ${err.name} - ${err.message}`);
+                els.actionBtn.disabled = false;
+                els.actionBtn.innerText = "Retry Camera";
+                handleCameraError(err);
+            }
+        }
 
                 els.scanUi.classList.remove('hidden');
                 els.actionBtn.classList.add('hidden');
