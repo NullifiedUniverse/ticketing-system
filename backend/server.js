@@ -2,19 +2,19 @@ require('dotenv').config();
 // --- LIBRARIES ---
 const express = require('express');
 const cors = require('cors');
-const { db } = require('./firebase');
-const config = require('./config');
-const scannerAuthMiddleware = require('./middleware/scannerAuthMiddleware');
-const { adminRouter, scannerRouter } = require('./routes/tickets');
+const compression = require('compression');
 const scannerTokenRoutes = require('./routes/scannerToken');
-const ngrok = require('./ngrok');
-const path = require('path');
+const ticketRoutes = require('./routes/tickets');
+const { connect, getPublicUrl } = require('./ngrok'); // Import ngrok module
 
-// --- INITIALIZATION ---
 const app = express();
+const PORT = process.env.PORT || 3001;
 
-// --- MIDDLEWARE ---
-app.use(cors({ origin: '*' }));
+// Middleware
+app.use(compression()); // Compress all responses
+app.use(cors({
+    origin: '*', // Allow all origins (for now, to support local & ngrok)
+
 app.use(express.json());
 
 // Security Headers for Camera Access

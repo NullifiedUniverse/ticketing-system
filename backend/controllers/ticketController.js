@@ -145,15 +145,14 @@ class TicketController {
     }
 
     async getTickets(req, res) {
+        const { eventId } = req.params;
         try {
-            const { eventId } = req.params;
             const tickets = await ticketService.getTickets(eventId);
-            res.json({ status: 'success', tickets });
+            res.json(tickets);
         } catch (error) {
-            console.error("Error getting tickets:", error);
-            res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+            res.status(500).json({ error: error.message });
         }
-    }
+    },
 }
 
 module.exports = new TicketController();

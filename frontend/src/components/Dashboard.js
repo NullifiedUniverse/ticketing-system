@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import DashboardStats from './DashboardStats';
-import AnalyticsDashboard from './AnalyticsDashboard';
+import AnalyticsChart from './AnalyticsChart';
 import CreateTicket from './CreateTicket';
 import TicketList from './TicketList';
 import LiveIndicator from './LiveIndicator';
@@ -190,14 +190,10 @@ const Dashboard = () => {
                                 <DashboardStats stats={stats} />
                             </section>
 
-                             {/* Analytics */}
-                             <AnimatePresence>
-                                {tickets.length > 0 && (
-                                    <section>
-                                        <AnalyticsDashboard tickets={tickets} />
-                                    </section>
-                                )}
-                            </AnimatePresence>
+                             {/* Analytics Chart */}
+                            <section>
+                                <AnalyticsChart tickets={tickets} />
+                            </section>
 
                             {/* Management Grid */}
                             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
