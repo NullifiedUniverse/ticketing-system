@@ -70,7 +70,8 @@
         /* Scanner Frame Animation */
         .scan-frame {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: min(80vw, 350px); aspect-ratio: 1;
+            /* Visual Alignment Fix: Ensure it matches JS logic (min of width/height) */
+            width: min(70vw, 70vh, 350px); aspect-ratio: 1;
             border-radius: 2rem;
             box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75); /* Dim overlay */
             transition: all 0.3s ease;
@@ -309,6 +310,7 @@
                     { 
                         fps: 25, // High FPS for fluid feel
                         qrbox: (viewfinderWidth, viewfinderHeight) => {
+                            // Alignment Fix: Match CSS (min of 70% width/height)
                             const side = Math.min(viewfinderWidth, viewfinderHeight) * 0.7;
                             return { width: side, height: side };
                         },
