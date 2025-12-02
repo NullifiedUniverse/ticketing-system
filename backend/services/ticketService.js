@@ -5,155 +5,158 @@ const AppError = require('../utils/AppError');
 
 /**
  * Service for managing tickets and events.
- * Includes an in-memory cache to optimize read/scan operations.
+ * Implements a Read-Through / Write-Through cache strategy with Real-Time Firestore Listeners.
  */
 class TicketService {
     constructor() {
-        // In-memory cache: Map<eventId, Map<ticketId, ticketData>>
+        // Cache Structure: Map<eventId, Map<ticketId, ticketData>>
         this.cache = new Map();
+        
+        // Track listeners to unsubscribe on shutdown/cleanup if needed
+        this.listeners = new Map();
+
+        // Performance Metrics
+        this.metrics = {
+            hits: 0,
+            misses: 0,
+            writes: 0,
+            latencies: [] // Keep last 100 write latencies
+        };
     }
 
-    /**
-     * Loads tickets for an event into the in-memory cache.
-     * @param {string} eventId 
-     */
-    async loadCacheForEvent(eventId) {
-        if (this.cache.has(eventId)) return;
+    // --- METRICS ---
+    recordLatency(ms) {
+        this.metrics.latencies.push(ms);
+        if (this.metrics.latencies.length > 100) this.metrics.latencies.shift();
+    }
 
-        logger.debug(`[Cache] Loading event: ${eventId}`);
-        try {
-            const ticketsRef = db.collection('events').doc(eventId).collection('tickets');
-            const snapshot = await ticketsRef.get();
+    getMetrics() {
+        const total = this.metrics.hits + this.metrics.misses;
+        const ratio = total === 0 ? 0 : (this.metrics.hits / total * 100).toFixed(2);
+        const avgLatency = this.metrics.latencies.length === 0 ? 0 : 
+            (this.metrics.latencies.reduce((a, b) => a + b, 0) / this.metrics.latencies.length).toFixed(2);
+        
+        return {
+            hitRatio: `${ratio}%`,
+            totalOps: total,
+            writes: this.metrics.writes,
+            avgWriteLatencyMs: avgLatency
+        };
+    }
+
+    // --- CACHE & REAL-TIME SYNC ---
+
+    /**
+     * Ensures the cache is initialized for an event.
+     * Sets up a real-time listener if one doesn't exist.
+     */
+    async ensureCache(eventId) {
+        if (this.cache.has(eventId) && this.listeners.has(eventId)) {
+            return; 
+        }
+
+        logger.info(`[Cache] Initializing Real-Time Sync for Event: ${eventId}`);
+        
+        // 1. Initialize Storage
+        if (!this.cache.has(eventId)) {
+            this.cache.set(eventId, new Map());
+        }
+
+        // 2. Setup Firestore Listener
+        const collectionRef = db.collection('events').doc(eventId).collection('tickets');
+        
+        const unsubscribe = collectionRef.onSnapshot(snapshot => {
+            const eventCache = this.cache.get(eventId);
             
-            const eventTickets = new Map();
-            snapshot.forEach(doc => {
-                eventTickets.set(doc.id, doc.data());
+            snapshot.docChanges().forEach(change => {
+                const ticket = change.doc.data();
+                const ticketId = change.doc.id;
+
+                if (change.type === 'added' || change.type === 'modified') {
+                    // Update Cache
+                    eventCache.set(ticketId, ticket);
+                    // logger.debug(`[Sync] Updated ${ticketId} in cache.`);
+                }
+                if (change.type === 'removed') {
+                    eventCache.delete(ticketId);
+                    // logger.debug(`[Sync] Removed ${ticketId} from cache.`);
+                }
             });
-            
-            this.cache.set(eventId, eventTickets);
-            logger.info(`[Cache] Loaded ${eventTickets.size} tickets for ${eventId}`);
-        } catch (error) {
-            logger.error(`[Cache] Failed to load event ${eventId}: ${error.message}`);
-            throw new AppError('Failed to load ticket cache', 500);
+        }, error => {
+            logger.error(`[Sync] Listener Error for ${eventId}: ${error.message}`);
+        });
+
+        this.listeners.set(eventId, unsubscribe);
+        
+        // Wait for initial load? onSnapshot fires immediately with current state.
+        // However, for the very first request, we might want to ensure data is there.
+        // We can trust the listener to populate it very quickly.
+        // To be safe for the *very first* synchronous call, we can do a get() if empty.
+        if (this.cache.get(eventId).size === 0) {
+             const snap = await collectionRef.get();
+             snap.forEach(doc => this.cache.get(eventId).set(doc.id, doc.data()));
+             logger.info(`[Cache] Pre-loaded ${snap.size} tickets.`);
         }
     }
 
     /**
-     * Retrieves a ticket from the cache.
-     * @param {string} eventId 
-     * @param {string} ticketId 
-     * @returns {Object|null}
+     * Retrieves a ticket from the cache (Read-Through).
      */
     getCachedTicket(eventId, ticketId) {
-        if (!this.cache.has(eventId)) return null;
-        return this.cache.get(eventId).get(ticketId);
-    }
-
-    /**
-     * Updates a ticket in the cache.
-     * @param {string} eventId 
-     * @param {string} ticketId 
-     * @param {Object} newData 
-     */
-    updateCachedTicket(eventId, ticketId, newData) {
-        if (!this.cache.has(eventId)) return;
-        this.cache.get(eventId).set(ticketId, newData);
-    }
-
-    /**
-     * Removes a ticket from the cache.
-     * @param {string} eventId 
-     * @param {string} ticketId 
-     */
-    removeCachedTicket(eventId, ticketId) {
-        if (!this.cache.has(eventId)) return;
-        this.cache.get(eventId).delete(ticketId);
+        if (!this.cache.has(eventId)) {
+            this.metrics.misses++;
+            return null;
+        }
+        
+        const ticket = this.cache.get(eventId).get(ticketId);
+        if (ticket) {
+            this.metrics.hits++;
+        } else {
+            this.metrics.misses++;
+        }
+        return ticket;
     }
 
     // --- EVENT MANAGEMENT ---
 
-    /**
-     * Creates a new event.
-     * @param {string} eventId 
-     * @returns {Promise<Object>}
-     */
     async createEvent(eventId) {
-        try {
-            await this.createEventMetadata(eventId);
-            // Initialize empty cache
-            this.cache.set(eventId, new Map());
-            logger.info(`Event created: ${eventId}`);
-            return { id: eventId, name: eventId, createdAt: new Date() };
-        } catch (error) {
-            logger.error(`Error creating event ${eventId}: ${error.message}`);
-            throw new AppError('Could not create event', 500);
-        }
+        await this.createEventMetadata(eventId);
+        await this.ensureCache(eventId); // Start sync immediately
+        return { id: eventId, name: eventId, createdAt: new Date() };
     }
 
-    /**
-     * Deletes an event and all its tickets.
-     * @param {string} eventId 
-     */
     async deleteEvent(eventId) {
-        try {
-            this.cache.delete(eventId); // Clear cache
-
-            await db.collection('events_meta').doc(eventId).delete();
-            
-            const ticketsRef = db.collection('events').doc(eventId).collection('tickets');
-            const snapshot = await ticketsRef.get();
-            
-            if (!snapshot.empty) {
-                const batch = db.batch();
-                snapshot.docs.forEach((doc) => batch.delete(doc.ref));
-                await batch.commit();
-            }
-            
-            await db.collection('events').doc(eventId).delete();
-            logger.info(`Event deleted: ${eventId}`);
-        } catch (error) {
-            logger.error(`Error deleting event ${eventId}: ${error.message}`);
-            throw new AppError('Could not delete event', 500);
+        // Stop Listener
+        if (this.listeners.has(eventId)) {
+            this.listeners.get(eventId)(); // Unsubscribe
+            this.listeners.delete(eventId);
         }
+        this.cache.delete(eventId);
+
+        // DB Deletion
+        await db.collection('events_meta').doc(eventId).delete();
+        const ticketsRef = db.collection('events').doc(eventId).collection('tickets');
+        const snapshot = await ticketsRef.get();
+        if (!snapshot.empty) {
+            const batch = db.batch();
+            snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+            await batch.commit();
+        }
+        await db.collection('events').doc(eventId).delete();
     }
 
-    /**
-     * Retrieves all events.
-     * @returns {Promise<Array>}
-     */
     async getEvents() {
-        try {
-            const eventsRef = db.collection('events_meta');
-            const snapshot = await eventsRef.get();
-            let events = [];
-            snapshot.forEach(doc => events.push(doc.data()));
-
-            // Discovery Fallback
-            if (events.length === 0) {
-                logger.warn("No metadata found. Attempting discovery fallback.");
-                try {
-                    const collections = await db.collection('events').listDocuments();
-                    if (collections.length > 0) {
-                        const discoveredEvents = collections.map(doc => ({ id: doc.id, name: doc.id, createdAt: new Date() }));
-                        for (const evt of discoveredEvents) await this.createEventMetadata(evt.id);
-                        events = discoveredEvents;
-                        logger.info(`Discovered and registered ${events.length} events.`);
-                    }
-                } catch (err) {
-                    logger.warn("Discovery failed:", err);
-                }
-            }
-            return events;
-        } catch (error) {
-            logger.error(`Error getting events: ${error.message}`);
-            throw new AppError('Could not retrieve events', 500);
-        }
+        const eventsRef = db.collection('events_meta');
+        const snapshot = await eventsRef.get();
+        let events = [];
+        snapshot.forEach(doc => events.push(doc.data()));
+        
+        // Pre-warm caches for known events?
+        // events.forEach(e => this.ensureCache(e.id)); // Optional: Warm up all on startup
+        
+        return events;
     }
 
-    /**
-     * Helper to create event metadata.
-     * @param {string} eventId 
-     */
     async createEventMetadata(eventId) {
         const eventRef = db.collection('events_meta').doc(eventId);
         const doc = await eventRef.get();
@@ -162,23 +165,14 @@ class TicketService {
         }
     }
 
-    // --- TICKET MANAGEMENT ---
+    // --- TICKET MANAGEMENT (Write-Through) ---
 
-    /**
-     * Creates a new ticket for an event.
-     * @param {string} eventId 
-     * @param {Object} ticketData 
-     * @returns {Promise<Object>}
-     */
     async createTicket(eventId, ticketData) {
-        // Ensure cache is loaded to avoid state drift
-        await this.loadCacheForEvent(eventId);
+        await this.ensureCache(eventId);
 
         const { attendeeName, attendeeEmail } = ticketData;
         const ticketId = uuidv4();
-
-        const eventRef = db.collection('events').doc(eventId);
-        const ticketRef = eventRef.collection('tickets').doc(ticketId);
+        const start = performance.now();
 
         const newTicket = {
             id: ticketId,
@@ -189,52 +183,27 @@ class TicketService {
             checkInHistory: [],
         };
 
+        // Write to DB (Listener will update Cache automatically)
+        // But for Write-Through latency, we can also optimistically update cache
+        this.cache.get(eventId).set(ticketId, newTicket);
+
         try {
-            await ticketRef.set(newTicket);
-            this.updateCachedTicket(eventId, ticketId, newTicket); // Update Cache
-            logger.info(`Ticket created: ${ticketId} for event ${eventId}`);
+            await db.collection('events').doc(eventId).collection('tickets').doc(ticketId).set(newTicket);
+            this.metrics.writes++;
+            this.recordLatency(performance.now() - start);
             return newTicket;
         } catch (error) {
-            logger.error(`Error creating ticket: ${error.message}`);
-            throw new AppError('Could not create ticket', 500);
+            // Revert cache on failure?
+            this.cache.get(eventId).delete(ticketId);
+            throw error;
         }
     }
 
-    /**
-     * Updates the status of a ticket (check-in/check-out).
-     * @param {string} eventId 
-     * @param {string} ticketId 
-     * @param {string} action 
-     * @param {string} scannedBy 
-     * @returns {Promise<Object>}
-     */
     async updateTicketStatus(eventId, ticketId, action, scannedBy) {
-        // 1. Ensure Cache Loaded
-        const startLoad = performance.now();
-        await this.loadCacheForEvent(eventId);
-        const endLoad = performance.now();
-
-        if (endLoad - startLoad > 100) {
-            logger.warn(`[Perf Warning] Cache Load took ${(endLoad - startLoad).toFixed(2)}ms`);
-        }
-
-        // 2. Get from Cache (Fast)
-        let ticketData = this.getCachedTicket(eventId, ticketId);
+        await this.ensureCache(eventId);
         
-        if (!ticketData) {
-            logger.warn(`[Perf] Cache miss for ${ticketId}. Fallback to DB.`);
-            // Fallback to DB
-            try {
-                const ticketRef = db.collection('events').doc(eventId).collection('tickets').doc(ticketId);
-                const doc = await ticketRef.get();
-                if (!doc.exists) throw new AppError("Ticket not found.", 404);
-                // Note: We aren't updating cache here to keep "single source of truth" logic simple for now.
-                // Ideally we should add it to cache.
-                ticketData = doc.data();
-            } catch (error) {
-                throw new AppError("Ticket not found.", 404);
-            }
-        }
+        const ticketData = this.getCachedTicket(eventId, ticketId);
+        if (!ticketData) throw new AppError("Ticket not found (or not loaded).", 404);
 
         const now = new Date();
         let newStatus = ticketData.status;
@@ -254,90 +223,73 @@ class TicketService {
         }
 
         const historyEntry = { action, timestamp: now, scannedBy };
-        
-        // 3. Update Cache Immediately
         const updatedTicket = {
             ...ticketData,
             status: newStatus,
             checkInHistory: [...(ticketData.checkInHistory || []), historyEntry]
         };
-        this.updateCachedTicket(eventId, ticketId, updatedTicket);
 
-        // 4. Background DB Write
+        const start = performance.now();
+
+        // 1. Optimistic Cache Update (Immediate Feedback)
+        this.cache.get(eventId).set(ticketId, updatedTicket);
+
+        // 2. Write to DB
         const ticketRef = db.collection('events').doc(eventId).collection('tickets').doc(ticketId);
-        ticketRef.update({
+        
+        // We await this to ensure persistence, but the UI already got the cache response effectively
+        await ticketRef.update({
             status: newStatus,
             checkInHistory: admin.firestore.FieldValue.arrayUnion(historyEntry)
-        }).catch(err => logger.error(`[Background Write Error] Ticket ${ticketId}: ${err.message}`));
+        }).catch(err => {
+            // Revert on DB failure
+            this.cache.get(eventId).set(ticketId, ticketData);
+            logger.error(`[Write Error] Reverting cache for ${ticketId}: ${err.message}`);
+            throw err;
+        });
+
+        this.metrics.writes++;
+        this.recordLatency(performance.now() - start);
         
         return { ...updatedTicket, message };
     }
 
-    /**
-     * Updates arbitrary ticket data.
-     * @param {string} eventId 
-     * @param {string} ticketId 
-     * @param {Object} updateData 
-     * @returns {Promise<Object>}
-     */
     async updateTicket(eventId, ticketId, updateData) {
-        await this.loadCacheForEvent(eventId);
-        
+        await this.ensureCache(eventId);
         const current = this.getCachedTicket(eventId, ticketId);
         if (!current) throw new AppError('Ticket not found', 404);
 
         const updated = { ...current, ...updateData };
+        const start = performance.now();
+
+        this.cache.get(eventId).set(ticketId, updated);
+
+        await db.collection('events').doc(eventId).collection('tickets').doc(ticketId).update(updateData);
         
-        try {
-            await db.collection('events').doc(eventId).collection('tickets').doc(ticketId).update(updateData);
-            this.updateCachedTicket(eventId, ticketId, updated); // Update Cache
-            return { message: 'Ticket updated successfully.' };
-        } catch (error) {
-             logger.error(`Error updating ticket ${ticketId}: ${error.message}`);
-             throw new AppError('Could not update ticket', 500);
-        }
+        this.metrics.writes++;
+        this.recordLatency(performance.now() - start);
+
+        return { message: 'Ticket updated successfully.' };
     }
 
-    /**
-     * Deletes a ticket.
-     * @param {string} eventId 
-     * @param {string} ticketId 
-     * @returns {Promise<Object>}
-     */
     async deleteTicket(eventId, ticketId) {
-        await this.loadCacheForEvent(eventId);
-        
+        await this.ensureCache(eventId);
         if (!this.getCachedTicket(eventId, ticketId)) throw new AppError('Ticket not found', 404);
 
-        try {
-            await db.collection('events').doc(eventId).collection('tickets').doc(ticketId).delete();
-            this.removeCachedTicket(eventId, ticketId); // Update Cache
-            return { message: 'Ticket deleted successfully.' };
-        } catch (error) {
-             logger.error(`Error deleting ticket ${ticketId}: ${error.message}`);
-             throw new AppError('Could not delete ticket', 500);
-        }
+        const start = performance.now();
+        
+        this.cache.get(eventId).delete(ticketId);
+        await db.collection('events').doc(eventId).collection('tickets').doc(ticketId).delete();
+
+        this.metrics.writes++;
+        this.recordLatency(performance.now() - start);
+
+        return { message: 'Ticket deleted successfully.' };
     }
 
-    /**
-     * Gets all tickets for an event.
-     * @param {string} eventId 
-     * @returns {Promise<Array>}
-     */
     async getTickets(eventId) {
-        // 1. Check Cache first
-        if (this.cache.has(eventId)) {
-            return Array.from(this.cache.get(eventId).values());
-        }
-
-        // 2. Load if missing
-        await this.loadCacheForEvent(eventId);
-        // 3. Return from cache
-        if (this.cache.has(eventId)) {
-             return Array.from(this.cache.get(eventId).values());
-        }
-        
-        return [];
+        await this.ensureCache(eventId);
+        return Array.from(this.cache.get(eventId).values());
     }
 }
 

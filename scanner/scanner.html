@@ -21,7 +21,8 @@
             --glass-border: rgba(255,255,255,0.1);
         }
 
-        body { 
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%;
             font-family: 'Inter', sans-serif; 
             background: black; 
             overflow: hidden; 
@@ -29,19 +30,32 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        /* Fullscreen Camera with Center Crop */
+        /* Fullscreen Camera Container */
         #reader { 
-            position: fixed; inset: 0; z-index: 0; background: black; 
+            position: fixed; 
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100% !important; 
+            height: 100% !important; 
+            z-index: 0; 
+            background: black; 
+            border: none !important;
         }
+        
+        /* Force Video to Cover Screen */
         #reader video { 
-            width: 100% !important; height: 100% !important; 
+            width: 100% !important; 
+            height: 100% !important; 
             object-fit: cover !important; 
+            border-radius: 0 !important;
+        }
+
+        /* Hide Library's Default Overlays/Canvas */
+        #reader canvas, #reader__scan_region { 
+            display: none !important; 
         }
 
         /* 
-           Perfectly Centered Overlay
-           Uses absolute positioning with transform to ensure it's always center
-           Max size ensures it doesn't overflow on small phones
+           Custom Overlay - Centered & Responsive
         */
         .scanner-overlay {
             position: absolute; 
@@ -49,33 +63,27 @@
             left: 50%; 
             transform: translate(-50%, -50%);
             
-            /* Responsive Size: 70% of smaller dimension */
-            width: 70vmin; 
-            height: 70vmin;
+            /* Responsive Size: 65% of the smaller dimension */
+            width: 65vmin; 
+            height: 65vmin;
             
             /* Limits */
             max-width: 500px; 
             max-height: 500px;
             
-            border-radius: 24px;
-            
-            /* The "Darken Everything Else" trick */
-            box-shadow: 0 0 0 200vmax rgba(0,0,0,0.7); 
-            
-            border: 2px solid rgba(255,255,255,0.4);
             z-index: 10;
+            pointer-events: none;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
+        /* Visual Feedback via Box Shadow Flash instead of Border */
         .scanner-overlay.active { 
-            border-color: var(--color-success); 
-            box-shadow: 0 0 0 200vmax rgba(0,0,0,0.7), 0 0 30px rgba(34, 197, 94, 0.4); 
-            transform: translate(-50%, -50%) scale(1.02); 
+            box-shadow: 0 0 0 0 rgba(0,0,0,0), 0 0 50px 20px rgba(34, 197, 94, 0.6) inset; 
+            transform: translate(-50%, -50%) scale(1.05); 
         }
         
         .scanner-overlay.error { 
-            border-color: var(--color-error); 
-            box-shadow: 0 0 0 200vmax rgba(0,0,0,0.7), 0 0 30px rgba(239, 68, 68, 0.4); 
+            box-shadow: 0 0 0 0 rgba(0,0,0,0), 0 0 50px 20px rgba(239, 68, 68, 0.6) inset; 
         }
 
         /* Laser Animation - Smoother */
@@ -91,11 +99,11 @@
         }
         
         @keyframes scan { 
-            0% { transform: translateY(-20vmin) scaleX(0.9); opacity: 0; } 
+            0% { transform: translateY(-35vmin) scaleX(0.9); opacity: 0; } 
             10% { opacity: 1; }
             50% { transform: translateY(0) scaleX(1); opacity: 0.5; } 
             90% { opacity: 1; }
-            100% { transform: translateY(20vmin) scaleX(0.9); opacity: 0; } 
+            100% { transform: translateY(35vmin) scaleX(0.9); opacity: 0; } 
         }
 
         /* Modern Glass UI */
@@ -146,10 +154,23 @@
                 </div>
             </div>
 
-            <!-- Settings / Reset -->
-            <button onclick="resetApp()" class="glass w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            </button>
+            <!-- Settings Controls -->
+            <div class="flex gap-2">
+                <!-- Torch Toggle -->
+                <button onclick="toggleTorch()" id="btn-torch" class="glass w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition hidden">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                </button>
+
+                <!-- Mute Toggle -->
+                <button onclick="toggleMute()" id="btn-mute" class="glass w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition">
+                    <svg id="icon-mute" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
+                </button>
+
+                <!-- Reset -->
+                <button onclick="resetApp()" class="glass w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                </button>
+            </div>
         </div>
 
         <!-- Result Card Area (Bottom-Center) -->
@@ -190,6 +211,8 @@
         let mode = 'check-in';
         let isProcessing = false;
         let isCameraRunning = false;
+        let isTorchOn = false;
+        let isMuted = false;
 
         // Preload Audio
         const audioSuccess = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'); // Placeholder
@@ -238,29 +261,38 @@
             try {
                 // 1. Request Permissions
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                
+                // Check torch capability
+                const track = stream.getVideoTracks()[0];
+                const capabilities = track.getCapabilities();
+                if (capabilities.torch) {
+                    document.getElementById('btn-torch').classList.remove('hidden');
+                }
+                
                 stream.getTracks().forEach(t => t.stop()); // Stop initial test stream
 
                 // 2. Init Lib
                 html5QrCode = new Html5QrCode("reader");
                 
-                // 3. Calculate optimal box size relative to screen
-                // We want the scanning region to match the CSS overlay exactly
-                // CSS is 70vmin (70% of min dimension)
-                const qrBoxFunction = (viewfinderWidth, viewfinderHeight) => {
+                // 3. Calculate optimal box size
+                // This matches the CSS .scanner-overlay (65vmin)
+                const getQrBoxSize = (viewfinderWidth, viewfinderHeight) => {
                     const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                    const boxSize = Math.floor(minEdge * 0.70);
-                    return { width: boxSize, height: boxSize };
+                    return { 
+                        width: Math.floor(minEdge * 0.65), 
+                        height: Math.floor(minEdge * 0.65) 
+                    };
                 };
 
                 // 4. Start
                 await html5QrCode.start(
                     { facingMode: "environment" },
                     { 
-                        fps: 30, // Higher FPS for smoother feel
-                        qrbox: qrBoxFunction,
-                        aspectRatio: window.innerWidth / window.innerHeight,
+                        fps: 30, 
+                        qrbox: getQrBoxSize,
+                        // aspectRatio: undefined, // Let library determine best fit
                         disableFlip: false,
-                        formatsToSupport: [ 0 ] // 0 = QR_CODE only (Faster)
+                        formatsToSupport: [ 0 ] // QR_CODE
                     },
                     onScan,
                     (err) => { /* Ignore frame errors */ }
@@ -279,13 +311,53 @@
             }
         }
 
+        async function toggleTorch() {
+            if (!html5QrCode || !isCameraRunning) return;
+            
+            try {
+                await html5QrCode.applyVideoConstraints({
+                    advanced: [{ torch: !isTorchOn }]
+                });
+                isTorchOn = !isTorchOn;
+                
+                const btn = document.getElementById('btn-torch');
+                if (isTorchOn) {
+                    btn.classList.add('bg-yellow-500', 'text-white', 'shadow-lg');
+                    btn.classList.remove('text-white/70');
+                } else {
+                    btn.classList.remove('bg-yellow-500', 'text-white', 'shadow-lg');
+                    btn.classList.add('text-white/70');
+                }
+            } catch (err) {
+                console.error("Torch failed", err);
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('btn-mute');
+            const icon = document.getElementById('icon-mute');
+            
+            if (isMuted) {
+                btn.classList.add('bg-red-500', 'text-white');
+                btn.classList.remove('text-white/70');
+                // Mute Icon
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />';
+            } else {
+                btn.classList.remove('bg-red-500', 'text-white');
+                btn.classList.add('text-white/70');
+                // Sound Icon
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />';
+            }
+        }
+
         async function onScan(text) {
             if (isProcessing) return;
             isProcessing = true;
 
             // Immediate Feedback
             try { html5QrCode.pause(true); } catch(e){}
-            if (navigator.vibrate) navigator.vibrate(40);
+            if (!isMuted && navigator.vibrate) navigator.vibrate(40);
             
             const box = document.getElementById('scan-box');
             box.classList.add('active'); // Visual flash
