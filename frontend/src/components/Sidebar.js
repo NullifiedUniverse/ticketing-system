@@ -98,7 +98,7 @@ const Sidebar = ({ currentEventId, onSelectEvent, onNewEvent, refreshTrigger }) 
                                 >
                                     <button
                                         onClick={() => { onSelectEvent(event.id); setIsMobileOpen(false); }}
-                                        className={`flex-grow text-left px-4 py-3.5 rounded-xl transition-all duration-200 relative ${
+                                        className={`flex-grow text-left px-4 py-3.5 rounded-xl transition-all duration-200 relative hover:scale-[1.02] active:scale-[0.98] ${
                                             currentEventId === event.id 
                                             ? 'bg-white/10 text-white font-semibold shadow-lg ring-1 ring-white/10' 
                                             : 'text-gray-400 hover:bg-white/5 hover:text-white'
@@ -155,7 +155,7 @@ const Sidebar = ({ currentEventId, onSelectEvent, onNewEvent, refreshTrigger }) 
                     <div className="mt-auto pt-6 border-t border-white/5">
                         <button
                             onClick={onNewEvent}
-                            className="w-full group relative flex items-center justify-center gap-2 bg-gradient-to-r from-gray-800 to-gray-900 hover:from-gray-800 hover:to-gray-800 text-white py-3.5 px-4 rounded-xl transition-all border border-gray-700 hover:border-gray-600 shadow-lg hover:shadow-xl active:scale-[0.98]"
+                            className="w-full group relative flex items-center justify-center gap-2 bg-gradient-to-r from-gray-800 via-gray-700 to-gray-800 hover:from-gray-700 hover:to-gray-700 text-white py-3.5 px-4 rounded-xl transition-all border border-gray-700 hover:border-purple-500/50 shadow-lg hover:shadow-purple-500/20 active:scale-[0.98]"
                         >
                             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-pink-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             <span className="text-xl font-light relative z-10 leading-none pb-1">+</span>

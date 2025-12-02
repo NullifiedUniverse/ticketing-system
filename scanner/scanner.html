@@ -11,107 +11,174 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Inter', sans-serif; background: black; overflow: hidden; }
+        /* Optimized Dark Theme */
+        :root {
+            --color-primary: #6366f1; /* Indigo 500 */
+            --color-success: #22c55e; /* Green 500 */
+            --color-error: #ef4444; /* Red 500 */
+            --color-warning: #eab308; /* Yellow 500 */
+            --glass-bg: rgba(20, 20, 20, 0.6);
+            --glass-border: rgba(255,255,255,0.1);
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: black; 
+            overflow: hidden; 
+            color: white;
+            -webkit-tap-highlight-color: transparent;
+        }
         
-        /* Fullscreen Camera */
-        #reader { position: fixed; inset: 0; z-index: 0; background: black; }
+        /* Fullscreen Camera with Center Crop */
+        #reader { 
+            position: fixed; inset: 0; z-index: 0; background: black; 
+        }
         #reader video { 
             width: 100% !important; height: 100% !important; 
             object-fit: cover !important; 
         }
 
-        /* Scanner Overlay (The Box) */
+        /* 
+           Perfectly Centered Overlay
+           Uses absolute positioning with transform to ensure it's always center
+           Max size ensures it doesn't overflow on small phones
+        */
         .scanner-overlay {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 70vw; height: 70vw;
-            max-width: 70vh; max-height: 70vh;
-            border-radius: 20px;
-            box-shadow: 0 0 0 100vmax rgba(0,0,0,0.6); /* Dim everything else */
-            border: 2px solid rgba(255,255,255,0.5);
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%);
+            
+            /* Responsive Size: 70% of smaller dimension */
+            width: 70vmin; 
+            height: 70vmin;
+            
+            /* Limits */
+            max-width: 500px; 
+            max-height: 500px;
+            
+            border-radius: 24px;
+            
+            /* The "Darken Everything Else" trick */
+            box-shadow: 0 0 0 200vmax rgba(0,0,0,0.7); 
+            
+            border: 2px solid rgba(255,255,255,0.4);
             z-index: 10;
-            transition: all 0.2s ease-out;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        .scanner-overlay.active { border-color: #4ade80; box-shadow: 0 0 0 100vmax rgba(0,0,0,0.6), 0 0 50px rgba(74, 222, 128, 0.5); transform: translate(-50%, -50%) scale(1.05); }
-        .scanner-overlay.error { border-color: #ef4444; box-shadow: 0 0 0 100vmax rgba(0,0,0,0.6), 0 0 50px rgba(239, 68, 68, 0.5); }
+        .scanner-overlay.active { 
+            border-color: var(--color-success); 
+            box-shadow: 0 0 0 200vmax rgba(0,0,0,0.7), 0 0 30px rgba(34, 197, 94, 0.4); 
+            transform: translate(-50%, -50%) scale(1.02); 
+        }
+        
+        .scanner-overlay.error { 
+            border-color: var(--color-error); 
+            box-shadow: 0 0 0 200vmax rgba(0,0,0,0.7), 0 0 30px rgba(239, 68, 68, 0.4); 
+        }
 
-        /* Laser Animation */
+        /* Laser Animation - Smoother */
         .laser {
-            position: absolute; width: 100%; height: 2px; background: #6366f1;
-            box-shadow: 0 0 15px #6366f1; top: 50%;
-            animation: scan 2s infinite ease-in-out;
+            position: absolute; 
+            width: 100%; 
+            height: 2px; 
+            background: var(--color-primary);
+            box-shadow: 0 0 15px var(--color-primary); 
+            top: 50%;
+            opacity: 0.6;
+            animation: scan 2.5s infinite ease-in-out;
         }
-        @keyframes scan { 0% { transform: translateY(-15vh) scaleX(0.8); opacity: 0; } 50% { transform: translateY(0) scaleX(1); opacity: 1; } 100% { transform: translateY(15vh) scaleX(0.8); opacity: 0; } }
+        
+        @keyframes scan { 
+            0% { transform: translateY(-20vmin) scaleX(0.9); opacity: 0; } 
+            10% { opacity: 1; }
+            50% { transform: translateY(0) scaleX(1); opacity: 0.5; } 
+            90% { opacity: 1; }
+            100% { transform: translateY(20vmin) scaleX(0.9); opacity: 0; } 
+        }
 
-        /* Glass UI */
+        /* Modern Glass UI */
         .glass {
-            background: rgba(20, 20, 20, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255,255,255,0.1);
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
         }
 
-        /* Result Popup */
-        .result-popup {
-            animation: popUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        /* Popups */
+        .popup-enter {
+            animation: slideUp 0.4s cubic-bezier(0.19, 1, 0.22, 1) forwards;
         }
-        @keyframes popUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideUp { 
+            from { transform: translateY(120%); opacity: 0; } 
+            to { transform: translateY(0); opacity: 1; } 
+        }
     </style>
 </head>
 <body>
 
+    <!-- Camera Container -->
     <div id="reader"></div>
 
-    <!-- Visual Overlay (Aligned with JS Logic) -->
+    <!-- Visual Overlay -->
     <div class="scanner-overlay" id="scan-box">
         <div class="laser"></div>
-        <!-- Corner Accents -->
-        <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-white rounded-tl-2xl -mt-1 -ml-1"></div>
-        <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-white rounded-tr-2xl -mt-1 -mr-1"></div>
-        <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-white rounded-bl-2xl -mb-1 -ml-1"></div>
-        <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-white rounded-br-2xl -mb-1 -mr-1"></div>
+        <!-- Stylish Corners -->
+        <div class="absolute top-0 left-0 w-10 h-10 border-t-[5px] border-l-[5px] border-white rounded-tl-2xl -mt-1 -ml-1"></div>
+        <div class="absolute top-0 right-0 w-10 h-10 border-t-[5px] border-r-[5px] border-white rounded-tr-2xl -mt-1 -mr-1"></div>
+        <div class="absolute bottom-0 left-0 w-10 h-10 border-b-[5px] border-l-[5px] border-white rounded-bl-2xl -mb-1 -ml-1"></div>
+        <div class="absolute bottom-0 right-0 w-10 h-10 border-b-[5px] border-r-[5px] border-white rounded-br-2xl -mb-1 -mr-1"></div>
     </div>
 
-    <!-- UI Layer -->
-    <div class="fixed inset-0 z-20 flex flex-col p-6 pointer-events-none">
+    <!-- UI Overlay Layer (Click-through except buttons) -->
+    <div class="fixed inset-0 z-20 flex flex-col p-safe-area pointer-events-none">
         
-        <!-- Top Bar -->
-        <div class="flex justify-between items-center pointer-events-auto">
-            <div class="glass px-4 py-2 rounded-full flex items-center gap-3 shadow-lg">
-                <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div>
-                <div class="flex flex-col">
-                    <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Event</span>
-                    <span id="event-name" class="text-xs font-bold text-white">Setup Required</span>
+        <!-- Top Navigation Bar -->
+        <div class="flex justify-between items-start p-4 pointer-events-auto">
+            
+            <!-- Status Badge -->
+            <div class="glass px-4 py-2.5 rounded-full flex items-center gap-3 shadow-lg transition-all" id="status-badge">
+                <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-gray-500 transition-colors duration-300"></div>
+                <div class="flex flex-col leading-none">
+                    <span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Event</span>
+                    <span id="event-name" class="text-xs font-bold text-white truncate max-w-[120px]">Not Linked</span>
                 </div>
             </div>
-            <button onclick="resetApp()" class="glass w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white active:scale-95 transition">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+
+            <!-- Settings / Reset -->
+            <button onclick="resetApp()" class="glass w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
             </button>
         </div>
 
-        <!-- Result Display (Large Name) -->
-        <div id="result-area" class="mt-auto mb-4 hidden">
-            <div class="glass rounded-3xl p-6 text-center shadow-2xl border-l-8 result-popup" id="result-card">
-                <div id="result-icon" class="text-5xl mb-2">✅</div>
-                <h1 id="result-name" class="text-3xl font-black text-white leading-tight mb-1 break-words">Attendee Name</h1>
-                <p id="result-msg" class="text-sm text-gray-300 font-medium uppercase tracking-wide">Access Granted</p>
+        <!-- Result Card Area (Bottom-Center) -->
+        <div id="result-area" class="mt-auto px-4 pb-4 hidden flex justify-center w-full">
+            <div class="glass rounded-[2rem] p-6 w-full max-w-sm text-center shadow-2xl border-l-[6px] popup-enter relative overflow-hidden" id="result-card">
+                <!-- Background Glow -->
+                <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-50 pointer-events-none"></div>
+                
+                <div id="result-icon" class="text-5xl mb-3 transform transition-transform hover:scale-110">✅</div>
+                <h1 id="result-name" class="text-2xl font-black text-white leading-tight mb-1 break-words tracking-tight">Attendee Name</h1>
+                <p id="result-msg" class="text-xs font-bold text-white/70 uppercase tracking-widest">Access Granted</p>
             </div>
         </div>
 
-        <!-- Controls -->
-        <div class="pointer-events-auto space-y-3 mt-auto" id="controls-area">
-            <!-- Mode Toggle -->
-            <div id="mode-toggle" class="glass p-1 rounded-2xl flex hidden">
-                <button onclick="setMode('check-in')" id="btn-in" class="flex-1 py-3 rounded-xl text-sm font-bold shadow-lg transition-all bg-indigo-600 text-white relative overflow-hidden">
+        <!-- Controls Area (Bottom) -->
+        <div class="pointer-events-auto px-4 pb-6 pt-2" id="controls-area">
+            
+            <!-- Toggle Switch (Check-In / Check-Out) -->
+            <div id="mode-toggle" class="glass p-1.5 rounded-2xl flex hidden mb-3">
+                <button onclick="setMode('check-in')" id="btn-in" class="flex-1 py-3 rounded-xl text-sm font-extrabold shadow-lg transition-all relative overflow-hidden">
                     Check In
                 </button>
-                <button onclick="setMode('check-out')" id="btn-out" class="flex-1 py-3 rounded-xl text-sm font-bold text-gray-400 transition-all hover:text-white">
+                <button onclick="setMode('check-out')" id="btn-out" class="flex-1 py-3 rounded-xl text-sm font-extrabold transition-all relative overflow-hidden">
                     Check Out
                 </button>
             </div>
 
-            <!-- Start Button -->
-            <button id="start-btn" onclick="startScanner()" class="w-full bg-white hover:bg-gray-100 text-black font-black text-lg py-4 rounded-2xl shadow-xl active:scale-95 transition disabled:opacity-50">
+            <!-- Initialization Button -->
+            <button id="start-btn" onclick="startScanner()" class="w-full bg-white hover:bg-gray-100 active:bg-gray-200 text-black font-black text-lg py-4 rounded-2xl shadow-xl active:scale-95 transition-all disabled:opacity-50 disabled:scale-100">
                 Initialize Camera
             </button>
         </div>
@@ -122,20 +189,25 @@
         let config = null;
         let mode = 'check-in';
         let isProcessing = false;
-        let scanTimeout;
+        let isCameraRunning = false;
+
+        // Preload Audio
+        const audioSuccess = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'); // Placeholder
+        // Real implementation would use distinct short beeps
 
         window.onload = () => {
-            if (typeof Html5QrCode === 'undefined') {
-                // Shim fallback
-                if (window.__Html5QrcodeLibrary__) window.Html5QrCode = window.__Html5QrcodeLibrary__.Html5Qrcode;
+            // LibraryShim
+            if (typeof Html5QrCode === 'undefined' && window.__Html5QrcodeLibrary__) {
+                window.Html5QrCode = window.__Html5QrcodeLibrary__.Html5Qrcode;
             }
             
             if (typeof Html5QrCode !== 'undefined') {
-                document.getElementById('start-btn').innerText = "Start Camera";
+                document.getElementById('start-btn').innerText = "Tap to Start";
                 loadConfig();
             } else {
-                document.getElementById('start-btn').innerText = "Lib Error - Reload";
-                document.getElementById('start-btn').onclick = () => location.reload();
+                const btn = document.getElementById('start-btn');
+                btn.innerText = "Library Error";
+                btn.classList.add('bg-red-500', 'text-white');
             }
         };
 
@@ -145,49 +217,65 @@
                 if (saved) {
                     config = JSON.parse(saved);
                     updateUI(true);
-                    // Warmup
+                    // Silent Warmup
                     fetch(`${config.apiBaseUrl}/api/scanner/warmup/${config.eventId}`, {
                         headers: { 'Authorization': `Bearer ${config.token}` },
                         keepalive: true
-                    }).catch(()=>{});
+                    }).catch(console.warn);
                 }
-            } catch(e) { localStorage.removeItem('ticketScannerConfig'); }
+            } catch(e) { 
+                localStorage.removeItem('ticketScannerConfig'); 
+            }
         }
 
         async function startScanner() {
             const btn = document.getElementById('start-btn');
-            btn.innerText = "Starting...";
+            if (isCameraRunning) return;
+
+            btn.innerText = "Accessing Camera...";
             btn.disabled = true;
 
             try {
+                // 1. Request Permissions
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                stream.getTracks().forEach(t => t.stop());
+                stream.getTracks().forEach(t => t.stop()); // Stop initial test stream
 
+                // 2. Init Lib
                 html5QrCode = new Html5QrCode("reader");
                 
-                // ALIGNMENT FIX: Match JS logical box to CSS visual box
-                // CSS is 70vw/70vh. We use the exact same ratio here.
+                // 3. Calculate optimal box size relative to screen
+                // We want the scanning region to match the CSS overlay exactly
+                // CSS is 70vmin (70% of min dimension)
+                const qrBoxFunction = (viewfinderWidth, viewfinderHeight) => {
+                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                    const boxSize = Math.floor(minEdge * 0.70);
+                    return { width: boxSize, height: boxSize };
+                };
+
+                // 4. Start
                 await html5QrCode.start(
                     { facingMode: "environment" },
                     { 
-                        fps: 25, 
-                        qrbox: (w, h) => {
-                            const side = Math.min(w, h) * 0.70; // Exact match to CSS '70vw/vh'
-                            return { width: side, height: side };
-                        }
+                        fps: 30, // Higher FPS for smoother feel
+                        qrbox: qrBoxFunction,
+                        aspectRatio: window.innerWidth / window.innerHeight,
+                        disableFlip: false,
+                        formatsToSupport: [ 0 ] // 0 = QR_CODE only (Faster)
                     },
                     onScan,
-                    () => {}
+                    (err) => { /* Ignore frame errors */ }
                 );
 
-                btn.classList.add('hidden');
-                document.getElementById('scan-box').style.opacity = "1"; // Ensure visible
+                isCameraRunning = true;
+                btn.classList.add('hidden'); // Hide button
+                document.getElementById('scan-box').style.opacity = "1"; 
 
             } catch (err) {
                 console.error(err);
-                alert("Camera Error: " + err.message);
+                alert("Camera Error: " + (err.message || "Permission Denied"));
                 btn.disabled = false;
-                btn.innerText = "Retry";
+                btn.innerText = "Retry Camera";
+                btn.classList.add('bg-red-100', 'text-red-900');
             }
         }
 
@@ -195,13 +283,12 @@
             if (isProcessing) return;
             isProcessing = true;
 
-            // Freeze
+            // Immediate Feedback
             try { html5QrCode.pause(true); } catch(e){}
-            if(navigator.vibrate) navigator.vibrate(50);
+            if (navigator.vibrate) navigator.vibrate(40);
             
-            // Visuals
             const box = document.getElementById('scan-box');
-            box.classList.add('active');
+            box.classList.add('active'); // Visual flash
 
             if (!config) {
                 await handleSetup(text);
@@ -213,25 +300,30 @@
         async function handleSetup(text) {
             try {
                 const data = JSON.parse(text);
-                if (!data.eventId) throw new Error();
+                if (!data.eventId || !data.apiBaseUrl) throw new Error("Missing Config");
+                
                 config = data;
                 localStorage.setItem('ticketScannerConfig', JSON.stringify(config));
+                
                 updateUI(true);
-                showResult('success', 'Connected', config.eventId);
+                showResult('success', 'Linked!', config.eventId);
+                
+                // Force reload to apply new API Base URL logic if needed, 
+                // but for SPA feel we just reset state
+                
             } catch (e) {
-                showResult('error', 'Setup Failed', 'Invalid QR');
+                showResult('error', 'Invalid Setup QR', 'Scan the Dashboard QR');
             } finally {
                 resetState(1500);
             }
         }
 
         async function handleTicket(id) {
-            // Show loading state
-            showResult('loading', 'Verifying...', id);
+            showResult('loading', 'Checking...', 'Verifying ID');
 
             try {
                 const controller = new AbortController();
-                const to = setTimeout(() => controller.abort(), 5000);
+                const timeout = setTimeout(() => controller.abort(), 4000); // 4s Timeout
 
                 const res = await fetch(`${config.apiBaseUrl}/api/scanner/update-ticket-status/${config.eventId}/${id}`, {
                     method: 'POST',
@@ -240,54 +332,83 @@
                         'Authorization': `Bearer ${config.token}` 
                     },
                     body: JSON.stringify({ action: mode }),
-                    signal: controller.signal,
-                    keepalive: true
+                    signal: controller.signal
                 });
-                clearTimeout(to);
+                clearTimeout(timeout);
                 
                 const data = await res.json();
                 
                 if (!res.ok) throw new Error(data.message || "Scan Failed");
 
-                // Success - Show Name Huge
-                const name = data.data?.attendeeName || data.attendeeName || "Unknown";
-                showResult('success', name, data.message);
+                // Double-Vibrate for success
+                if(navigator.vibrate) navigator.vibrate([50, 50, 50]);
+                
+                showResult('success', data.data?.attendeeName || "Valid Ticket", data.message);
 
             } catch (e) {
-                let isWarn = e.message.includes('Checked In');
-                showResult(isWarn ? 'warning' : 'error', isWarn ? 'Already In' : 'Error', e.message);
+                // Long vibrate for error
+                if(navigator.vibrate) navigator.vibrate(300);
+                
+                const isCheckedIn = e.message.toLowerCase().includes('already checked');
+                const isLeave = e.message.toLowerCase().includes('on leave');
+                
+                if (isCheckedIn) {
+                    showResult('warning', 'Already In', 'Ticket Used');
+                } else {
+                    showResult('error', 'Invalid', e.message || "Unknown Error");
+                }
             } finally {
-                resetState(isProcessing ? 1000 : 0); // Faster reset
+                resetState(isProcessing ? 1200 : 500);
             }
         }
 
-        function showResult(type, mainText, subText) {
+        function showResult(type, title, subtitle) {
+            const area = document.getElementById('result-area');
             const card = document.getElementById('result-card');
             const icon = document.getElementById('result-icon');
             const name = document.getElementById('result-name');
             const msg = document.getElementById('result-msg');
-            const area = document.getElementById('result-area');
             const box = document.getElementById('scan-box');
 
             area.classList.remove('hidden');
             
-            // Colors
-            const map = {
-                success: { border: 'border-green-500', bg: 'bg-green-900/90', icon: '✅' },
-                error:   { border: 'border-red-500',   bg: 'bg-red-900/90',   icon: '⛔' },
-                warning: { border: 'border-yellow-500',bg: 'bg-yellow-900/90',icon: '⚠️' },
-                loading: { border: 'border-blue-500',  bg: 'bg-gray-900/90',  icon: '⏳' }
+            // Configs
+            const styles = {
+                success: { 
+                    bg: 'bg-green-600/90', 
+                    border: 'border-green-400', 
+                    icon: '✨' 
+                },
+                error: { 
+                    bg: 'bg-red-600/90', 
+                    border: 'border-red-400', 
+                    icon: '🛑' 
+                },
+                warning: { 
+                    bg: 'bg-yellow-600/90', 
+                    border: 'border-yellow-400', 
+                    icon: '⚠️' 
+                },
+                loading: { 
+                    bg: 'bg-gray-800/90', 
+                    border: 'border-blue-400', 
+                    icon: '⏳' 
+                }
             };
             
-            const s = map[type] || map.loading;
-            card.className = `glass rounded-3xl p-6 text-center shadow-2xl border-l-8 result-popup ${s.border} ${s.bg}`;
+            const s = styles[type] || styles.loading;
+            
+            // Apply Styles
+            // Reset classes first
+            card.className = `glass rounded-[2rem] p-6 w-full max-w-sm text-center shadow-2xl border-l-[8px] popup-enter relative overflow-hidden ${s.bg} ${s.border}`;
+            
             icon.innerText = s.icon;
-            name.innerText = mainText;
-            msg.innerText = subText;
+            name.innerText = title;
+            msg.innerText = subtitle;
 
-            // Box color
+            // Update Overlay Box Color
             if (type === 'error') box.classList.add('error');
-            if (type === 'loading') box.style.borderColor = '#3b82f6';
+            if (type === 'success') box.classList.add('active');
         }
 
         function resetState(delay) {
@@ -296,32 +417,52 @@
                 document.getElementById('result-area').classList.add('hidden');
                 const box = document.getElementById('scan-box');
                 box.classList.remove('active', 'error');
-                box.style.borderColor = 'rgba(255,255,255,0.5)';
-                try { html5QrCode.resume(); } catch(e){}
+                
+                // Resume Camera
+                if (isCameraRunning) {
+                    try { html5QrCode.resume(); } catch(e){}
+                }
             }, delay);
         }
 
         function updateUI(isConfigured) {
+            const badge = document.getElementById('status-badge');
+            const dot = document.getElementById('status-dot');
+            const text = document.getElementById('event-name');
+            const toggle = document.getElementById('mode-toggle');
+
             if (isConfigured) {
-                document.getElementById('event-name').innerText = config.eventId;
-                document.getElementById('status-dot').className = "w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse";
-                document.getElementById('mode-toggle').classList.remove('hidden');
+                text.innerText = config.eventId;
+                dot.classList.remove('bg-gray-500');
+                dot.classList.add('bg-green-400', 'animate-pulse');
+                toggle.classList.remove('hidden');
+                badge.classList.add('border-green-500/30');
             } else {
-                document.getElementById('event-name').innerText = "Setup Required";
-                document.getElementById('mode-toggle').classList.add('hidden');
+                text.innerText = "Not Linked";
+                dot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse";
+                toggle.classList.add('hidden');
             }
         }
 
         function setMode(m) {
             mode = m;
-            const active = "bg-indigo-600 text-white shadow-lg";
-            const inactive = "text-gray-400 hover:text-white";
-            document.getElementById('btn-in').className = `flex-1 py-3 rounded-xl text-sm font-bold transition-all ${mode==='check-in'?active:inactive}`;
-            document.getElementById('btn-out').className = `flex-1 py-3 rounded-xl text-sm font-bold transition-all ${mode==='check-out'?"bg-pink-600 text-white shadow-lg":inactive}`;
+            const btnIn = document.getElementById('btn-in');
+            const btnOut = document.getElementById('btn-out');
+            
+            const activeClass = "bg-indigo-600 text-white shadow-xl scale-105 z-10";
+            const inactiveClass = "text-gray-400 hover:text-white hover:bg-white/5";
+            
+            if (mode === 'check-in') {
+                btnIn.className = `flex-1 py-3 rounded-xl text-sm font-extrabold transition-all ${activeClass}`;
+                btnOut.className = `flex-1 py-3 rounded-xl text-sm font-extrabold transition-all ${inactiveClass}`;
+            } else {
+                btnIn.className = `flex-1 py-3 rounded-xl text-sm font-extrabold transition-all ${inactiveClass}`;
+                btnOut.className = `flex-1 py-3 rounded-xl text-sm font-extrabold transition-all bg-pink-600 text-white shadow-xl scale-105 z-10`;
+            }
         }
 
         function resetApp() {
-            if (confirm("Reset Config?")) {
+            if (confirm("Unlink scanner from current event?")) {
                 localStorage.removeItem('ticketScannerConfig');
                 location.reload();
             }

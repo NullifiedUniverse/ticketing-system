@@ -1,101 +1,66 @@
-# TicketMaster Pro
+# Null's Ticketing System
 
-TicketMaster Pro is a comprehensive and secure event ticketing system designed for efficient management of attendees and seamless ticket validation. It features a modern web-based administration dashboard, a highly optimized real-time QR code scanning solution, and a robust backend powered by Node.js and Firebase.
+**Null's Ticketing System** is an enterprise-grade, self-hosted event management solution designed for speed, reliability, and ease of use. It features a real-time React dashboard, a high-performance mobile QR scanner, and a robust Node.js backend with Firebase integration.
 
-## Features
+![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-- **Admin Dashboard:** A sleek, responsive dashboard built with React for real-time event monitoring and management.
-- **Event Lifecycle:** Create, manage, and delete multiple events effortlessly.
-- **Ticket Management:** Instantly issue new tickets, edit attendee details, and manage status manually if needed.
-- **Real-time Analytics:** Dashboard auto-refreshes every 5 seconds to show live check-in counts and status updates.
-- **High-Performance Scanner:** 
-    - **Optimized Mobile UI:** Full-screen camera view, large high-contrast feedback toasts, and haptic feedback.
-    - **Offline-Capable Library:** Intelligent loading of scanning libraries (Local fallback + CDN) ensures reliability.
-    - **Smart Feedback:** Distinct visual states for Valid (Green), Warning/Already-In (Yellow), and Error (Red).
-    - **Speed:** Optimized for rapid scanning with minimal latency.
-- **Cross-Network Capability:** Integrated `ngrok` tunneling allows mobile devices on any network (4G/5G) to communicate with your local server securely.
+## 🚀 Key Features
 
-## Project Structure
+*   **Real-Time Dashboard:** Monitor check-ins, sales, and attendance live.
+*   **Universal Scanner:** Web-based QR scanner works on any device (iOS/Android) with a camera. No app install required.
+*   **Offline-Ready:** Scanner handles spotty connections gracefully with robust error feedback.
+*   **Email Automation:** Bulk send tickets with custom designs and QR codes directly to attendees.
+*   **Secure Architecture:** Powered by Firebase Firestore and secured via Ngrok tunneling for safe remote access.
 
-The project is organized into three main parts:
+## 📂 Project Structure
 
-- `frontend/`: The React-based admin dashboard (Built with Tailwind CSS & Framer Motion).
-- `backend/`: The Node.js/Express API server with Firebase Firestore integration.
-- `scanner/`: A standalone, lightweight HTML/JS client for QR code ticket scanning.
+*   **`backend/`**: Node.js/Express API, Firebase logic, Email Service.
+*   **`frontend/`**: React Admin Dashboard (Tailwind CSS).
+*   **`scanner/`**: Standalone HTML5 QR Scanner client.
+*   **`documentation/`**: Detailed user guides and technical references.
 
-## Getting Started
+## 🛠️ Quick Start
 
 ### Prerequisites
+1.  **Node.js** (v16+)
+2.  **Firebase Project** (Firestore enabled)
+3.  **Ngrok Account** (For public scanner access)
 
-- Node.js (v18+) and npm
-- A Firebase project with Firestore enabled.
-
-### Backend Setup
-
-1.  Navigate to the `backend` directory:
-    ```bash
-    cd backend
-    ```
-2.  Install the dependencies:
-    ```bash
-    npm install
-    ```
-3.  **Firebase Service Account Key:**
-    *   Go to your Firebase project settings.
-    *   Navigate to "Service accounts" and click "Generate new private key".
-    *   Rename the downloaded JSON file to `serviceAccountKey.json` and place it in the `backend/` directory.
-4.  Create a `.env` file in the `backend` directory:
-    ```
-    PORT=3001
-    JWT_SECRET=your_super_secret_jwt_key
-    API_KEY=your_secret_api_key_for_scanners
-    ```
-5.  Start the backend server:
+### 1. Backend Setup
+```bash
+cd backend
+npm install
+```
+*   Place your `serviceAccountKey.json` (from Firebase) in the `backend/` folder.
+*   Create a `.env` file (see `documentation/CONFIGURATION.md`).
+*   Start the server:
     ```bash
     npm start
     ```
-    The server will start on port 3001, and an `ngrok` public URL will be logged to the console automatically.
 
-### Frontend Setup
+### 2. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run build
+```
+*   The backend automatically serves the built frontend at `http://localhost:3001`.
 
-1.  Navigate to the `frontend` directory:
-    ```bash
-    cd frontend
-    ```
-2.  Install the dependencies:
-    ```bash
-    npm install
-    ```
-3.  Build the frontend (Required for the backend to serve it):
-    ```bash
-    npm run build
-    ```
-    *Note: The backend server is configured to serve the static files from `frontend/build`. You do not need to run `npm start` in the frontend directory for production usage, only for development.*
+## 📖 Documentation
 
-## Usage
+For detailed instructions, please refer to the `documentation/` directory:
 
-### 1. Admin Dashboard
-Open `http://localhost:3001` in your browser.
--   **Create Event:** Click the "+ Create Event" button in the sidebar.
--   **Manage:** Select an event to view statistics and tickets. Use the icons to Edit, Delete, or manually Check-In attendees.
--   **Delete Event:** Use the trash icon in the sidebar to remove an event and all its data.
+*   [**User Guide**](documentation/USER_GUIDE.md): How to create events, manage tickets, and scan.
+*   [**Configuration**](documentation/CONFIGURATION.md): Environment variables and email setup.
 
-### 2. Ticket Scanner
-1.  **Setup:** In the Dashboard header, click **"Scanner Setup"**.
-2.  **Open Scanner:** Scan the QR code displayed with your mobile device's camera app, or navigate to the `ngrok` URL provided in the server logs followed by `/scanner` (e.g., `https://xxxx.ngrok.io/scanner`).
-3.  **Configure:** On your mobile device, the scanner will ask to "Scan Setup QR Code". Point it at the **same** QR code on your Dashboard screen.
-4.  **Scan Tickets:** Once configured, the scanner is ready. Point it at attendee tickets to validate them.
-    -   **Green:** Valid Ticket.
-    -   **Yellow:** Warning (e.g., Already Checked In).
-    -   **Red:** Invalid Ticket or Network Error.
+## 🤝 Contributing
 
-## Troubleshooting
+1.  Fork the repository.
+2.  Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
+4.  Push to the branch (`git push origin feature/AmazingFeature`).
+5.  Open a Pull Request.
 
--   **Scanner not loading?** Ensure your mobile device has camera permissions enabled for the site. The scanner uses a robust loader that attempts to load libraries locally first, then via CDN.
--   **Changes not showing?** If you modify frontend code, remember to run `npm run build` in the `frontend` folder and restart the backend.
--   **"Network Timeout"?** The scanner requires a connection to the backend. Ensure the `ngrok` tunnel is active and your phone has internet access.
-
-## Security Notes
-
--   **`serviceAccountKey.json`**: This file contains sensitive credentials and is ignored by git.
--   **Environment Variables**: Secrets are managed via `.env`.
+---
+*Built with ❤️ by the Null's System Team.*

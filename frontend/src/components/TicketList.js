@@ -7,7 +7,13 @@ import TicketCard from './TicketCard';
 const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 
 const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onCheckIn, onShowQR, onEdit, onDelete }) => (
-    <motion.div layout variants={itemVariants} className="glass-panel p-6 rounded-2xl">
+    <motion.div 
+        layout 
+        variants={itemVariants} 
+        initial="hidden"
+        animate="visible"
+        className="glass-panel p-6 rounded-2xl"
+    >
         {/* Search Bar */}
         <div className="relative mb-6">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -25,17 +31,17 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
         </div>
 
         {/* Desktop View (Table) */}
-        <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left">
-                <thead className="border-b border-gray-700/50 text-gray-400 text-sm uppercase tracking-wider">
+        <div className="hidden md:block overflow-x-auto max-h-[600px] custom-scrollbar">
+            <table className="w-full text-left border-collapse relative">
+                <thead className="sticky top-0 bg-gray-950/95 backdrop-blur-xl z-10 border-b border-gray-700/50 text-gray-400 text-sm uppercase tracking-wider shadow-sm">
                     <tr>
-                        <th className="p-4 font-semibold">Status</th>
+                        <th className="p-4 font-semibold rounded-tl-lg">Status</th>
                         <th className="p-4 font-semibold">Attendee</th>
                         <th className="p-4 font-semibold">Ticket ID</th>
-                        <th className="p-4 text-right font-semibold">Actions</th>
+                        <th className="p-4 text-right font-semibold rounded-tr-lg">Actions</th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800">
+                <tbody className="divide-y divide-gray-800/50">
                     <AnimatePresence mode='popLayout'>
                         {filteredTickets.map((ticket) => (
                             <TicketRow 

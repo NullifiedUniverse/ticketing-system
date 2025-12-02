@@ -8,6 +8,8 @@ const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, trans
 const DashboardStats = ({ stats }) => (
     <motion.div
         variants={containerVariants}
+        initial="hidden"
+        animate="visible"
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
     >
         <StatsCard title="Currently Inside" value={stats.checkedIn} />

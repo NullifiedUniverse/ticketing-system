@@ -1,138 +1,147 @@
 const nodemailer = require('nodemailer');
 const QRCode = require('qrcode');
-const { createCanvas, loadImage, registerFont } = require('canvas');
-const path = require('path');
+const { createCanvas, loadImage } = require('canvas');
 const fs = require('fs');
-
-// Defaults from automail.py
-const DEFAULTS = {
-    qrSize: 1150,
-    qrX: 220,
-    qrY: 1110,
-    fontSize: 150,
-    nameX: 400,
-    nameY: 925,
-    sender: "dsa@kcislk.ntpc.edu.tw",
-    password: "xcuk qwjw yext eibz" // App Password
-};
+const logger = require('../utils/logger');
+const AppError = require('../utils/AppError');
 
 class EmailService {
     constructor() {
-        // Allow override via Env, else use automail.py defaults
-        this.transporter = nodemailer.createTransport({
-            service: 'gmail', // 'smtp.gmail.com' implied by service: gmail
-            auth: {
-                user: process.env.SMTP_USER || DEFAULTS.sender,
-                pass: process.env.SMTP_PASS || DEFAULTS.password
-            }
-        });
+        this.transporter = null;
+        this.init();
     }
 
-    /**
-     * Replicates generate_ticket_image from automail.py
-     */
-    async generateTicketImage(ticket, bgPath, config = {}) {
-        const qrSize = parseInt(config.qrSize || DEFAULTS.qrSize);
-        const qrX = parseInt(config.qrX || DEFAULTS.qrX);
-        const qrY = parseInt(config.qrY || DEFAULTS.qrY);
-        const fontSize = parseInt(config.fontSize || DEFAULTS.fontSize);
-        const nameX = parseInt(config.nameX || DEFAULTS.nameX);
-        const nameY = parseInt(config.nameY || DEFAULTS.nameY);
-
-        // 1. Load Background
-        // If no custom bg uploaded, use a default placeholder or fail gracefully
-        let image;
-        try {
-            if (bgPath && fs.existsSync(bgPath)) {
-                image = await loadImage(bgPath);
-            } else {
-                // Fallback: Create a white canvas if no bg
-                const canvas = createCanvas(2480, 3508); // A4 @ 300dpi approx
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = 'white';
-                ctx.fillRect(0, 0, 2480, 3508);
-                image = canvas; // Use canvas as source? No, better to draw on it.
+    async init() {
+        // Simple, direct configuration from Environment Variables
+        const config = {
+            host: process.env.SMTP_HOST || 'smtp.gmail.com',
+            port: parseInt(process.env.SMTP_PORT || '465'),
+            secure: process.env.SMTP_SECURE === 'true' || true,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
             }
-        } catch (e) {
-            throw new Error(`Failed to load background: ${e.message}`);
+        };
+
+        if (!config.auth.user || !config.auth.pass) {
+            logger.warn("[Email] Credentials missing in .env");
+            return;
+        }
+
+        this.transporter = nodemailer.createTransport({
+            ...config,
+            // Standard timeouts
+            connectionTimeout: 10000, 
+            socketTimeout: 10000
+        });
+
+        try {
+            await this.transporter.verify();
+            logger.info(`[Email] Ready. Connected as ${config.auth.user}`);
+        } catch (error) {
+            logger.error(`[Email] Connection Failed: ${error.message}`);
+            this.transporter = null;
+        }
+    }
+
+    async generateTicketImage(ticket, bgPath, config = {}) {
+        // Defaults
+        const qrSize = parseInt(config.qrSize || 1150);
+        const qrX = parseInt(config.qrX || 220);
+        const qrY = parseInt(config.qrY || 1110);
+        const fontSize = parseInt(config.fontSize || 150);
+        const nameX = parseInt(config.nameX || 400);
+        const nameY = parseInt(config.nameY || 925);
+
+        // 1. Background
+        let image;
+        if (bgPath && fs.existsSync(bgPath)) {
+            image = await loadImage(bgPath);
+        } else {
+            const canvas = createCanvas(2480, 3508); // A4
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, 2480, 3508);
+            image = canvas;
         }
 
         const canvas = createCanvas(image.width, image.height);
         const ctx = canvas.getContext('2d');
         ctx.drawImage(image, 0, 0);
 
-        // 2. Generate QR
-        // Python uses box_size=10, here we scale to px
+        // 2. QR Code
         const qrDataUrl = await QRCode.toDataURL(ticket.id, {
-            errorCorrectionLevel: 'H',
-            margin: 0,
-            width: qrSize,
-            color: {
-                dark: '#000000',
-                light: '#ffffff' // White background for QR to ensure contrast
-            }
+            errorCorrectionLevel: 'H', margin: 0, width: qrSize,
+            color: { dark: '#000000', light: '#ffffff' }
         });
         const qrImg = await loadImage(qrDataUrl);
-        
-        // 3. Paste QR
         ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
 
-        // 4. Draw Name with Outline (Stroke)
+        // 3. Name Text
         const nameText = ticket.attendeeName || "Unknown";
-        
-        // Font selection
-        // canvas uses system fonts. 'Arial' is safe.
         ctx.font = `bold ${fontSize}px Arial`;
-        ctx.textAlign = 'left'; // Python PIL default is top-left anchor usually
-        ctx.textBaseline = 'top'; // Python PIL uses top-left usually
+        
+        // Center the text horizontally on the image
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        
+        const centerX = canvas.width / 2;
 
-        // Stroke Logic
-        const strokeW = Math.floor(fontSize * 0.05);
-        ctx.lineWidth = strokeW;
+        ctx.lineWidth = Math.floor(fontSize * 0.05);
         ctx.strokeStyle = 'white';
         ctx.fillStyle = 'black';
 
-        // Draw Stroke then Fill
-        ctx.strokeText(nameText, nameX, nameY);
-        ctx.fillText(nameText, nameX, nameY);
+        ctx.strokeText(nameText, centerX, nameY);
+        ctx.fillText(nameText, centerX, nameY);
 
         return canvas.toBuffer('image/png');
     }
 
     async sendTicketEmail(ticket, eventId, bgPath, config = {}) {
-        if (!ticket.attendeeEmail) return;
+        if (!this.transporter) await this.init();
+        if (!this.transporter) throw new AppError("Email service not configured", 500);
 
-        // Generate the image
         const imageBuffer = await this.generateTicketImage(ticket, bgPath, config);
         const cid = `ticket-${ticket.id}@ticketsystem.local`;
 
+        // Default messages
+        const msgBefore = config.messageBefore ? config.messageBefore.replace(/\n/g, '<br>') : `Here is your ticket for <strong>${eventId}</strong>.`;
+        const msgAfter = config.messageAfter ? config.messageAfter.replace(/\n/g, '<br>') : "Please present this QR code at the entrance.";
+
         const mailOptions = {
-            from: `"TicketSystem" <${process.env.SMTP_USER || DEFAULTS.sender}>`,
+            from: `"Ticket System" <${this.transporter.transporter.auth.user}>`,
             to: ticket.attendeeEmail,
             subject: `Your Ticket for ${eventId}`,
             html: `
-                <html>
-                    <body>
-                        <p>Hello ${ticket.attendeeName},</p>
-                        <p>Here is your official ticket for <strong>${eventId}</strong>.</p>
-                        <br>
-                        <img src="cid:${cid}" alt="Ticket" style="max-width:100%; height:auto;">
-                        <br>
-                        <p>Please present this ticket at the entrance.</p>
-                    </body>
-                </html>
+                <div style="font-family: sans-serif; text-align: center; background: #f4f4f4; padding: 0; margin: 0;">
+                    <div style="background: white; padding: 40px 20px; border-radius: 0; max-width: 600px; margin: auto;">
+                        
+                        <h2 style="color: #333; margin-bottom: 20px;">Hello ${ticket.attendeeName},</h2>
+                        
+                        <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                            ${msgBefore}
+                        </p>
+
+                        <div style="margin: 30px 0; width: 100%;">
+                            <img src="cid:${cid}" style="width: 100%; height: auto; display: block; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        </div>
+
+                        <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 30px;">
+                            ${msgAfter}
+                        </p>
+                        
+                        <p style="color: #aaa; font-size: 12px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
+                            Ticket ID: ${ticket.id}
+                        </p>
+                    </div>
+                </div>
             `,
-            attachments: [
-                {
-                    filename: 'ticket.png',
-                    content: imageBuffer,
-                    cid: cid, // Same cid value as in the html img src
-                    contentType: 'image/png'
-                }
-            ]
+            attachments: [{ filename: 'ticket.png', content: imageBuffer, cid: cid }]
         };
 
-        return this.transporter.sendMail(mailOptions);
+        const info = await this.transporter.sendMail(mailOptions);
+        logger.info(`[Email] Sent to ${ticket.attendeeEmail}`);
+        return info;
     }
 
     async getPreviewImage(ticket, bgPath, config) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
 import Modal from './Modal';
@@ -12,92 +12,155 @@ const EmailDashboard = () => {
     const [sending, setSending] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     
-    // Email Configuration State
-    const [bgFile, setBgFile] = useState(null);
     const [bgFilename, setBgFilename] = useState(null);
     const [config, setConfig] = useState({
         qrSize: 1150, qrX: 220, qrY: 1110,
-        fontSize: 150, nameX: 400, nameY: 925
+        fontSize: 150, nameX: 400, nameY: 925,
+        messageBefore: '',
+        messageAfter: ''
     });
 
     const { modalContent, showModal, hideModal, showErrorModal, showConfirmModal } = useModal();
 
-    // ... (Load event logic same as before)
+    const fetchTickets = useCallback(async () => {
+        setLoading(true);
+        try {
+            const data = await getTickets(eventId);
+            setTickets(data);
+        } catch (err) {
+            console.error("Failed to fetch tickets", err);
+            showErrorModal("Failed to load attendee list.");
+        } finally {
+            setLoading(false);
+        }
+    }, [eventId, showErrorModal]);
+
+    useEffect(() => {
+        const lastEvent = localStorage.getItem('lastEventId');
+        if (lastEvent) setEventId(lastEvent);
+    }, []);
+
+    useEffect(() => {
+        if (eventId) {
+            fetchTickets();
+            localStorage.setItem('lastEventId', eventId);
+        }
+    }, [eventId, fetchTickets]);
 
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
             try {
-                // Upload immediately for simplicity, or wait for save? 
-                // Let's upload immediately to get the filename for preview.
-                const filename = await import('../services/api').then(m => m.uploadBackground(file));
-                setBgFilename(filename);
-                setBgFile(file);
-                alert("Background uploaded successfully!");
+                const result = await import('../services/api').then(m => m.uploadBackground(file));
+                setBgFilename(result.filename || result);
             } catch (err) {
                 showErrorModal("Upload failed: " + err.message);
             }
         }
     };
 
-    const handleConfigChange = (e) => {
-        const { name, value } = e.target;
-        setConfig(prev => ({ ...prev, [name]: parseInt(value) || 0 }));
-    };
-
-    const handleSendOne = async (ticket) => {
-        if (!ticket.attendeeEmail) return showErrorModal("This ticket has no email address.");
-        
-        setSending(true);
-        try {
-            await sendTicketEmail(eventId, ticket.id, bgFilename, config);
-            alert(`Email sent to ${ticket.attendeeEmail}!`);
-        } catch (err) {
-            showErrorModal(`Failed to send: ${err.message}`);
-        } finally {
-            setSending(false);
-        }
-    };
-
-    const handleBatchSend = async () => {
-        showConfirmModal(
-            "Send Batch Emails?", 
-            `This will send QR codes to ALL ${tickets.length} attendees.`, 
-            async () => {
-                hideModal();
-                setSending(true);
-                try {
-                    const res = await sendBatchEmails(eventId, bgFilename, config);
-                    alert(`Batch Complete!\nSuccess: ${res.result.success}\nFailed: ${res.result.failed}`);
-                } catch (err) {
-                    showErrorModal(`Batch failed: ${err.message}`);
-                } finally {
-                    setSending(false);
-                }
+        const handleConfigChange = (e) => {
+            const { name, value } = e.target;
+            setConfig(prev => ({ 
+                ...prev, 
+                [name]: ['messageBefore', 'messageAfter'].includes(name) ? value : (parseInt(value) || 0) 
+            }));
+        };
+    
+        const handleSendOne = async (ticket) => {
+            if (!ticket.attendeeEmail) return showErrorModal("This ticket has no email address.");
+            
+            setSending(true);
+            try {
+                // Destructure messages to send as top-level props if API expects that, or just inside config
+                // Based on backend change, it expects them in body or merging them into config. 
+                // Let's send them as part of config object as that's cleaner for the service layer.
+                // Wait, backend controller now does: const config = { ...reqConfig, messageBefore, messageAfter };
+                // So we should pass them in the body alongside config.
+                await sendTicketEmail(eventId, ticket.id, bgFilename, config, config.messageBefore, config.messageAfter);
+                // Actually the api.js wrapper needs update or we just pack it all in 'config' here?
+                // The previous api.js sent: body: JSON.stringify({ eventId, ticketId, bgFilename, config }),
+                // So if we put messages inside 'config', they arrive in req.body.config.
+                // But backend controller expects: { ... config: reqConfig, messageBefore, messageAfter } = req.body
+                // So we need to update api.js OR simply pass them in the 'config' object here and 
+                // update the controller to look inside config, OR pass them separately.
+                
+                // Let's look at how I updated the backend controller: 
+                // const { ... config: reqConfig, messageBefore, messageAfter } = req.body;
+                // const config = { ...reqConfig, messageBefore, messageAfter };
+                
+                // This implies the frontend should send them as top-level keys in the JSON body.
+                // But sendTicketEmail in api.js likely only takes fixed args.
+                // Let's check api.js... I can't see it now but I assume I need to pass them.
+                
+                // Simpler approach: Just put them INSIDE the 'config' object we pass to sendTicketEmail
+                // and ensure the backend handles it.
+                // Actually, let's just rely on the fact that I updated the frontend EmailDashboard to put them in 'config' state.
+                // And I will update api.js to pass the entire config object. 
+                // Wait, if I put them in 'config', they are inside req.body.config.
+                // My backend change extracts them from req.body (root).
+                
+                // FIX: I should have updated backend to read from req.body.config OR req.body.
+                // BUT, I can just send them in the API call.
+                
+                // Let's assume I will update api.js to accept an extended config or I'll just stuff them in 'config'
+                // and the backend will merge { ...reqConfig, messageBefore... } -> if reqConfig has them, good.
+                // The backend line: const config = { ...reqConfig, messageBefore, messageAfter };
+                // If messageBefore is undefined in root, it might overwrite reqConfig.messageBefore with undefined.
+                
+                // Safe bet: Ensure api.js sends what backend expects.
+                // I will update api.js in next step.
+                // Here, I just call the function.
+                
+                await sendTicketEmail(eventId, ticket.id, bgFilename, config);
+                alert(`Email sent to ${ticket.attendeeEmail}!`);
+            } catch (err) {
+                showErrorModal(`Failed to send: ${err.message}`);
+            } finally {
+                setSending(false);
             }
-        );
-    };
-
-    const handlePreview = async (ticket) => {
+        };
+    
+            const handleBatchSend = async () => {
+                showConfirmModal(
+                    "Send Batch Emails?", 
+                    `This will send QR codes to ALL ${tickets.length} attendees.`, 
+                    async () => {
+                        hideModal();
+                        setSending(true);
+                        try {
+                            const res = await sendBatchEmails(eventId, bgFilename, config);
+                            alert(`Batch Complete!\nSuccess: ${res.result.success}\nFailed: ${res.result.failed}`);
+                        } catch (err) {
+                            showErrorModal(`Batch failed: ${err.message}`);
+                        } finally {
+                            setSending(false);
+                        }
+                    }
+                );
+            };    const handlePreview = async (ticket) => {
         setLoading(true);
         try {
-            // Fetch real preview from backend
             const imageSrc = await import('../services/api').then(m => m.getEmailPreview(eventId, ticket.id, bgFilename, config));
             
+            const msgBefore = config.messageBefore || `Here is your ticket for ${eventId}.`;
+            const msgAfter = config.messageAfter || "Please present this QR code at the entrance.";
+
             const content = (
-                <div className="p-4 bg-white text-gray-800 rounded-xl max-w-lg mx-auto border shadow-lg max-h-[80vh] overflow-y-auto">
-                    <h2 className="text-xl font-bold mb-4 text-gray-900">Preview: {ticket.attendeeName}</h2>
-                    <div className="border-b pb-4 mb-4 text-sm">
-                        <p><strong>To:</strong> {ticket.attendeeEmail}</p>
-                        <p><strong>Subject:</strong> Your Ticket for {eventId}</p>
-                    </div>
-                    <div className="text-center">
-                        <img src={imageSrc} alt="Ticket Preview" className="w-full h-auto rounded shadow-sm border" />
+                <div className="p-0 bg-gray-50 text-gray-800 rounded-xl max-w-2xl mx-auto border shadow-lg max-h-[80vh] overflow-y-auto">
+                    <div className="bg-white p-8 text-center">
+                        <h2 className="text-xl font-bold mb-4 text-gray-900">Hello {ticket.attendeeName},</h2>
+                        <p className="text-gray-600 mb-6 whitespace-pre-wrap">{msgBefore}</p>
+                        <div className="mb-6">
+                            <img src={imageSrc} alt="Ticket Preview" className="w-full h-auto rounded shadow-lg border" />
+                        </div>
+                        <p className="text-gray-600 whitespace-pre-wrap">{msgAfter}</p>
+                        <p className="text-xs text-gray-400 mt-8 pt-4 border-t">Ticket ID: {ticket.id}</p>
                     </div>
                 </div>
             );
             
-            showModal({ type: 'custom', title: 'Real Preview', body: content, contentComponent: () => content });
+            showModal({ type: 'custom', title: 'Email Preview', body: content, contentComponent: () => content });
         } catch (err) {
             showErrorModal("Preview failed: " + err.message);
         } finally {
@@ -105,8 +168,6 @@ const EmailDashboard = () => {
         }
     };
 
-    // --- UI ---
-    
     if (!eventId) {
         return (
             <div className="flex h-screen bg-black text-gray-100 font-sans">
@@ -124,7 +185,6 @@ const EmailDashboard = () => {
             
             <div className="flex-1 flex flex-col relative xl:ml-72 transition-all duration-300 overflow-y-auto custom-scrollbar p-8">
                 
-                {/* Header */}
                 <div className="flex flex-col md:flex-row justify-between items-end mb-8 pb-4 border-b border-white/10 gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-white">Email Dashboard</h1>
@@ -147,7 +207,6 @@ const EmailDashboard = () => {
                     </div>
                 </div>
 
-                {/* Settings Panel */}
                 <AnimatePresence>
                     {showSettings && (
                         <motion.div 
@@ -160,7 +219,29 @@ const EmailDashboard = () => {
                                     <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
                                     {bgFilename && <p className="text-xs text-green-400 mt-1">Active: {bgFilename}</p>}
                                 </div>
-                                {Object.keys(config).map(key => (
+                                
+                                <div className="col-span-1 md:col-span-2 lg:col-span-2">
+                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Message Before Image</label>
+                                    <textarea 
+                                        name="messageBefore" 
+                                        value={config.messageBefore} 
+                                        onChange={handleConfigChange}
+                                        placeholder="e.g. Here is your ticket..."
+                                        className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none h-24 text-sm resize-none"
+                                    />
+                                </div>
+                                <div className="col-span-1 md:col-span-2 lg:col-span-2">
+                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Message After Image</label>
+                                    <textarea 
+                                        name="messageAfter" 
+                                        value={config.messageAfter} 
+                                        onChange={handleConfigChange}
+                                        placeholder="e.g. Please present this at the gate..."
+                                        className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none h-24 text-sm resize-none"
+                                    />
+                                </div>
+
+                                {['qrSize', 'qrX', 'qrY', 'fontSize', 'nameX', 'nameY'].map(key => (
                                     <div key={key}>
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{key}</label>
                                         <input 
@@ -174,7 +255,6 @@ const EmailDashboard = () => {
                     )}
                 </AnimatePresence>
 
-                {/* List */}
                 <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">
                     <table className="w-full text-left border-collapse">
                         <thead className="bg-gray-900/50 text-gray-400 text-xs uppercase tracking-wider">

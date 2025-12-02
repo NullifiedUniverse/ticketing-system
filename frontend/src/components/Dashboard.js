@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Sidebar from './Sidebar';
 import DashboardStats from './DashboardStats';
 import AnalyticsChart from './AnalyticsChart';
@@ -100,7 +100,7 @@ const Dashboard = () => {
         }
         try {
             const scannerToken = await getScannerToken();
-            const { url: publicUrl, localUrl, type } = await getNgrokUrl();
+            const { url: publicUrl, localUrl } = await getNgrokUrl();
             
             let selectedUrl = publicUrl;
             let modeMessage = "";

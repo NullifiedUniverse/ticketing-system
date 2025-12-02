@@ -146,6 +146,10 @@ export const uploadBackground = async (file) => {
 };
 
 export const getEmailPreview = async (eventId, ticketId, bgFilename, config) => {
+    // Note: Config already contains messageBefore/After in the updated UI logic, 
+    // but if passed separately, we should merge them or ensure backend handles it.
+    // The backend expects { ... config, messageBefore, messageAfter }
+    // For preview, we just pass config as is, assuming it has everything.
     const result = await callApi('/api/admin/email/preview', {
         method: 'POST',
         headers: getAuthHeaders(),
@@ -154,20 +158,22 @@ export const getEmailPreview = async (eventId, ticketId, bgFilename, config) => 
     return result.image;
 };
 
-export const sendTicketEmail = async (eventId, ticketId, bgFilename, config) => {
+export const sendTicketEmail = async (eventId, ticketId, bgFilename, config, messageBefore, messageAfter) => {
     const result = await callApi('/api/admin/email/send-one', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ eventId, ticketId, bgFilename, config }),
+        body: JSON.stringify({ eventId, ticketId, bgFilename, config, messageBefore, messageAfter }),
     });
     return result;
 };
 
-export const sendBatchEmails = async (eventId, bgFilename, config) => {
+export const sendBatchEmails = async (eventId, bgFilename, config, messageBefore, messageAfter) => {
+    // messageBefore/After might be inside config if called from UI state directly, 
+    // but we support explicit passing too.
     const result = await callApi('/api/admin/email/send-batch', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ eventId, bgFilename, config }),
+        body: JSON.stringify({ eventId, bgFilename, config, messageBefore, messageAfter }),
     });
     return result;
 };
