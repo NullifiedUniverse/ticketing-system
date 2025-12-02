@@ -173,6 +173,27 @@ class TicketController {
             res.status(500).json({ status: 'error', message: 'Warmup failed' });
         }
     }
+
+    async getMinimalTicketData(req, res) {
+        const { eventId } = req.params;
+        try {
+            // Ensure cache is hot
+            await ticketService.loadCacheForEvent(eventId);
+            const tickets = await ticketService.getTickets(eventId);
+            
+            // Map to minimal array: [id, status, name]
+            const minimal = tickets.map(t => ({
+                id: t.id,
+                s: t.status === 'checked-in' ? 1 : 0, // 1 = Checked In, 0 = Valid
+                n: t.attendeeName
+            }));
+            
+            res.json({ status: 'success', data: minimal });
+        } catch (error) {
+            console.error("Minimal Data Error:", error);
+            res.status(500).json({ status: 'error', message: error.message });
+        }
+    }
 }
 
 module.exports = new TicketController();

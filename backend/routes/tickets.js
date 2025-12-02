@@ -25,5 +25,6 @@ adminRouter.get('/raffle/draw/:eventId', raffleController.drawWinner.bind(raffle
 // --- SCANNER ROUTES ---
 scannerRouter.post('/update-ticket-status/:eventId/:ticketId', ticketController.updateTicketStatus.bind(ticketController));
 scannerRouter.get('/warmup/:eventId', ticketController.warmupCache.bind(ticketController));
+scannerRouter.get('/data/:eventId', ticketController.getMinimalTicketData.bind(ticketController));
 
 module.exports = { adminRouter, scannerRouter };
