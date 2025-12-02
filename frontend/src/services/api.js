@@ -132,3 +132,22 @@ export const getNgrokUrl = async () => {
     });
     return result; // Return full object { url, type }
 };
+
+// --- EMAIL ---
+export const sendTicketEmail = async (eventId, ticketId) => {
+    const result = await callApi('/api/admin/email/send-one', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ eventId, ticketId }),
+    });
+    return result;
+};
+
+export const sendBatchEmails = async (eventId) => {
+    const result = await callApi('/api/admin/email/send-batch', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ eventId }),
+    });
+    return result;
+};
