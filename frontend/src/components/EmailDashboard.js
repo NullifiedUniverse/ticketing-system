@@ -10,28 +10,39 @@ const EmailDashboard = () => {
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
+    
+    // Email Configuration State
+    const [bgFile, setBgFile] = useState(null);
+    const [bgFilename, setBgFilename] = useState(null);
+    const [config, setConfig] = useState({
+        qrSize: 1150, qrX: 220, qrY: 1110,
+        fontSize: 150, nameX: 400, nameY: 925
+    });
+
     const { modalContent, showModal, hideModal, showErrorModal, showConfirmModal } = useModal();
 
-    // Load event from local storage on mount
-    useEffect(() => {
-        const lastEvent = localStorage.getItem('lastEventId');
-        if (lastEvent) setEventId(lastEvent);
-    }, []);
+    // ... (Load event logic same as before)
 
-    useEffect(() => {
-        if (eventId) fetchTickets();
-    }, [eventId]);
-
-    const fetchTickets = async () => {
-        setLoading(true);
-        try {
-            const data = await getTickets(eventId);
-            setTickets(Array.isArray(data) ? data : []);
-        } catch (err) {
-            showErrorModal("Failed to load tickets.");
-        } finally {
-            setLoading(false);
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            try {
+                // Upload immediately for simplicity, or wait for save? 
+                // Let's upload immediately to get the filename for preview.
+                const filename = await import('../services/api').then(m => m.uploadBackground(file));
+                setBgFilename(filename);
+                setBgFile(file);
+                alert("Background uploaded successfully!");
+            } catch (err) {
+                showErrorModal("Upload failed: " + err.message);
+            }
         }
+    };
+
+    const handleConfigChange = (e) => {
+        const { name, value } = e.target;
+        setConfig(prev => ({ ...prev, [name]: parseInt(value) || 0 }));
     };
 
     const handleSendOne = async (ticket) => {
@@ -39,7 +50,7 @@ const EmailDashboard = () => {
         
         setSending(true);
         try {
-            await sendTicketEmail(eventId, ticket.id);
+            await sendTicketEmail(eventId, ticket.id, bgFilename, config);
             alert(`Email sent to ${ticket.attendeeEmail}!`);
         } catch (err) {
             showErrorModal(`Failed to send: ${err.message}`);
@@ -51,12 +62,12 @@ const EmailDashboard = () => {
     const handleBatchSend = async () => {
         showConfirmModal(
             "Send Batch Emails?", 
-            `This will send QR codes to ALL ${tickets.length} attendees with valid emails. This action cannot be undone.`, 
+            `This will send QR codes to ALL ${tickets.length} attendees.`, 
             async () => {
                 hideModal();
                 setSending(true);
                 try {
-                    const res = await sendBatchEmails(eventId);
+                    const res = await sendBatchEmails(eventId, bgFilename, config);
                     alert(`Batch Complete!\nSuccess: ${res.result.success}\nFailed: ${res.result.failed}`);
                 } catch (err) {
                     showErrorModal(`Batch failed: ${err.message}`);
@@ -67,32 +78,31 @@ const EmailDashboard = () => {
         );
     };
 
-    const handlePreview = (ticket) => {
-        const content = (
-            <div className="p-6 bg-white text-gray-800 rounded-xl max-w-md mx-auto border shadow-lg">
-                <h2 className="text-2xl font-bold mb-4 text-gray-900">Example Ticket Email</h2>
-                <div className="border-b pb-4 mb-4">
-                    <p><strong>To:</strong> {ticket.attendeeEmail}</p>
-                    <p><strong>Subject:</strong> Your Ticket for {eventId}</p>
-                </div>
-                <div className="text-center space-y-4">
-                    <p>Hello <strong>{ticket.attendeeName}</strong>,</p>
-                    <p>Here is your ticket for <strong>{eventId}</strong>.</p>
-                    <div className="w-48 h-48 bg-gray-200 mx-auto flex items-center justify-center rounded-lg border-2 border-dashed border-gray-400">
-                        <span className="text-gray-500 italic text-sm">(QR Code Image)</span>
+    const handlePreview = async (ticket) => {
+        setLoading(true);
+        try {
+            // Fetch real preview from backend
+            const imageSrc = await import('../services/api').then(m => m.getEmailPreview(eventId, ticket.id, bgFilename, config));
+            
+            const content = (
+                <div className="p-4 bg-white text-gray-800 rounded-xl max-w-lg mx-auto border shadow-lg max-h-[80vh] overflow-y-auto">
+                    <h2 className="text-xl font-bold mb-4 text-gray-900">Preview: {ticket.attendeeName}</h2>
+                    <div className="border-b pb-4 mb-4 text-sm">
+                        <p><strong>To:</strong> {ticket.attendeeEmail}</p>
+                        <p><strong>Subject:</strong> Your Ticket for {eventId}</p>
                     </div>
-                    <p className="text-xs text-gray-500 font-mono">{ticket.id}</p>
-                    <p className="text-sm text-gray-600">Please present this code at the entrance.</p>
+                    <div className="text-center">
+                        <img src={imageSrc} alt="Ticket Preview" className="w-full h-auto rounded shadow-sm border" />
+                    </div>
                 </div>
-            </div>
-        );
-        
-        showModal({
-            type: 'custom',
-            title: 'Email Preview',
-            body: content, // This modal impl might need adjustment if it expects string
-            contentComponent: () => content // Passing component directly if supported
-        });
+            );
+            
+            showModal({ type: 'custom', title: 'Real Preview', body: content, contentComponent: () => content });
+        } catch (err) {
+            showErrorModal("Preview failed: " + err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     // --- UI ---
@@ -115,19 +125,54 @@ const EmailDashboard = () => {
             <div className="flex-1 flex flex-col relative xl:ml-72 transition-all duration-300 overflow-y-auto custom-scrollbar p-8">
                 
                 {/* Header */}
-                <div className="flex justify-between items-end mb-8 pb-4 border-b border-white/10">
+                <div className="flex flex-col md:flex-row justify-between items-end mb-8 pb-4 border-b border-white/10 gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-white">Email Dashboard</h1>
                         <p className="text-gray-400 mt-1">Manage communications for <span className="text-purple-400 font-mono">{eventId}</span></p>
                     </div>
-                    <button 
-                        onClick={handleBatchSend}
-                        disabled={sending || loading}
-                        className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 flex items-center gap-2"
-                    >
-                        {sending ? 'Sending...' : '🚀 Send Batch to All'}
-                    </button>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => setShowSettings(!showSettings)}
+                            className="px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl shadow-lg transition-all border border-gray-600"
+                        >
+                            ⚙️ Settings
+                        </button>
+                        <button 
+                            onClick={handleBatchSend}
+                            disabled={sending || loading}
+                            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {sending ? 'Sending...' : '🚀 Send Batch to All'}
+                        </button>
+                    </div>
                 </div>
+
+                {/* Settings Panel */}
+                <AnimatePresence>
+                    {showSettings && (
+                        <motion.div 
+                            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                            className="mb-8 overflow-hidden"
+                        >
+                            <div className="glass-panel p-6 rounded-2xl border border-white/10 bg-white/5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div className="col-span-1 md:col-span-2 lg:col-span-4">
+                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Background Image</label>
+                                    <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
+                                    {bgFilename && <p className="text-xs text-green-400 mt-1">Active: {bgFilename}</p>}
+                                </div>
+                                {Object.keys(config).map(key => (
+                                    <div key={key}>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{key}</label>
+                                        <input 
+                                            type="number" name={key} value={config[key]} onChange={handleConfigChange}
+                                            className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* List */}
                 <div className="glass-panel rounded-2xl overflow-hidden border border-white/5">

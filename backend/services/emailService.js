@@ -1,76 +1,143 @@
 const nodemailer = require('nodemailer');
 const QRCode = require('qrcode');
-const ticketService = require('./ticketService');
+const { createCanvas, loadImage, registerFont } = require('canvas');
+const path = require('path');
+const fs = require('fs');
+
+// Defaults from automail.py
+const DEFAULTS = {
+    qrSize: 1150,
+    qrX: 220,
+    qrY: 1110,
+    fontSize: 150,
+    nameX: 400,
+    nameY: 925,
+    sender: "dsa@kcislk.ntpc.edu.tw",
+    password: "xcuk qwjw yext eibz" // App Password
+};
 
 class EmailService {
     constructor() {
-        // Configure your SMTP transporter here
-        // For now, we'll use a placeholder or a test account (Ethereal)
-        // In production, use SendGrid, AWS SES, or Gmail
+        // Allow override via Env, else use automail.py defaults
         this.transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-            port: 587,
+            service: 'gmail', // 'smtp.gmail.com' implied by service: gmail
             auth: {
-                user: process.env.SMTP_USER || 'test',
-                pass: process.env.SMTP_PASS || 'test'
+                user: process.env.SMTP_USER || DEFAULTS.sender,
+                pass: process.env.SMTP_PASS || DEFAULTS.password
             }
         });
     }
 
-    async generateQR(text) {
+    /**
+     * Replicates generate_ticket_image from automail.py
+     */
+    async generateTicketImage(ticket, bgPath, config = {}) {
+        const qrSize = parseInt(config.qrSize || DEFAULTS.qrSize);
+        const qrX = parseInt(config.qrX || DEFAULTS.qrX);
+        const qrY = parseInt(config.qrY || DEFAULTS.qrY);
+        const fontSize = parseInt(config.fontSize || DEFAULTS.fontSize);
+        const nameX = parseInt(config.nameX || DEFAULTS.nameX);
+        const nameY = parseInt(config.nameY || DEFAULTS.nameY);
+
+        // 1. Load Background
+        // If no custom bg uploaded, use a default placeholder or fail gracefully
+        let image;
         try {
-            return await QRCode.toDataURL(text);
-        } catch (err) {
-            console.error("QR Gen Error:", err);
-            throw err;
+            if (bgPath && fs.existsSync(bgPath)) {
+                image = await loadImage(bgPath);
+            } else {
+                // Fallback: Create a white canvas if no bg
+                const canvas = createCanvas(2480, 3508); // A4 @ 300dpi approx
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, 2480, 3508);
+                image = canvas; // Use canvas as source? No, better to draw on it.
+            }
+        } catch (e) {
+            throw new Error(`Failed to load background: ${e.message}`);
         }
+
+        const canvas = createCanvas(image.width, image.height);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0);
+
+        // 2. Generate QR
+        // Python uses box_size=10, here we scale to px
+        const qrDataUrl = await QRCode.toDataURL(ticket.id, {
+            errorCorrectionLevel: 'H',
+            margin: 0,
+            width: qrSize,
+            color: {
+                dark: '#000000',
+                light: '#ffffff' // White background for QR to ensure contrast
+            }
+        });
+        const qrImg = await loadImage(qrDataUrl);
+        
+        // 3. Paste QR
+        ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+
+        // 4. Draw Name with Outline (Stroke)
+        const nameText = ticket.attendeeName || "Unknown";
+        
+        // Font selection
+        // canvas uses system fonts. 'Arial' is safe.
+        ctx.font = `bold ${fontSize}px Arial`;
+        ctx.textAlign = 'left'; // Python PIL default is top-left anchor usually
+        ctx.textBaseline = 'top'; // Python PIL uses top-left usually
+
+        // Stroke Logic
+        const strokeW = Math.floor(fontSize * 0.05);
+        ctx.lineWidth = strokeW;
+        ctx.strokeStyle = 'white';
+        ctx.fillStyle = 'black';
+
+        // Draw Stroke then Fill
+        ctx.strokeText(nameText, nameX, nameY);
+        ctx.fillText(nameText, nameX, nameY);
+
+        return canvas.toBuffer('image/png');
     }
 
-    async sendTicketEmail(ticket, eventName) {
-        const qrCodeDataUrl = await this.generateQR(ticket.id);
-        
-        const mailOptions = {
-            from: '"TicketSystem" <noreply@ticketsystem.com>',
-            to: ticket.attendeeEmail,
-            subject: `Your Ticket for ${eventName}`,
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
-                    <h2 style="color: #333;">Hello ${ticket.attendeeName},</h2>
-                    <p>Here is your ticket for <strong>${eventName}</strong>.</p>
-                    
-                    <div style="text-align: center; margin: 30px 0;">
-                        <img src="${qrCodeDataUrl}" alt="Ticket QR Code" style="width: 200px; height: 200px;" />
-                        <p style="font-size: 12px; color: #777;">ID: ${ticket.id}</p>
-                    </div>
+    async sendTicketEmail(ticket, eventId, bgPath, config = {}) {
+        if (!ticket.attendeeEmail) return;
 
-                    <p>Please present this QR code at the entrance.</p>
-                    <p style="color: #999; font-size: 12px;">Sent by TicketMaster Pro</p>
-                </div>
-            `
+        // Generate the image
+        const imageBuffer = await this.generateTicketImage(ticket, bgPath, config);
+        const cid = `ticket-${ticket.id}@ticketsystem.local`;
+
+        const mailOptions = {
+            from: `"TicketSystem" <${process.env.SMTP_USER || DEFAULTS.sender}>`,
+            to: ticket.attendeeEmail,
+            subject: `Your Ticket for ${eventId}`,
+            html: `
+                <html>
+                    <body>
+                        <p>Hello ${ticket.attendeeName},</p>
+                        <p>Here is your official ticket for <strong>${eventId}</strong>.</p>
+                        <br>
+                        <img src="cid:${cid}" alt="Ticket" style="max-width:100%; height:auto;">
+                        <br>
+                        <p>Please present this ticket at the entrance.</p>
+                    </body>
+                </html>
+            `,
+            attachments: [
+                {
+                    filename: 'ticket.png',
+                    content: imageBuffer,
+                    cid: cid, // Same cid value as in the html img src
+                    contentType: 'image/png'
+                }
+            ]
         };
 
         return this.transporter.sendMail(mailOptions);
     }
 
-    async sendAllTickets(eventId) {
-        const tickets = await ticketService.getTickets(eventId);
-        const results = { success: 0, failed: 0, errors: [] };
-
-        // Process in chunks to avoid rate limits? 
-        // For now, sequential is safer to prevent spam flagging
-        for (const ticket of tickets) {
-            if (!ticket.attendeeEmail) continue;
-            try {
-                await this.sendTicketEmail(ticket, eventId);
-                results.success++;
-            } catch (error) {
-                console.error(`Failed to email ${ticket.attendeeEmail}:`, error);
-                results.failed++;
-                results.errors.push({ email: ticket.attendeeEmail, error: error.message });
-            }
-        }
-
-        return results;
+    async getPreviewImage(ticket, bgPath, config) {
+        const buffer = await this.generateTicketImage(ticket, bgPath, config);
+        return `data:image/png;base64,${buffer.toString('base64')}`;
     }
 }
 

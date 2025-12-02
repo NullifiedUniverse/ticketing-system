@@ -134,20 +134,40 @@ export const getNgrokUrl = async () => {
 };
 
 // --- EMAIL ---
-export const sendTicketEmail = async (eventId, ticketId) => {
+export const uploadBackground = async (file) => {
+    const formData = new FormData();
+    formData.append('background', file);
+    const result = await callApi('/api/admin/email/upload-bg', {
+        method: 'POST',
+        // headers: getAuthHeaders(), // Do NOT set Content-Type for FormData, browser does it
+        body: formData,
+    });
+    return result.filename;
+};
+
+export const getEmailPreview = async (eventId, ticketId, bgFilename, config) => {
+    const result = await callApi('/api/admin/email/preview', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ eventId, ticketId, bgFilename, config }),
+    });
+    return result.image;
+};
+
+export const sendTicketEmail = async (eventId, ticketId, bgFilename, config) => {
     const result = await callApi('/api/admin/email/send-one', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ eventId, ticketId }),
+        body: JSON.stringify({ eventId, ticketId, bgFilename, config }),
     });
     return result;
 };
 
-export const sendBatchEmails = async (eventId) => {
+export const sendBatchEmails = async (eventId, bgFilename, config) => {
     const result = await callApi('/api/admin/email/send-batch', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ eventId }),
+        body: JSON.stringify({ eventId, bgFilename, config }),
     });
     return result;
 };

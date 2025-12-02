@@ -3,7 +3,7 @@ const adminRouter = express.Router();
 const scannerRouter = express.Router();
 const ticketController = require('../controllers/ticketController');
 const raffleController = require('../controllers/raffleController');
-const emailController = require('../controllers/emailController');
+const { controller: emailController, uploadMiddleware } = require('../controllers/emailController');
 
 // --- ADMIN ROUTES ---
 
@@ -23,6 +23,8 @@ adminRouter.post('/update-ticket-status/:eventId/:ticketId', ticketController.up
 adminRouter.get('/raffle/draw/:eventId', raffleController.drawWinner.bind(raffleController));
 
 // Email
+adminRouter.post('/email/upload-bg', uploadMiddleware, emailController.uploadBackground.bind(emailController));
+adminRouter.post('/email/preview', emailController.preview.bind(emailController));
 adminRouter.post('/email/send-one', emailController.sendSingle.bind(emailController));
 adminRouter.post('/email/send-batch', emailController.sendBatch.bind(emailController));
 
