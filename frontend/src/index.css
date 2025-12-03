@@ -16,21 +16,26 @@ body {
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #0f172a; 
+    background: transparent; 
 }
 
 ::-webkit-scrollbar-thumb {
     background: #334155; 
-    border-radius: 4px;
+    border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #475569; 
+    background: #4b5563; 
+}
+
+::selection {
+    background: #8b5cf6;
+    color: white;
 }
 
 /* Global Utils */

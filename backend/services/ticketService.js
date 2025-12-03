@@ -253,56 +253,61 @@ class TicketService {
     async updateTicketStatus(eventId, ticketId, action, scannedBy) {
         await this.ensureCache(eventId);
         
-        const ticketData = this.getCachedTicket(eventId, ticketId);
-        if (!ticketData) throw new AppError("Ticket not found (or not loaded).", 404);
-
-        const now = new Date();
-        let newStatus = ticketData.status;
+        // Use Firestore Transaction for Atomicity
+        // This prevents race conditions if two scanners scan the same ticket simultaneously
+        const ticketRef = db.collection('events').doc(eventId).collection('tickets').doc(ticketId);
+        let finalTicketData = null;
         let message = '';
 
-        if (action === 'check-in') {
-            if (ticketData.status === 'checked-in') throw new AppError('Ticket already checked in.', 400);
-            if (ticketData.status !== 'valid' && ticketData.status !== 'on-leave') throw new AppError('Ticket cannot be checked in.', 400);
-            newStatus = 'checked-in';
-            message = `Checked In: ${ticketData.attendeeName}`;
-        } else if (action === 'check-out') {
-            if (ticketData.status !== 'checked-in') throw new AppError('Can only check out an already checked-in ticket.', 400);
-            newStatus = 'on-leave';
-            message = `On Leave: ${ticketData.attendeeName}`;
-        } else {
-             throw new AppError(`Invalid action: ${action}`, 400);
-        }
+        await db.runTransaction(async (t) => {
+            const doc = await t.get(ticketRef);
+            if (!doc.exists) throw new AppError("Ticket not found.", 404);
+            
+            const ticketData = doc.data();
+            const now = new Date();
+            let newStatus = ticketData.status;
 
-        const historyEntry = { action, timestamp: now, scannedBy };
-        const updatedTicket = {
-            ...ticketData,
-            status: newStatus,
-            checkInHistory: [...(ticketData.checkInHistory || []), historyEntry]
-        };
+            if (action === 'check-in') {
+                if (ticketData.status === 'checked-in') throw new AppError('Ticket already checked in.', 400);
+                if (ticketData.status !== 'valid' && ticketData.status !== 'on-leave') throw new AppError('Ticket cannot be checked in.', 400);
+                newStatus = 'checked-in';
+                message = `Checked In: ${ticketData.attendeeName}`;
+            } else if (action === 'check-out') {
+                if (ticketData.status !== 'checked-in') throw new AppError('Can only check out an already checked-in ticket.', 400);
+                newStatus = 'on-leave';
+                message = `On Leave: ${ticketData.attendeeName}`;
+            } else {
+                 throw new AppError(`Invalid action: ${action}`, 400);
+            }
+
+            const historyEntry = { action, timestamp: now, scannedBy };
+            const updatedData = {
+                status: newStatus,
+                checkInHistory: admin.firestore.FieldValue.arrayUnion(historyEntry)
+            };
+
+            t.update(ticketRef, updatedData);
+            
+            // Prepare return data (cannot rely on doc.data() after update inside txn)
+            finalTicketData = { 
+                ...ticketData, 
+                status: newStatus,
+                checkInHistory: [...(ticketData.checkInHistory || []), historyEntry]
+            };
+        });
 
         const start = performance.now();
 
-        // 1. Optimistic Cache Update (Immediate Feedback)
-        this.cache.get(eventId).set(ticketId, updatedTicket);
-
-        // 2. Write to DB
-        const ticketRef = db.collection('events').doc(eventId).collection('tickets').doc(ticketId);
-        
-        // We await this to ensure persistence, but the UI already got the cache response effectively
-        await ticketRef.update({
-            status: newStatus,
-            checkInHistory: admin.firestore.FieldValue.arrayUnion(historyEntry)
-        }).catch(err => {
-            // Revert on DB failure
-            this.cache.get(eventId).set(ticketId, ticketData);
-            logger.error(`[Write Error] Reverting cache for ${ticketId}: ${err.message}`);
-            throw err;
-        });
+        // Transaction successful -> Update Cache
+        // (Ideally the listener would catch this, but optimistic update is faster for UI response)
+        if (finalTicketData) {
+            this.cache.get(eventId).set(ticketId, finalTicketData);
+        }
 
         this.metrics.writes++;
         this.recordLatency(performance.now() - start);
         
-        return { ...updatedTicket, message };
+        return { ...finalTicketData, message };
     }
 
     async updateTicket(eventId, ticketId, updateData) {
@@ -358,6 +363,30 @@ class TicketService {
             return doc.data().emailConfig;
         }
         return null;
+    }
+
+    // --- EMAIL STATUS (Idempotency & DLQ) ---
+    async updateEmailStatus(eventId, ticketId, status, error = null) {
+        await this.ensureCache(eventId);
+        
+        const updateData = { 
+            emailStatus: status,
+            emailLastAttempt: new Date()
+        };
+        if (error) updateData.emailError = error;
+
+        // Optimistic Cache Update
+        const ticket = this.cache.get(eventId).get(ticketId);
+        if (ticket) {
+            this.cache.get(eventId).set(ticketId, { ...ticket, ...updateData });
+        }
+
+        await db.collection('events').doc(eventId).collection('tickets').doc(ticketId).update(updateData);
+    }
+
+    async getEmailStatus(eventId, ticketId) {
+        const ticket = this.getCachedTicket(eventId, ticketId);
+        return ticket ? ticket.emailStatus : null;
     }
 }
 

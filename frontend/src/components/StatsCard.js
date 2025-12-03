@@ -1,32 +1,43 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import AnimatedCounter from './AnimatedCounter';
+import { fadeInUp } from '../utils/animations';
+import AnimatedCounter from './AnimatedCounter'; // Assuming this exists or we use simple text
 
-const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
-const animatedGradientStyle = { '--gradient-start': '#ec4899', '--gradient-end': '#8b5cf6' };
+const StatsCard = ({ title, value, total, showProgress }) => {
+    const percent = total > 0 ? Math.round((value / total) * 100) : 0;
 
-const StatsCard = ({ title, value, total, showProgress = false }) => (
-    <motion.div
-        variants={itemVariants}
-        className="bg-gray-900 border border-purple-500/20 p-6 rounded-2xl shadow-lg h-full"
-    >
-        <h2 className="text-lg font-semibold animated-gradient-text">{title}</h2>
-        <p className="text-5xl font-bold mt-2 text-white">
-            <AnimatedCounter value={value} /> {total !== undefined && <span className="text-3xl text-gray-400">/ {total.toLocaleString()}</span>}
-        </p>
-        {showProgress && (
-            <div className="w-full bg-black rounded-full h-2.5 mt-4">
-                <motion.div
-                    className="animated-gradient-bg h-2.5 rounded-full shadow-lg"
-                    initial={{ width: 0 }}
-                    animate={{ width: total > 0 ? `${(value / total) * 100}%` : '0%' }}
-                    transition={{ duration: 0.8, ease: "easeInOut" }}
-                    style={animatedGradientStyle}
-                />
+    return (
+        <motion.div 
+            variants={fadeInUp}
+            whileHover={{ y: -5, transition: { duration: 0.2 } }}
+            className="bg-gray-900/50 border border-white/10 p-6 rounded-2xl shadow-lg relative overflow-hidden group"
+        >
+            <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10 transition-opacity opacity-50 group-hover:opacity-80"></div>
+            
+            <h3 className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2 relative z-10">{title}</h3>
+            
+            <div className="flex items-end gap-2 relative z-10">
+                <span className="text-4xl font-bold text-white">
+                    <AnimatedCounter value={value} />
+                </span>
+                {total !== undefined && (
+                    <span className="text-gray-500 text-sm mb-1">/ {total}</span>
+                )}
             </div>
-        )}
-    </motion.div>
-);
+
+            {showProgress && (
+                <div className="mt-4 h-1.5 w-full bg-gray-800 rounded-full overflow-hidden relative z-10">
+                    <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${percent}%` }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full"
+                    />
+                </div>
+            )}
+        </motion.div>
+    );
+};
 
 export default StatsCard;

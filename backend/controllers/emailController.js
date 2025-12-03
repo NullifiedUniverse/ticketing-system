@@ -132,8 +132,15 @@ class EmailController {
         // Filter only valid emails
         const emailQueue = tickets.filter(t => t.attendeeEmail);
         
-        // Sequential processing with Retry Logic
+        // Sequential processing with Exponential Backoff & Idempotency
         for (const ticket of emailQueue) {
+            // 1. Idempotency Check
+            if (ticket.emailStatus === 'sent') {
+                logger.info(`[Email Batch] Skipping ${ticket.attendeeEmail} - Already Sent`);
+                results.success++; // Count as success to not alarm user
+                continue;
+            }
+
             let attempts = 0;
             const maxAttempts = 3;
             let sent = false;
@@ -142,16 +149,28 @@ class EmailController {
                 try {
                     attempts++;
                     await emailService.sendTicketEmail(ticket, eventId, bgPath, configPayload);
+                    
+                    // Success: Update DB
+                    await ticketService.updateEmailStatus(eventId, ticket.id, 'sent');
                     results.success++;
                     sent = true;
                 } catch (e) {
-                    if (attempts === maxAttempts) {
-                        logger.error(`[Email Batch] Failed for ${ticket.attendeeEmail} after ${maxAttempts} attempts: ${e.message}`);
+                    const isLastAttempt = attempts === maxAttempts;
+                    const errorMsg = e.message;
+
+                    logger.warn(`[Email Batch] Attempt ${attempts}/${maxAttempts} failed for ${ticket.attendeeEmail}: ${errorMsg}`);
+
+                    if (isLastAttempt) {
+                        // DLQ: Mark as dead letter
+                        logger.error(`[Email Batch] FAILED PERMANENTLY for ${ticket.attendeeEmail}`);
+                        await ticketService.updateEmailStatus(eventId, ticket.id, 'dead_letter', errorMsg);
+                        
                         results.failed++;
-                        results.errors.push(`${ticket.attendeeEmail}: ${e.message}`);
+                        results.errors.push(`${ticket.attendeeEmail}: ${errorMsg}`);
                     } else {
-                        logger.warn(`[Email Batch] Attempt ${attempts} failed for ${ticket.attendeeEmail}: ${e.message}. Retrying...`);
-                        await new Promise(resolve => setTimeout(resolve, 1000)); // Simple 1s delay
+                        // Exponential Backoff: 1s, 2s, 4s...
+                        const delay = 1000 * (2 ** (attempts - 1));
+                        await new Promise(resolve => setTimeout(resolve, delay));
                     }
                 }
             }

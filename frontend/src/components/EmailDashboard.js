@@ -6,6 +6,7 @@ import { getTickets, sendTicketEmail, sendBatchEmails } from '../services/api';
 import { useModal } from '../hooks/useModal';
 import { useEvent } from '../context/EventContext';
 import { useLanguage } from '../context/LanguageContext';
+import { buttonClick, containerStagger, fadeInUp, EASING } from '../utils/animations';
 
 const EmailDashboard = () => {
     const { eventId } = useEvent(); // Use global state
@@ -35,7 +36,7 @@ const EmailDashboard = () => {
             setTickets(data);
         } catch (err) {
             console.error("Failed to fetch tickets", err);
-            showErrorModal(`${t('errorCsvEmpty')}: ${err.message}`); // Reusing errorCsvEmpty for generic list load. Or a new key.
+            showErrorModal(`${t('errorCsvEmpty')}: ${err.message}`);
         } finally {
             setLoading(false);
         }
@@ -70,14 +71,14 @@ const EmailDashboard = () => {
     };
 
     const handleSendOne = async (ticket) => {
-        if (!ticket.attendeeEmail) return showErrorModal("This ticket has no email address."); // No specific translation for this.
+        if (!ticket.attendeeEmail) return showErrorModal("This ticket has no email address.");
 
         setSending(true);
         try {
             await sendTicketEmail(eventId, ticket.id, bgFilename, config, config.messageBefore, config.messageAfter, config.emailSubject, config.senderName);
             alert(t('emailSent', ticket.attendeeEmail));
         } catch (err) {
-            showErrorModal(`${t('importFailed')}: ${err.message}`); // Reusing importFailed for generic email send error
+            showErrorModal(`${t('importFailed')}: ${err.message}`);
         } finally {
             setSending(false);
         }
@@ -86,7 +87,7 @@ const EmailDashboard = () => {
     const handleBatchSend = async () => {
         showConfirmModal(
             t('modalSendBatchTitle'), 
-            t('modalSendBatchBody', tickets.length),
+            t('modalSendBatchBody', tickets.length), 
             async () => {
                 hideModal();
                 setSending(true);
@@ -98,13 +99,13 @@ const EmailDashboard = () => {
                     }
                     alert(msg);
                 } catch (err) {
-                    showErrorModal(`${t('importFailed')}: ${err.message}`); // Reusing importFailed
+                    showErrorModal(`${t('importFailed')}: ${err.message}`);
                 } finally {
                     setSending(false);
                 }
             }
         );
-    };    
+    };
 
     const handlePreview = async (ticket) => {
         setLoading(true);
@@ -117,7 +118,7 @@ const EmailDashboard = () => {
             const content = (
                 <div className="p-0 bg-gray-50 text-gray-800 rounded-xl max-w-2xl mx-auto border shadow-lg max-h-[80vh] overflow-y-auto">
                     <div className="bg-white p-8 text-center">
-                        <h2 className="text-xl font-bold mb-4 text-gray-900"></h2> {/* Removed Hello line */}
+                        <h2 className="text-xl font-bold mb-4 text-gray-900"></h2> 
                         <p className="text-gray-600 mb-6 whitespace-pre-wrap">{msgBefore}</p>
                         <div className="mb-6">
                             <img 
@@ -133,9 +134,9 @@ const EmailDashboard = () => {
                 </div>
             );
             
-            showModal({ type: 'custom', title: t('btnSimulate'), body: content, contentComponent: () => content }); // Title from simulate button
+            showModal({ type: 'custom', title: t('btnSimulate'), body: content, contentComponent: () => content });
         } catch (err) {
-            showErrorModal(`${t('importFailed')}: ${err.message}`); // Reusing importFailed
+            showErrorModal(`Preview failed: ${err.message}`);
         } finally {
             setLoading(false);
         }
@@ -163,31 +164,37 @@ const EmailDashboard = () => {
                             <p className="text-gray-400 mt-1">{t('emailManageCommunications')} <span className="text-purple-400 font-mono">{eventId}</span></p>
                         </div>
                         <div className="flex gap-3">
-                            <button 
+                            <motion.button 
+                                variants={buttonClick}
+                                whileHover="hover"
+                                whileTap="tap"
                                 onClick={() => setShowSettings(!showSettings)}
-                                className="px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl shadow-lg transition-all border border-gray-600"
+                                className="px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl shadow-lg transition-colors border border-gray-600"
                             >
                                 ⚙️ {t('btnSettings')}
-                            </button>
-                            <button 
+                            </motion.button>
+                            <motion.button 
+                                variants={buttonClick}
+                                whileHover="hover"
+                                whileTap="tap"
                                 onClick={handleBatchSend}
                                 disabled={sending || loading}
                                 className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 flex items-center gap-2"
                             >
                                 {sending ? 'Sending...' : `🚀 ${t('btnBatch')}`}
-                            </button>
+                            </motion.button>
                         </div>
                     </div>
 
                     <AnimatePresence>
                         {showSettings && (
                             <motion.div 
-                                initial={{ height: 0, opacity: 0, marginBottom: 0 }}
-                                animate={{ height: 'auto', opacity: 1, marginBottom: 32 }}
-                                exit={{ height: 0, opacity: 0, marginBottom: 0 }}
+                                initial={{ height: 0, opacity: 0, marginBottom: 0 }} 
+                                animate={{ height: 'auto', opacity: 1, marginBottom: 32, transition: { ease: EASING.gentle, duration: 0.4 } }} 
+                                exit={{ height: 0, opacity: 0, marginBottom: 0, transition: { ease: EASING.gentle, duration: 0.3 } }}
                                 className="overflow-hidden relative z-50 shrink-0"
                             >
-                                <div className="glass-panel p-6 rounded-2xl border border-white/10 bg-white/5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <div className="glass-panel p-6 rounded-2xl border border-white/10 bg-white/5 grid grid-cols-1 md:grid-cols-2 lg:col-span-4 gap-6">
                                     <div className="col-span-1 md:col-span-2 lg:col-span-4">
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{t('labelBg')}</label>
                                         <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
@@ -263,9 +270,19 @@ const EmailDashboard = () => {
                                         <th className="p-4 text-right">{t('colActions')}</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-white/5">
+                                <motion.tbody 
+                                    variants={containerStagger}
+                                    initial="hidden"
+                                    animate="visible"
+                                    className="divide-y divide-white/5"
+                                >
                                     {tickets.map(ticket => (
-                                        <tr key={ticket.id} className="hover:bg-white/5 transition-colors">
+                                        <motion.tr 
+                                            key={ticket.id} 
+                                            variants={fadeInUp}
+                                            layout
+                                            className="hover:bg-white/5 transition-colors"
+                                        >
                                             <td className="p-4 font-medium">{ticket.attendeeName}</td>
                                             <td className="p-4 text-gray-400">{ticket.attendeeEmail}</td>
                                             <td className="p-4">
@@ -274,23 +291,29 @@ const EmailDashboard = () => {
                                                 </span>
                                             </td>
                                             <td className="p-4 text-right space-x-2">
-                                                <button 
+                                                <motion.button 
+                                                    variants={buttonClick}
+                                                    whileHover="hover"
+                                                    whileTap="tap"
                                                     onClick={() => handlePreview(ticket)}
                                                     className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-xs font-bold border border-white/10 transition-colors"
                                                 >
                                                     {t('btnSimulate')}
-                                                </button>
-                                                <button 
+                                                </motion.button>
+                                                <motion.button 
+                                                    variants={buttonClick}
+                                                    whileHover="hover"
+                                                    whileTap="tap"
                                                     onClick={() => handleSendOne(ticket)}
                                                     disabled={sending}
                                                     className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 hover:text-white border border-indigo-500/30 rounded-lg text-xs font-bold transition-colors"
                                                 >
                                                     {t('btnHarass')}
-                                                </button>
+                                                </motion.button>
                                             </td>
-                                        </tr>
+                                        </motion.tr>
                                     ))}
-                                </tbody>
+                                </motion.tbody>
                             </table>
                             
                             {tickets.length === 0 && !loading && (
@@ -305,5 +328,3 @@ const EmailDashboard = () => {
         </Layout>
     );
 };
-
-export default EmailDashboard;

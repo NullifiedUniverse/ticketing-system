@@ -3,8 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import StatusBadge from './StatusBadge';
 import { useLanguage } from '../context/LanguageContext';
-
-const animatedGradientStyle = { '--gradient-start': '#ec4899', '--gradient-end': '#8b5cf6' };
+import { buttonClick, fadeInUp } from '../utils/animations'; // Use standard fadeInUp instead of local variant if possible, but parent controls stagger.
 
 const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
     const { t } = useLanguage();
@@ -12,10 +11,10 @@ const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
     return (
     <motion.tr
         layout
-        key={ticket.id}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        variants={fadeInUp}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
         className="border-b border-gray-800 hover:bg-gray-800 transition-colors"
     >
         <td className="p-4"><StatusBadge status={ticket.status} /></td>
@@ -27,8 +26,9 @@ const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
         <td className="p-4 text-right">
             <div className="flex items-center justify-end gap-2">
                 <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    variants={buttonClick}
+                    whileHover="hover"
+                    whileTap="tap"
                     onClick={() => onShowQR(ticket.id, ticket.attendeeName)}
                     className="p-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-colors"
                     title={t('btnMark')}
@@ -38,8 +38,9 @@ const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
                 
                 {ticket.status !== 'checked-in' && (
                     <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
+                        variants={buttonClick}
+                        whileHover="hover"
+                        whileTap="tap"
                         onClick={() => onCheckIn(ticket)}
                         className="px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold rounded-lg shadow-lg shadow-indigo-500/20 flex items-center gap-1"
                         title={t('btnCapture')}
@@ -50,8 +51,9 @@ const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
                 )}
 
                 <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    variants={buttonClick}
+                    whileHover="hover"
+                    whileTap="tap"
                     onClick={() => onEdit(ticket)}
                     className="p-2 bg-gray-800 hover:bg-gray-700 text-blue-400 hover:text-blue-300 rounded-lg transition-colors border border-gray-700"
                     title={t('btnRetcon')}
@@ -60,8 +62,9 @@ const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
                 </motion.button>
 
                 <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                    variants={buttonClick}
+                    whileHover="hover"
+                    whileTap="tap"
                     onClick={() => onDelete(ticket)}
                     className="p-2 bg-gray-800 hover:bg-gray-700 text-red-400 hover:text-red-300 rounded-lg transition-colors border border-gray-700"
                     title={t('btnPurge')}

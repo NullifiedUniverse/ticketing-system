@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { createTicket } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
+import { buttonClick } from '../utils/animations';
 
 const CreateTicket = ({ eventId, onTicketCreated, onApiError }) => {
     const [name, setName] = useState('');
@@ -43,7 +44,8 @@ const CreateTicket = ({ eventId, onTicketCreated, onApiError }) => {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">{t('labelIdentity')}</label>
-                        <input
+                        <motion.input
+                            whileFocus={{ scale: 1.01, borderColor: '#a855f7' }}
                             type="text"
                             placeholder={t('placeholderIdentity')}
                             value={name}
@@ -55,7 +57,8 @@ const CreateTicket = ({ eventId, onTicketCreated, onApiError }) => {
                     
                     <div className="space-y-2">
                          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">{t('labelEmail')}</label>
-                        <input
+                        <motion.input
+                            whileFocus={{ scale: 1.01, borderColor: '#a855f7' }}
                             type="email"
                             placeholder="alice@example.com"
                             value={email}
@@ -68,8 +71,9 @@ const CreateTicket = ({ eventId, onTicketCreated, onApiError }) => {
                     <motion.button
                         type="submit"
                         disabled={isLoading}
-                        whileHover={{ scale: isLoading ? 1 : 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        variants={buttonClick}
+                        whileHover="hover"
+                        whileTap="tap"
                         className="w-full mt-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3.5 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
                     >
                         {isLoading ? (

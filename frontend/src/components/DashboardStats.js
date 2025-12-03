@@ -3,15 +3,14 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import StatsCard from './StatsCard';
 import { useLanguage } from '../context/LanguageContext';
-
-const containerVariants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.07 } } };
+import { containerStagger } from '../utils/animations';
 
 const DashboardStats = ({ stats }) => {
     const { t } = useLanguage();
 
     return (
     <motion.div
-        variants={containerVariants}
+        variants={containerStagger}
         initial="hidden"
         animate="visible"
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
