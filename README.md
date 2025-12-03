@@ -21,32 +21,16 @@
 *   **`scanner/`**: Standalone HTML5 QR Scanner client.
 *   **`documentation/`**: Detailed user guides and technical references.
 
-## 🛠️ Quick Start
+## 🚀 Quick Start
 
-### Prerequisites
-1.  **Node.js** (v16+)
-2.  **Firebase Project** (Firestore enabled)
-3.  **Ngrok Account** (For public scanner access)
+> **New here?** check out our **[Step-by-Step Setup Guide for Beginners](./documentation/SETUP_PIPELINE.md)**! 🍼
 
-### 1. Backend Setup
-```bash
-cd backend
-npm install
-```
-*   Place your `serviceAccountKey.json` (from Firebase) in the `backend/` folder.
-*   Create a `.env` file (see `documentation/CONFIGURATION.md`).
-*   Start the server:
-    ```bash
-    npm start
-    ```
+1.  **Backend Setup**
+    *   Place your Firebase `serviceAccountKey.json` in `backend/`.
+    *   Create `.env` (see `documentation/CONFIGURATION.md`).
+    *   Run: `cd backend && npm install && npm start`
 
-### 2. Frontend Setup
-```bash
-cd frontend
-npm install
-npm run build
-```
-*   The backend automatically serves the built frontend at `http://localhost:3001`.
+2.  **Frontend Setup**
 
 ## 📖 Documentation
 
