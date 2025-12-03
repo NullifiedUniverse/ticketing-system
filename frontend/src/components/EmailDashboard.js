@@ -9,7 +9,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { buttonClick, containerStagger, fadeInUp, EASING } from '../utils/animations';
 
 const EmailDashboard = () => {
-    const { eventId } = useEvent(); // Use global state
+    const { eventId } = useEvent();
     const { t } = useLanguage();
     const [tickets, setTickets] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -87,7 +87,7 @@ const EmailDashboard = () => {
     const handleBatchSend = async () => {
         showConfirmModal(
             t('modalSendBatchTitle'), 
-            t('modalSendBatchBody', tickets.length), 
+            t('modalSendBatchBody', tickets.length),
             async () => {
                 hideModal();
                 setSending(true);
@@ -105,7 +105,7 @@ const EmailDashboard = () => {
                 }
             }
         );
-    };
+    };    
 
     const handlePreview = async (ticket) => {
         setLoading(true);
@@ -169,7 +169,7 @@ const EmailDashboard = () => {
                                 whileHover="hover"
                                 whileTap="tap"
                                 onClick={() => setShowSettings(!showSettings)}
-                                className="px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl shadow-lg transition-colors border border-gray-600"
+                                className="px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl shadow-lg transition-colors border border-gray-600 hover:border-purple-500"
                             >
                                 ⚙️ {t('btnSettings')}
                             </motion.button>
@@ -189,8 +189,8 @@ const EmailDashboard = () => {
                     <AnimatePresence>
                         {showSettings && (
                             <motion.div 
-                                initial={{ height: 0, opacity: 0, marginBottom: 0 }} 
-                                animate={{ height: 'auto', opacity: 1, marginBottom: 32, transition: { ease: EASING.gentle, duration: 0.4 } }} 
+                                initial={{ height: 0, opacity: 0, marginBottom: 0 }}
+                                animate={{ height: 'auto', opacity: 1, marginBottom: 32, transition: { ease: EASING.gentle, duration: 0.4 } }}
                                 exit={{ height: 0, opacity: 0, marginBottom: 0, transition: { ease: EASING.gentle, duration: 0.3 } }}
                                 className="overflow-hidden relative z-50 shrink-0"
                             >
@@ -328,3 +328,5 @@ const EmailDashboard = () => {
         </Layout>
     );
 };
+
+export default EmailDashboard;

@@ -194,7 +194,7 @@ const Sidebar = ({ onNewEvent }) => {
                     </div>
 
                     {/* Watermark */}
-                    <div className="text-[10px] text-gray-700 text-center mt-2 select-none opacity-50">
+                    <div className="text-[10px] text-gray-700 text-center mt-6 pb-2 select-none opacity-50">
                         {t('sidebarFooter')}
                     </div>
                 </div>

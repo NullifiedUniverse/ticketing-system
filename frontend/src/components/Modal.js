@@ -30,7 +30,7 @@ const Modal = ({ isOpen, onClose, content }) => {
                         <div className="p-6 border-b border-purple-500/20 flex justify-between items-center">
                             <h3 className="text-xl font-bold text-white tracking-wider">{content?.title || t('modalDefaultTitle')}</h3>
                             <motion.button
-                                whileHover={{ scale: 1.1, rotate: 90 }}
+                                whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={onClose}
                                 aria-label="Close Modal"

@@ -7,12 +7,13 @@ import CreateTicket from './CreateTicket';
 import TicketList from './TicketList';
 import LiveIndicator from './LiveIndicator';
 import Modal from './Modal';
-import { getScannerToken, getNgrokUrl, createEvent } from '../services/api';
+import { getScannerToken, getNgrokUrl } from '../services/api';
 import { useTickets } from '../hooks/useTickets';
 import { useModal } from '../hooks/useModal';
 import { useEvent } from '../context/EventContext';
 import { useLanguage } from '../context/LanguageContext';
 import { parseCSV } from '../utils/csvParser';
+import { buttonClick, containerStagger, fadeInUp } from '../utils/animations';
 
 const Dashboard = () => {
     const { modalContent, showModal, hideModal, showErrorModal, showConfirmModal, showPromptModal, showQrCodeModal } = useModal();
@@ -35,14 +36,14 @@ const Dashboard = () => {
 
     const handleTicketCreatedAndShowQR = (result) => {
         handleTicketCreated(result);
-        showQrCodeModal('Ticket QR Code', `QR Code for ${result.ticket.attendeeName}`, result.ticket.id);
+        showQrCodeModal(t('modalQrCodeTitle'), `${t('modalQrCodeBodyPrefix')} ${result.ticket.attendeeName}`, result.ticket.id);
     }
 
     const handleEdit = (ticket) => {
         showModal({
             type: 'edit-ticket',
-            title: 'Edit Ticket',
-            body: `Editing ticket for ${ticket.attendeeName}`,
+            title: t('modalEditTicketTitle'),
+            body: t('modalEditTicketBody', ticket.attendeeName),
             ticket,
             onConfirm: async (updatedTicket) => {
                 await handleUpdateTicket(updatedTicket);
@@ -52,14 +53,14 @@ const Dashboard = () => {
     };
 
     const handleDelete = (ticket) => {
-        showConfirmModal('Delete Ticket', `Are you sure you want to delete the ticket for ${ticket.attendeeName}?`, async () => {
+        showConfirmModal(t('modalDeleteTicketTitle'), t('modalDeleteTicketBody', ticket.attendeeName), async () => {
             await handleDeleteTicket(ticket);
             hideModal();
         });
     };
     
     const handleCheckIn = (ticket) => {
-        showConfirmModal('Manual Check-In', `Are you sure you want to check in ${ticket.attendeeName}?`, async () => {
+        showConfirmModal(t('modalCheckInTitle'), t('modalCheckInBody', ticket.attendeeName), async () => {
             await handleManualCheckIn(ticket);
             hideModal();
         });
@@ -67,7 +68,7 @@ const Dashboard = () => {
     
     const generateSetupQR = async () => {
         if (!eventId) {
-            showErrorModal("Please select an event first.");
+            showErrorModal(t('errorNoEventSelected'));
             return;
         }
         try {
@@ -80,30 +81,30 @@ const Dashboard = () => {
             if (localUrl && publicUrl && localUrl !== publicUrl) {
                 // Ask user preference
                 const useLocal = window.confirm(
-                    `🚀 Optimize Speed?\n\nUse Local Network IP (${localUrl})?\n\n✅ YES: Fast (Phone must be on same Wi-Fi)\n❌ NO: Slower (Public Internet / 4G)`
+                    `🚀 ${t('scannerSpeedOpt')}\n\n${t('scannerLocalQ', localUrl)}\n\n✅ ${t('scannerLocalYes')}\n❌ ${t('scannerLocalNo')}`
                 );
                 if (useLocal) {
                     selectedUrl = localUrl;
-                    modeMessage = " [LOCAL MODE - FAST]";
+                    modeMessage = ` [${t('scannerLocalMode')}]`;
                 } else {
-                    modeMessage = " [PUBLIC MODE]";
+                    modeMessage = ` [${t('scannerPublicMode')}]`;
                 }
             } else if (!publicUrl && localUrl) {
                 selectedUrl = localUrl;
-                modeMessage = " [LOCAL ONLY]";
+                modeMessage = ` [${t('scannerLocalOnly')}]`;
             }
 
             if (!selectedUrl) {
-                 throw new Error("Could not retrieve backend URL.");
+                 throw new Error(t('errorBackendURL'));
             }
 
-            const message = `Event: ${eventId}${modeMessage}. Scan to configure.`;
+            const message = `${t('headerEvent')} ${eventId}${modeMessage}. ${t('scannerConfigPrompt')}`;
             const config = { eventId, apiBaseUrl: selectedUrl, token: scannerToken };
             
             showQrCodeModal(t('qaScanner'), message, JSON.stringify(config));
         } catch (error) {
             console.error(error);
-            showErrorModal(`Setup Failed: ${error.message}.`);
+            showErrorModal(`${t('setupFailed')}: ${error.message}.`);
         }
     };
 
@@ -125,18 +126,18 @@ const Dashboard = () => {
             try {
                 const attendees = parseCSV(text);
 
-                if (attendees.length === 0) throw new Error("No valid attendees found in CSV.");
+                if (attendees.length === 0) throw new Error(t('errorNoValidAttendees'));
 
                 showConfirmModal(
                     t('qaImport'), 
-                    t('importPrompt', attendees.length), 
+                    t('importPrompt', attendees.length),
                     async () => {
                         try {
                             const res = await import('../services/api').then(m => m.importAttendees(eventId, attendees));
                             alert(res.message);
                             // window.location.reload(); // Or refresh tickets
                         } catch (err) {
-                            showErrorModal(`Import failed: ${err.message}`);
+                            showErrorModal(`${t('importFailed')}: ${err.message}`);
                         } finally {
                             hideModal();
                         }
@@ -144,7 +145,7 @@ const Dashboard = () => {
                 );
 
             } catch (err) {
-                showErrorModal(`Failed to parse CSV: ${err.message}`);
+                showErrorModal(`${t('errorCsvParse')}: ${err.message}`);
             }
         };
         reader.readAsText(file);
@@ -174,7 +175,10 @@ const Dashboard = () => {
 
                 {eventId && (
                     <div className="flex items-center gap-3">
-                            <button 
+                            <motion.button 
+                            variants={buttonClick}
+                            whileHover="hover"
+                            whileTap="tap"
                             onClick={async () => {
                                 try {
                                     const { url } = await getNgrokUrl();
@@ -187,18 +191,21 @@ const Dashboard = () => {
                                 } catch(e) { console.error(e); }
                             }}
                             className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-gray-700"
-                            title={t('copyScannerLink')}
+                            title={t('copyScannerLink')} 
                             >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-                            </button>
+                            </motion.button>
 
-                            <button 
+                            <motion.button 
+                            variants={buttonClick}
+                            whileHover="hover"
+                            whileTap="tap"
                             onClick={generateSetupQR}
                             className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-lg shadow-indigo-500/20"
                             >
                             <span className="text-lg">📱</span>
                             <span className="hidden sm:inline">{t('qaScanner')}</span>
-                            </button>
+                            </motion.button>
                     </div>
                 )}
             </header>
@@ -212,54 +219,73 @@ const Dashboard = () => {
                         <p className="text-center px-4">{t('limboDesc')}</p>
                     </div>
                 ) : (
-                    <div className="max-w-7xl mx-auto space-y-8 pb-20">
+                    <motion.div 
+                        variants={containerStagger}
+                        initial="hidden"
+                        animate="visible"
+                        className="max-w-7xl mx-auto space-y-8 pb-20"
+                    >
                         
                         {/* Stats Grid */}
-                        <section>
+                        <motion.section variants={fadeInUp}>
                             <DashboardStats stats={stats} />
-                        </section>
+                        </motion.section>
 
                             {/* Analytics Chart */}
-                        <section>
+                        <motion.section variants={fadeInUp}>
                             <AnalyticsChart tickets={tickets} />
-                        </section>
+                        </motion.section>
 
                         {/* Management Grid */}
-                        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                        <motion.div variants={fadeInUp} className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                             
                             {/* Creation Form & Quick Settings */}
                             <div className="xl:col-span-1 space-y-8">
                                 <CreateTicket eventId={eventId} onTicketCreated={handleTicketCreatedAndShowQR} onApiError={showErrorModal} />
                                 
                                 {/* Quick Actions / Settings Card */}
-                                <div className="glass-panel p-6 rounded-2xl border border-white/5">
+                                <motion.div variants={fadeInUp} className="glass-panel p-6 rounded-2xl border border-white/5">
                                     <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                                         <span>⚙️</span> {t('qaTitle')}
                                     </h3>
                                     <div className="space-y-3">
-                                        <button 
+                                        <motion.button 
+                                            variants={buttonClick}
+                                            whileHover="hover"
+                                            whileTap="tap"
                                             onClick={() => window.location.hash = '#email'}
                                             className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-left transition-colors group"
                                         >
                                             <span className="text-gray-300 font-medium group-hover:text-white">{t('qaEmail')}</span>
                                             <span className="text-gray-500 group-hover:text-white">→</span>
-                                        </button>
+                                        </motion.button>
                                         
-                                        <button 
+                                        <motion.button 
+                                            variants={buttonClick}
+                                            whileHover="hover"
+                                            whileTap="tap"
                                             onClick={generateSetupQR}
                                             className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-left transition-colors group"
                                         >
                                             <span className="text-gray-300 font-medium group-hover:text-white">{t('qaScanner')}</span>
                                             <span className="text-xl">📱</span>
-                                        </button>
+                                        </motion.button>
                                         
-                                        <label className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-left transition-colors group cursor-pointer">
+                                        <motion.label 
+                                            variants={buttonClick}
+                                            whileHover="hover"
+                                            whileTap="tap"
+                                            className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-left transition-colors group cursor-pointer"
+                                        >
                                             <span className="text-gray-300 font-medium group-hover:text-white">{t('qaImport')}</span>
                                             <span className="text-xl">📂</span>
                                             <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
-                                        </label>
+                                        </motion.label>
 
-                                        <button 
+                                        <motion.button 
+                                            variants={buttonClick}
+                                            whileHover="hover"
+                                            whileTap="tap"
                                             onClick={() => {
                                                     // Alert user to use Sidebar
                                                     alert(t('alertDelete'));
@@ -268,9 +294,9 @@ const Dashboard = () => {
                                         >
                                             <span className="text-red-400 font-medium group-hover:text-red-300">{t('qaNuke')}</span>
                                             <span className="text-red-400 group-hover:text-red-300">🗑️</span>
-                                        </button>
+                                        </motion.button>
                                     </div>
-                                </div>
+                                </motion.div>
                             </div>
 
                             {/* List - Takes more space */}
@@ -281,14 +307,14 @@ const Dashboard = () => {
                                     searchTerm={searchTerm}
                                     setSearchTerm={setSearchTerm}
                                     onCheckIn={handleCheckIn}
-                                    onShowQR={(ticketId, attendeeName) => showQrCodeModal('Ticket QR Code', `QR Code for ${attendeeName}`, ticketId)}
+                                    onShowQR={(ticketId, attendeeName) => showQrCodeModal(t('modalQrCodeTitle'), `${t('modalQrCodeBodyPrefix')} ${attendeeName}`, ticketId)}
                                     onEdit={handleEdit}
                                     onDelete={handleDelete}
                                 />
                             </div>
-                        </div>
+                        </motion.div>
 
-                    </div>
+                    </motion.div>
                 )}
             </main>
             
