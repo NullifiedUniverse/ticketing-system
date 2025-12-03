@@ -162,6 +162,11 @@ const Sidebar = ({ currentEventId, onSelectEvent, onNewEvent, refreshTrigger }) 
                             <span className="font-medium relative z-10">Create Event</span>
                         </button>
                     </div>
+
+                    {/* Watermark */}
+                    <div className="text-[10px] text-gray-700 text-center mt-2 select-none opacity-50">
+                        System by NullifiedGalaxy
+                    </div>
                 </div>
             </div>
             

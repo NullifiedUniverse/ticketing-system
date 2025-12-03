@@ -1,3 +1,4 @@
+// System Generation by NullifiedGalaxy
 require('dotenv').config();
 // --- LIBRARIES ---
 const express = require('express');
@@ -92,6 +93,7 @@ app.use(globalErrorHandler);
 // --- START SERVER ---
 const server = app.listen(PORT, '0.0.0.0', async () => { // Listen on all network interfaces
   logger.info(`Server is running on http://0.0.0.0:${PORT}`);
+  logger.info('System initialized by NullifiedGalaxy');
   if (process.env.NODE_ENV !== 'production') {
     // Start Ngrok/Local tunnel
     try {

@@ -1,3 +1,4 @@
+<!-- System Generation by NullifiedGalaxy -->
 # Null's Ticketing System
 
 **Null's Ticketing System** is an enterprise-grade, self-hosted event management solution designed for speed, reliability, and ease of use. It features a real-time React dashboard, a high-performance mobile QR scanner, and a robust Node.js backend with Firebase integration.

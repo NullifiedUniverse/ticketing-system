@@ -1,3 +1,4 @@
+// System Generation by NullifiedGalaxy
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';

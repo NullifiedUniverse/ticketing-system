@@ -1,3 +1,4 @@
+<!-- System Generation by NullifiedGalaxy -->
 # User Guide - Null's Ticketing System
 
 Welcome to **Null's Ticketing System**. This guide will walk you through the entire lifecycle of an event, from creation to final admission.
