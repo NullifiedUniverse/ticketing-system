@@ -62,7 +62,7 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
         </div>
 
         {/* Desktop View (Table) */}
-        <div className="hidden md:block overflow-x-auto max-h-[600px] custom-scrollbar">
+        <div className="hidden md:block max-h-[600px] custom-scrollbar">
             <table className="w-full text-left border-collapse relative">
                 <thead className="sticky top-0 bg-gray-950/95 backdrop-blur-xl z-10 border-b border-gray-700/50 text-gray-400 text-sm uppercase tracking-wider shadow-sm">
                     <tr>

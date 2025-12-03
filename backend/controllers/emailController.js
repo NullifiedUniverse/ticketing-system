@@ -28,54 +28,118 @@ class EmailController {
 
     sendSingle = catchAsync(async (req, res, next) => {
         const { eventId, ticketId, bgFilename, config: reqConfig, messageBefore, messageAfter } = req.body;
-        const config = { ...reqConfig, messageBefore, messageAfter };
+
+        // 1. Load existing config from DB
+        const storedConfig = await ticketService.getEmailConfig(eventId) || {};
+
+        // 2. Merge: Request > Stored
+        // Note: We must distinguish between "undefined" (not sent) and "null/empty" (cleared) if needed.
+        // For now, simple override if provided.
+        const mergedBgFilename = bgFilename !== undefined ? bgFilename : storedConfig.bgFilename;
         
+        const mergedConfig = { ...storedConfig.layoutConfig, ...reqConfig };
+        
+        let mergedMsgBefore = storedConfig.messageBefore;
+        if (messageBefore !== undefined) mergedMsgBefore = messageBefore;
+        
+        let mergedMsgAfter = storedConfig.messageAfter;
+        if (messageAfter !== undefined) mergedMsgAfter = messageAfter;
+
+        // 3. Persist updates if any relevant fields are present in request
+        // We save the *resultant* state so it sticks.
+        // Optimization: Only write if something changed? For robustness, writing on send is fine.
+        if (bgFilename !== undefined || reqConfig || messageBefore !== undefined || messageAfter !== undefined) {
+             await ticketService.updateEmailConfig(eventId, {
+                 bgFilename: mergedBgFilename,
+                 layoutConfig: mergedConfig,
+                 messageBefore: mergedMsgBefore,
+                 messageAfter: mergedMsgAfter
+             });
+        }
+
+        // Prepare for Service
+        const configPayload = { ...mergedConfig }; // Layout props
+        // We pass messages separately to service or inside config as before, 
+        // but service expects them in config for caching? 
+        // Actually service has its own cache but we want DB persistence.
+        // Let's align with service signature: (ticket, eventId, bgPath, config)
+        // where config contains messageBefore/After.
+        configPayload.messageBefore = mergedMsgBefore;
+        configPayload.messageAfter = mergedMsgAfter;
+
         const tickets = await ticketService.getTickets(eventId);
         const ticket = tickets.find(t => t.id === ticketId);
 
         if (!ticket) return next(new AppError('Ticket not found', 404));
         if (!ticket.attendeeEmail) return next(new AppError('No email address for this ticket', 400));
 
-        const bgPath = bgFilename ? path.join(uploadDir, bgFilename) : null;
+        const bgPath = mergedBgFilename ? path.join(uploadDir, mergedBgFilename) : null;
         
-        await emailService.sendTicketEmail(ticket, eventId, bgPath, config);
+        await emailService.sendTicketEmail(ticket, eventId, bgPath, configPayload);
         res.json({ status: 'success', message: `Email sent to ${ticket.attendeeEmail}` });
     });
 
     sendBatch = catchAsync(async (req, res, next) => {
         const { eventId, bgFilename, config: reqConfig, messageBefore, messageAfter } = req.body;
-        const config = { ...reqConfig, messageBefore, messageAfter };
         
+        // 1. Load & Merge (Same logic as sendSingle)
+        const storedConfig = await ticketService.getEmailConfig(eventId) || {};
+        
+        const mergedBgFilename = bgFilename !== undefined ? bgFilename : storedConfig.bgFilename;
+        const mergedConfig = { ...storedConfig.layoutConfig, ...reqConfig };
+        
+        let mergedMsgBefore = storedConfig.messageBefore;
+        if (messageBefore !== undefined) mergedMsgBefore = messageBefore;
+        
+        let mergedMsgAfter = storedConfig.messageAfter;
+        if (messageAfter !== undefined) mergedMsgAfter = messageAfter;
+
+        // 2. Persist
+        if (bgFilename !== undefined || reqConfig || messageBefore !== undefined || messageAfter !== undefined) {
+             await ticketService.updateEmailConfig(eventId, {
+                 bgFilename: mergedBgFilename,
+                 layoutConfig: mergedConfig,
+                 messageBefore: mergedMsgBefore,
+                 messageAfter: mergedMsgAfter
+             });
+        }
+
+        const configPayload = { ...mergedConfig, messageBefore: mergedMsgBefore, messageAfter: mergedMsgAfter };
+
         logger.info(`[Email Batch] Syncing user list for event: ${eventId}`);
         const tickets = await ticketService.getTickets(eventId);
         logger.info(`[Email Batch] Found ${tickets.length} potential recipients.`);
 
-        const bgPath = bgFilename ? path.join(uploadDir, bgFilename) : null;
+        const bgPath = mergedBgFilename ? path.join(uploadDir, mergedBgFilename) : null;
         
         const results = { success: 0, failed: 0, errors: [] };
 
-        // Use Promise.all for better performance, but limit concurrency to avoid SMTP rate limits
-        const CONCURRENCY_LIMIT = 3;
-        const chunks = [];
-        
         // Filter only valid emails
         const emailQueue = tickets.filter(t => t.attendeeEmail);
         
-        for (let i = 0; i < emailQueue.length; i += CONCURRENCY_LIMIT) {
-            chunks.push(emailQueue.slice(i, i + CONCURRENCY_LIMIT));
-        }
+        // Sequential processing with Retry Logic
+        for (const ticket of emailQueue) {
+            let attempts = 0;
+            const maxAttempts = 3;
+            let sent = false;
 
-        for (const chunk of chunks) {
-            await Promise.all(chunk.map(async (ticket) => {
+            while (attempts < maxAttempts && !sent) {
                 try {
-                    await emailService.sendTicketEmail(ticket, eventId, bgPath, config);
+                    attempts++;
+                    await emailService.sendTicketEmail(ticket, eventId, bgPath, configPayload);
                     results.success++;
+                    sent = true;
                 } catch (e) {
-                    logger.error(`[Email Batch] Failed for ${ticket.attendeeEmail}: ${e.message}`);
-                    results.failed++;
-                    results.errors.push(`${ticket.attendeeEmail}: ${e.message}`);
+                    if (attempts === maxAttempts) {
+                        logger.error(`[Email Batch] Failed for ${ticket.attendeeEmail} after ${maxAttempts} attempts: ${e.message}`);
+                        results.failed++;
+                        results.errors.push(`${ticket.attendeeEmail}: ${e.message}`);
+                    } else {
+                        logger.warn(`[Email Batch] Attempt ${attempts} failed for ${ticket.attendeeEmail}: ${e.message}. Retrying...`);
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // Simple 1s delay
+                    }
                 }
-            }));
+            }
         }
         
         logger.info(`[Email Batch] Completed. Success: ${results.success}, Failed: ${results.failed}`);
@@ -83,15 +147,39 @@ class EmailController {
     });
 
     preview = catchAsync(async (req, res, next) => {
-        const { eventId, ticketId, bgFilename, config } = req.body;
+        const { eventId, ticketId, bgFilename, config: reqConfig, messageBefore, messageAfter } = req.body;
         
+        // 1. Load & Merge
+        const storedConfig = await ticketService.getEmailConfig(eventId) || {};
+        
+        const mergedBgFilename = bgFilename !== undefined ? bgFilename : storedConfig.bgFilename;
+        const mergedConfig = { ...storedConfig.layoutConfig, ...reqConfig };
+        
+        let mergedMsgBefore = storedConfig.messageBefore;
+        if (messageBefore !== undefined) mergedMsgBefore = messageBefore;
+        
+        let mergedMsgAfter = storedConfig.messageAfter;
+        if (messageAfter !== undefined) mergedMsgAfter = messageAfter;
+
+        // 2. Persist
+        if (bgFilename !== undefined || reqConfig || messageBefore !== undefined || messageAfter !== undefined) {
+             await ticketService.updateEmailConfig(eventId, {
+                 bgFilename: mergedBgFilename,
+                 layoutConfig: mergedConfig,
+                 messageBefore: mergedMsgBefore,
+                 messageAfter: mergedMsgAfter
+             });
+        }
+
+        const configPayload = { ...mergedConfig, messageBefore: mergedMsgBefore, messageAfter: mergedMsgAfter };
+
         const tickets = await ticketService.getTickets(eventId);
         const ticket = tickets.find(t => t.id === ticketId) || tickets[0]; 
 
         if (!ticket) return next(new AppError('No tickets found to preview', 404));
 
-        const bgPath = bgFilename ? path.join(uploadDir, bgFilename) : null;
-        const dataUrl = await emailService.getPreviewImage(ticket, bgPath, config);
+        const bgPath = mergedBgFilename ? path.join(uploadDir, mergedBgFilename) : null;
+        const dataUrl = await emailService.getPreviewImage(ticket, bgPath, configPayload);
         
         res.json({ status: 'success', image: dataUrl });
     });

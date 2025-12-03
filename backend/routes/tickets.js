@@ -14,6 +14,7 @@ adminRouter.delete('/delete-event/:eventId', ticketController.deleteEvent.bind(t
 
 // Tickets
 adminRouter.post('/create-ticket/:eventId', ticketController.createTicket.bind(ticketController));
+adminRouter.post('/import/:eventId', ticketController.importAttendees.bind(ticketController));
 adminRouter.put('/update-ticket/:eventId/:ticketId', ticketController.updateTicket.bind(ticketController));
 adminRouter.delete('/delete-ticket/:eventId/:ticketId', ticketController.deleteTicket.bind(ticketController));
 adminRouter.get('/tickets/:eventId', ticketController.getTickets.bind(ticketController));

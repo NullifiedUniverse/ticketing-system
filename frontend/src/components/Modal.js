@@ -32,7 +32,8 @@ const Modal = ({ isOpen, onClose, content }) => {
                                 whileHover={{ scale: 1.1, rotate: 90 }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={onClose}
-                                className="text-gray-400 hover:text-white text-2xl"
+                                aria-label="Close Modal"
+                                className="text-gray-400 hover:text-white text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
                             >
                                 &times;
                             </motion.button>

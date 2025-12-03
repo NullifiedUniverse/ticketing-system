@@ -1,36 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { getEvents, deleteEvent } from '../services/api';
+import React, { useState } from 'react';
+import { deleteEvent } from '../services/api';
+import { useEvent } from '../context/EventContext';
 
-const Sidebar = ({ currentEventId, onSelectEvent, onNewEvent, refreshTrigger }) => {
-    const [events, setEvents] = useState([]);
-    const [loading, setLoading] = useState(false);
+const Sidebar = ({ onNewEvent }) => {
+    const { events, loading, eventId: currentEventId, selectEvent, fetchEvents } = useEvent();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
-
-    useEffect(() => {
-        fetchEvents();
-    }, [currentEventId, refreshTrigger]); 
-
-    const fetchEvents = async () => {
-        setLoading(true);
-        try {
-            const fetchedEvents = await getEvents();
-            // Sort by most recent
-            const sorted = fetchedEvents.sort((a, b) => {
-                 const getTime = (t) => {
-                     if (!t) return 0;
-                     if (t._seconds) return t._seconds * 1000;
-                     if (t.seconds) return t.seconds * 1000; // Firebase timestamp standard
-                     return new Date(t).getTime();
-                 };
-                 return getTime(b.createdAt) - getTime(a.createdAt);
-            });
-            setEvents(sorted);
-        } catch (error) {
-            console.error("Failed to load events", error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleDelete = async (e, eventId) => {
         e.stopPropagation();
@@ -38,14 +12,19 @@ const Sidebar = ({ currentEventId, onSelectEvent, onNewEvent, refreshTrigger }) 
             try {
                 await deleteEvent(eventId);
                 if (currentEventId === eventId) {
-                    onSelectEvent(null);
+                    selectEvent(null);
                 }
-                // Force a small delay to ensure backend consistency
-                setTimeout(fetchEvents, 500);
+                // Force refresh via context
+                fetchEvents();
             } catch (error) {
                 alert("Failed to delete event: " + error.message);
             }
         }
+    };
+
+    const onSelectEvent = (id) => {
+        selectEvent(id);
+        setIsMobileOpen(false);
     };
 
     return (
@@ -54,6 +33,7 @@ const Sidebar = ({ currentEventId, onSelectEvent, onNewEvent, refreshTrigger }) 
             <div className="xl:hidden fixed top-4 left-4 z-50">
                 <button 
                     onClick={() => setIsMobileOpen(!isMobileOpen)}
+                    aria-label={isMobileOpen ? "Close Sidebar" : "Open Sidebar"}
                     className="bg-gray-900/80 backdrop-blur text-white p-2.5 rounded-xl border border-gray-700 shadow-lg active:scale-95 transition-transform"
                 >
                     {isMobileOpen ? (
@@ -75,7 +55,7 @@ const Sidebar = ({ currentEventId, onSelectEvent, onNewEvent, refreshTrigger }) 
                     <div className="mb-8 mt-2">
                         <h1 className="text-2xl font-bold flex items-center gap-2 cursor-pointer" onClick={() => window.location.hash = ''}>
                             <span className="w-8 h-8 bg-gradient-to-br from-pink-500 to-violet-600 rounded-lg flex items-center justify-center text-lg">🎫</span>
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">TicketControl</span>
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Null's Board</span>
                         </h1>
                     </div>
 

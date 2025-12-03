@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Dashboard from './components/Dashboard';
 import EmailDashboard from './components/EmailDashboard';
+import { EventProvider } from './context/EventContext';
 
 const App = () => {
     const [route, setRoute] = useState(window.location.hash || '#dashboard');
@@ -12,9 +13,11 @@ const App = () => {
     }, []);
 
     return (
-        <div>
-            {route === '#email' ? <EmailDashboard /> : <Dashboard />}
-        </div>
+        <EventProvider>
+            <div>
+                {route === '#email' ? <EmailDashboard /> : <Dashboard />}
+            </div>
+        </EventProvider>
     );
 };
 

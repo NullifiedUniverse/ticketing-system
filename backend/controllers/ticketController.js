@@ -132,7 +132,7 @@ class TicketController {
         const { eventId } = req.params;
         
         // Ensure cache is hot
-        await ticketService.loadCacheForEvent(eventId);
+        await ticketService.ensureCache(eventId); // Fixed method name from loadCacheForEvent
         const tickets = await ticketService.getTickets(eventId);
         
         // Map to minimal array: [id, status, name]
@@ -143,6 +143,20 @@ class TicketController {
         }));
         
         res.json({ status: 'success', data: minimal });
+    });
+
+    importAttendees = catchAsync(async (req, res, next) => {
+        const { eventId } = req.params;
+        const attendees = req.body; // Expects JSON array: [{ attendeeName, attendeeEmail }, ...]
+
+        if (!Array.isArray(attendees) || attendees.length === 0) {
+            return next(new AppError('Invalid or empty attendee list.', 400));
+        }
+
+        logger.info(`[Import] Starting batch import for ${eventId}. Count: ${attendees.length}`);
+        const result = await ticketService.createBatch(eventId, attendees);
+        
+        res.status(201).json({ status: 'success', message: `Successfully imported ${result.count} tickets.` });
     });
 }
 

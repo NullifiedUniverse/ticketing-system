@@ -199,6 +199,57 @@ class TicketService {
         }
     }
 
+    async createBatch(eventId, attendees) {
+        await this.ensureCache(eventId);
+        
+        // Firestore limits batches to 500 ops
+        const CHUNK_SIZE = 450; // Safe margin
+        const chunks = [];
+        for (let i = 0; i < attendees.length; i += CHUNK_SIZE) {
+            chunks.push(attendees.slice(i, i + CHUNK_SIZE));
+        }
+
+        let createdCount = 0;
+        
+        for (const chunk of chunks) {
+            const batch = db.batch();
+            const ticketRefBase = db.collection('events').doc(eventId).collection('tickets');
+            
+            const tempCacheUpdates = [];
+
+            chunk.forEach(attendee => {
+                if (!attendee.attendeeName) return; // Skip empty rows
+                
+                const ticketId = uuidv4();
+                const newTicket = {
+                    id: ticketId,
+                    attendeeName: attendee.attendeeName,
+                    attendeeEmail: attendee.attendeeEmail || '',
+                    status: 'valid',
+                    createdAt: new Date(),
+                    checkInHistory: []
+                };
+
+                const docRef = ticketRefBase.doc(ticketId);
+                batch.set(docRef, newTicket);
+                
+                tempCacheUpdates.push(newTicket);
+                createdCount++;
+            });
+
+            if (tempCacheUpdates.length > 0) {
+                // Optimistic Cache Update
+                const eventCache = this.cache.get(eventId);
+                tempCacheUpdates.forEach(t => eventCache.set(t.id, t));
+
+                await batch.commit();
+                this.metrics.writes += tempCacheUpdates.length;
+            }
+        }
+
+        return { success: true, count: createdCount };
+    }
+
     async updateTicketStatus(eventId, ticketId, action, scannedBy) {
         await this.ensureCache(eventId);
         
@@ -290,6 +341,23 @@ class TicketService {
     async getTickets(eventId) {
         await this.ensureCache(eventId);
         return Array.from(this.cache.get(eventId).values());
+    }
+
+    // --- EMAIL CONFIG (Persistence) ---
+    async updateEmailConfig(eventId, configData) {
+        // configData: { messageBefore, messageAfter, bgFilename, layoutConfig }
+        // We merge this into the existing events_meta doc
+        const eventRef = db.collection('events_meta').doc(eventId);
+        await eventRef.set({ emailConfig: configData }, { merge: true });
+    }
+
+    async getEmailConfig(eventId) {
+        const eventRef = db.collection('events_meta').doc(eventId);
+        const doc = await eventRef.get();
+        if (doc.exists && doc.data().emailConfig) {
+            return doc.data().emailConfig;
+        }
+        return null;
     }
 }
 

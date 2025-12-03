@@ -108,6 +108,15 @@ export const createTicket = async (eventId, attendeeName, attendeeEmail) => {
     return result;
 };
 
+export const importAttendees = async (eventId, attendees) => {
+    const result = await callApi(`/api/admin/import/${eventId}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(attendees),
+    });
+    return result;
+};
+
 export const updateTicketStatus = async (eventId, ticketId, action) => {
     const result = await callApi(`/api/admin/update-ticket-status/${eventId}/${ticketId}`, {
         method: 'POST',
