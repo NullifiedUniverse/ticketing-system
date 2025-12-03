@@ -1,7 +1,12 @@
 <!-- System Generation by NullifiedGalaxy -->
 # User Guide - Null's Ticketing System
 
-Welcome to **Null's Ticketing System**. This guide will walk you through the entire lifecycle of an event, from creation to final admission.
+Welcome to **Null's Board**. If you are reading this, you have likely been coerced into managing an event. This guide will walk you through the entire lifecycle of an event, from its optimistic creation to the inevitable chaos of final admission.
+
+### Prerequisites
+*   A working computer (optional, but recommended).
+*   Coffee. Lots of it.
+*   A sense of impending doom.
 
 ---
 
@@ -15,24 +20,26 @@ Access the dashboard at `http://localhost:3001` (or your Ngrok URL).
 *   **Quick Tools:** Access Email Dashboard and Raffles.
 
 ### **Live Stats**
-The top cards show real-time metrics:
-*   **Currently Inside:** Active check-ins.
-*   **On Leave:** Attendees who scanned "Check Out" (temporarily left).
-*   **Remaining:** Valid tickets not yet used.
+The top cards show real-time metrics (assuming the backend hasn't crashed):
+*   **Contained:** Active check-ins. (People currently breathing your air).
+*   **AWOL:** Attendees who scanned "Check Out" (temporarily left to escape).
+*   **At Large:** Valid tickets not yet used. The threat is still out there.
+
+**Pro Tip:** If 'Contained' is higher than 'Total Captured', you have a ghost problem. Call a priest.
 
 ---
 
-## 2. Managing Events
+## 2. Creating a Containment Zone (Events)
 
 ### **Creating an Event**
 1.  Click **"+ Create Event"** in the sidebar.
 2.  Enter a unique ID (e.g., `winter-gala-2025`).
 3.  The system automatically initializes the database collections.
 
-### **Deleting an Event**
+### **Nuking Evidence (Deleting)**
 1.  Hover over the event name in the sidebar.
 2.  Click the **Trash Icon**.
-3.  **Warning:** This permanently deletes all ticket data for that event.
+3.  **Warning:** This obliterates all ticket data for that event. There is no "Undo". It's gone. Forever.
 
 ---
 
@@ -46,14 +53,20 @@ The top cards show real-time metrics:
 
 ### **Manual Actions**
 In the ticket list, you can:
-*   **Check In:** Manually admit a user without scanning.
-*   **QR Code:** View/Print the QR code.
-*   **Edit:** Correct name/email typos.
-*   **Delete:** Revoke a ticket.
+*   **Capture:** Manually incarcerate a user without scanning. Useful for bypassing security protocols or for people who "forgot" their phone.
+*   **Mark (QR):** Stare directly into the matrix. View/Print the QR code.
+*   **Retcon:** Alter the timeline. Fix name typos before they notice you spelled "Jon" as "Jawn".
+*   **Purge:** Erase a subject from existence. It was just a bad dream.
+
+### **Mass Conscription (Batch Import)**
+1.  In the **Quick Actions** section.
+2.  Click **"Mass Conscription (CSV)"**.
+3.  Upload a CSV file. Format: `Name, Email`. Don't mess it up.
+4.  Watch as the system assimilates your victims.
 
 ---
 
-## 4. Email System
+## 4. Spamming Infrastructure (Email)
 
 Navigate to the **Email** section via the sidebar.
 
@@ -64,7 +77,7 @@ Navigate to the **Email** section via the sidebar.
 2.  **Preview:** Click "Preview" on any user row to see exactly what they will receive.
 3.  **Sending:**
     *   **Send One:** Send to a specific individual.
-    *   **Batch Send:** Blast tickets to ALL attendees in the list. The system handles rate limiting automatically.
+    *   **Batch Send:** Blast tickets to ALL attendees in the list. Hope you checked for typos. The system handles rate limiting automatically.
 
 ---
 
@@ -86,5 +99,7 @@ The scanner is a web app designed for mobile use.
 *   **Check Out Mode:** Toggle the switch at the bottom. Scans mark users as "On Leave", allowing them to re-enter later.
 
 ### **Troubleshooting**
-*   **"Permission Denied":** Ensure you allowed Camera access in your browser.
-*   **"HTTPS Required":** Android requires HTTPS for camera access. Ensure you are using the `ngrok` link (https), not the IP address, unless you have configured local SSL.
+*   **"The Machine Rejects You" (Permission Denied):** Ensure you allowed Camera access. The browser doesn't trust you.
+*   **"Security Theater" (HTTPS Required):** Android is paranoid. Use the `ngrok` link (https), not the IP address.
+*   **Scanner won't load:** Have you tried turning it off and on again? Seriously.
+*   **Soul not found:** That's a personal problem. We can't help you there.

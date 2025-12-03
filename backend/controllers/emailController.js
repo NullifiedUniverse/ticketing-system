@@ -27,14 +27,12 @@ class EmailController {
     });
 
     sendSingle = catchAsync(async (req, res, next) => {
-        const { eventId, ticketId, bgFilename, config: reqConfig, messageBefore, messageAfter } = req.body;
+        const { eventId, ticketId, bgFilename, config: reqConfig, messageBefore, messageAfter, emailSubject, senderName } = req.body;
 
         // 1. Load existing config from DB
         const storedConfig = await ticketService.getEmailConfig(eventId) || {};
 
         // 2. Merge: Request > Stored
-        // Note: We must distinguish between "undefined" (not sent) and "null/empty" (cleared) if needed.
-        // For now, simple override if provided.
         const mergedBgFilename = bgFilename !== undefined ? bgFilename : storedConfig.bgFilename;
         
         const mergedConfig = { ...storedConfig.layoutConfig, ...reqConfig };
@@ -45,27 +43,30 @@ class EmailController {
         let mergedMsgAfter = storedConfig.messageAfter;
         if (messageAfter !== undefined) mergedMsgAfter = messageAfter;
 
-        // 3. Persist updates if any relevant fields are present in request
-        // We save the *resultant* state so it sticks.
-        // Optimization: Only write if something changed? For robustness, writing on send is fine.
-        if (bgFilename !== undefined || reqConfig || messageBefore !== undefined || messageAfter !== undefined) {
+        let mergedSubject = storedConfig.emailSubject;
+        if (emailSubject !== undefined) mergedSubject = emailSubject;
+
+        let mergedSenderName = storedConfig.senderName;
+        if (senderName !== undefined) mergedSenderName = senderName;
+
+        // 3. Persist updates
+        if (bgFilename !== undefined || reqConfig || messageBefore !== undefined || messageAfter !== undefined || emailSubject !== undefined || senderName !== undefined) {
              await ticketService.updateEmailConfig(eventId, {
                  bgFilename: mergedBgFilename,
                  layoutConfig: mergedConfig,
                  messageBefore: mergedMsgBefore,
-                 messageAfter: mergedMsgAfter
+                 messageAfter: mergedMsgAfter,
+                 emailSubject: mergedSubject,
+                 senderName: mergedSenderName
              });
         }
 
         // Prepare for Service
-        const configPayload = { ...mergedConfig }; // Layout props
-        // We pass messages separately to service or inside config as before, 
-        // but service expects them in config for caching? 
-        // Actually service has its own cache but we want DB persistence.
-        // Let's align with service signature: (ticket, eventId, bgPath, config)
-        // where config contains messageBefore/After.
+        const configPayload = { ...mergedConfig };
         configPayload.messageBefore = mergedMsgBefore;
         configPayload.messageAfter = mergedMsgAfter;
+        configPayload.emailSubject = mergedSubject;
+        configPayload.senderName = mergedSenderName;
 
         const tickets = await ticketService.getTickets(eventId);
         const ticket = tickets.find(t => t.id === ticketId);
@@ -80,9 +81,9 @@ class EmailController {
     });
 
     sendBatch = catchAsync(async (req, res, next) => {
-        const { eventId, bgFilename, config: reqConfig, messageBefore, messageAfter } = req.body;
+        const { eventId, bgFilename, config: reqConfig, messageBefore, messageAfter, emailSubject, senderName } = req.body;
         
-        // 1. Load & Merge (Same logic as sendSingle)
+        // 1. Load & Merge
         const storedConfig = await ticketService.getEmailConfig(eventId) || {};
         
         const mergedBgFilename = bgFilename !== undefined ? bgFilename : storedConfig.bgFilename;
@@ -94,17 +95,31 @@ class EmailController {
         let mergedMsgAfter = storedConfig.messageAfter;
         if (messageAfter !== undefined) mergedMsgAfter = messageAfter;
 
+        let mergedSubject = storedConfig.emailSubject;
+        if (emailSubject !== undefined) mergedSubject = emailSubject;
+
+        let mergedSenderName = storedConfig.senderName;
+        if (senderName !== undefined) mergedSenderName = senderName;
+
         // 2. Persist
-        if (bgFilename !== undefined || reqConfig || messageBefore !== undefined || messageAfter !== undefined) {
+        if (bgFilename !== undefined || reqConfig || messageBefore !== undefined || messageAfter !== undefined || emailSubject !== undefined || senderName !== undefined) {
              await ticketService.updateEmailConfig(eventId, {
                  bgFilename: mergedBgFilename,
                  layoutConfig: mergedConfig,
                  messageBefore: mergedMsgBefore,
-                 messageAfter: mergedMsgAfter
+                 messageAfter: mergedMsgAfter,
+                 emailSubject: mergedSubject,
+                 senderName: mergedSenderName
              });
         }
 
-        const configPayload = { ...mergedConfig, messageBefore: mergedMsgBefore, messageAfter: mergedMsgAfter };
+        const configPayload = { 
+            ...mergedConfig, 
+            messageBefore: mergedMsgBefore, 
+            messageAfter: mergedMsgAfter,
+            emailSubject: mergedSubject,
+            senderName: mergedSenderName
+        };
 
         logger.info(`[Email Batch] Syncing user list for event: ${eventId}`);
         const tickets = await ticketService.getTickets(eventId);
@@ -147,7 +162,7 @@ class EmailController {
     });
 
     preview = catchAsync(async (req, res, next) => {
-        const { eventId, ticketId, bgFilename, config: reqConfig, messageBefore, messageAfter } = req.body;
+        const { eventId, ticketId, bgFilename, config: reqConfig, messageBefore, messageAfter, emailSubject, senderName } = req.body;
         
         // 1. Load & Merge
         const storedConfig = await ticketService.getEmailConfig(eventId) || {};
@@ -161,17 +176,31 @@ class EmailController {
         let mergedMsgAfter = storedConfig.messageAfter;
         if (messageAfter !== undefined) mergedMsgAfter = messageAfter;
 
+        let mergedSubject = storedConfig.emailSubject;
+        if (emailSubject !== undefined) mergedSubject = emailSubject;
+
+        let mergedSenderName = storedConfig.senderName;
+        if (senderName !== undefined) mergedSenderName = senderName;
+
         // 2. Persist
-        if (bgFilename !== undefined || reqConfig || messageBefore !== undefined || messageAfter !== undefined) {
+        if (bgFilename !== undefined || reqConfig || messageBefore !== undefined || messageAfter !== undefined || emailSubject !== undefined || senderName !== undefined) {
              await ticketService.updateEmailConfig(eventId, {
                  bgFilename: mergedBgFilename,
                  layoutConfig: mergedConfig,
                  messageBefore: mergedMsgBefore,
-                 messageAfter: mergedMsgAfter
+                 messageAfter: mergedMsgAfter,
+                 emailSubject: mergedSubject,
+                 senderName: mergedSenderName
              });
         }
 
-        const configPayload = { ...mergedConfig, messageBefore: mergedMsgBefore, messageAfter: mergedMsgAfter };
+        const configPayload = { 
+            ...mergedConfig, 
+            messageBefore: mergedMsgBefore, 
+            messageAfter: mergedMsgAfter,
+            emailSubject: mergedSubject,
+            senderName: mergedSenderName
+        };
 
         const tickets = await ticketService.getTickets(eventId);
         const ticket = tickets.find(t => t.id === ticketId) || tickets[0]; 

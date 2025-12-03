@@ -1,16 +1,19 @@
 import React from 'react';
 import Sidebar from './Sidebar';
 import Modal from './Modal';
+import PageTransition from './PageTransition';
 import { useEvent } from '../context/EventContext';
 import { useModal } from '../hooks/useModal';
 import { createEvent } from '../services/api';
+import { useLanguage } from '../context/LanguageContext';
 
 const Layout = ({ children }) => {
     const { eventId, selectEvent, triggerRefresh } = useEvent();
     const { modalContent, hideModal, showErrorModal, showPromptModal } = useModal();
+    const { t } = useLanguage();
     
     const handleNewEvent = () => {
-        showPromptModal('Create New Event', 'Enter a unique ID for the new event (e.g., concert-2025).', async (newEventId) => {
+        showPromptModal(t('modalPromptTitle'), 'Enter a unique ID for the new event (e.g., concert-2025).', async (newEventId) => {
             if (newEventId) {
                 const formattedId = newEventId.trim().toLowerCase().replace(/\s+/g, '-');
                 try {
@@ -35,7 +38,9 @@ const Layout = ({ children }) => {
             />
 
             <div className="flex-1 flex flex-col min-w-0 relative xl:ml-72 transition-all duration-300 h-full">
-                {children}
+                <PageTransition>
+                    {children}
+                </PageTransition>
             </div>
             
             <Modal isOpen={!!modalContent} onClose={hideModal} content={modalContent || {}} />

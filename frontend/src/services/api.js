@@ -167,22 +167,22 @@ export const getEmailPreview = async (eventId, ticketId, bgFilename, config) => 
     return result.image;
 };
 
-export const sendTicketEmail = async (eventId, ticketId, bgFilename, config, messageBefore, messageAfter) => {
+export const sendTicketEmail = async (eventId, ticketId, bgFilename, config, messageBefore, messageAfter, emailSubject, senderName) => {
     const result = await callApi('/api/admin/email/send-one', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ eventId, ticketId, bgFilename, config, messageBefore, messageAfter }),
+        body: JSON.stringify({ eventId, ticketId, bgFilename, config, messageBefore, messageAfter, emailSubject, senderName }),
     });
     return result;
 };
 
-export const sendBatchEmails = async (eventId, bgFilename, config, messageBefore, messageAfter) => {
+export const sendBatchEmails = async (eventId, bgFilename, config, messageBefore, messageAfter, emailSubject, senderName) => {
     // messageBefore/After might be inside config if called from UI state directly, 
     // but we support explicit passing too.
     const result = await callApi('/api/admin/email/send-batch', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ eventId, bgFilename, config, messageBefore, messageAfter }),
+        body: JSON.stringify({ eventId, bgFilename, config, messageBefore, messageAfter, emailSubject, senderName }),
     });
     return result;
 };

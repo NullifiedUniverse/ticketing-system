@@ -91,15 +91,33 @@ class EmailService {
 
         // 3. Name Text
         const nameText = ticket.attendeeName || "Unknown";
-        ctx.font = `bold ${fontSize}px Arial`;
         
+        // Robust Font Stack for Traditional Chinese (Windows, Mac, Linux)
+        // "Microsoft JhengHei" is key for win32.
+        const fontStack = '"Microsoft JhengHei", "Microsoft YaHei", "Noto Sans TC", "PingFang TC", "Heiti TC", "WenQuanYi Zen Hei", Arial, sans-serif';
+        
+        ctx.font = `bold ${fontSize}px ${fontStack}`;
+        
+        // Auto-scale text if it fits poorly (Centering & Spacing validation)
+        const maxTextWidth = canvas.width * 0.85; // Keep 7.5% padding on each side
+        let currentFontSize = fontSize;
+        let textMetrics = ctx.measureText(nameText);
+        
+        // Iteratively reduce font size if text is too wide
+        while (textMetrics.width > maxTextWidth && currentFontSize > 40) {
+            currentFontSize -= 10;
+            ctx.font = `bold ${currentFontSize}px ${fontStack}`;
+            textMetrics = ctx.measureText(nameText);
+        }
+
         // Center the text horizontally on the image
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         
         const centerX = canvas.width / 2;
 
-        ctx.lineWidth = Math.floor(fontSize * 0.05);
+        // Adjust line width relative to new font size
+        ctx.lineWidth = Math.floor(currentFontSize * 0.05);
         ctx.strokeStyle = 'white';
         ctx.fillStyle = 'black';
 
@@ -148,16 +166,18 @@ class EmailService {
         // Default messages (fallback if still empty)
         const msgBefore = finalMsgBefore ? finalMsgBefore.replace(/\n/g, '<br>') : `Here is your ticket for <strong>${eventId}</strong>.`;
         const msgAfter = finalMsgAfter ? finalMsgAfter.replace(/\n/g, '<br>') : "Please present this QR code at the entrance.";
+        
+        // Configurable Subject and Sender
+        const subject = config.emailSubject || `Your Ticket for ${eventId}`;
+        const senderName = config.senderName || "Ticket System";
 
         const mailOptions = {
-            from: `"Ticket System" <${this.transporter.transporter.auth.user}>`,
+            from: `"${senderName}" <${this.transporter.transporter.auth.user}>`,
             to: ticket.attendeeEmail,
-            subject: `Your Ticket for ${eventId}`,
+            subject: subject,
             html: `
                 <div style="font-family: sans-serif; text-align: center; background: #f4f4f4; padding: 0; margin: 0;">
                     <div style="background: white; padding: 40px 20px; border-radius: 0; max-width: 800px; margin: auto; text-align: left;">
-                        
-                        <h2 style="color: #333; margin-bottom: 20px;">Hello ${ticket.attendeeName},</h2>
                         
                         <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
                             ${msgBefore}

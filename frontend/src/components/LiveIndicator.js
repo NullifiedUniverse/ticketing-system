@@ -1,10 +1,12 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../context/LanguageContext';
 
 const LiveIndicator = ({ status, error }) => {
+    const { t } = useLanguage();
     const color = status === 'connected' ? '#22c55e' : '#ef4444';
-    const text = status === 'connected' ? 'Live' : 'Error';
+    const text = status === 'connected' ? t('liveConnected') : t('liveOffline');
 
     return (
         <div className="relative group flex items-center gap-2">

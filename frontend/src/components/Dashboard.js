@@ -7,14 +7,17 @@ import CreateTicket from './CreateTicket';
 import TicketList from './TicketList';
 import LiveIndicator from './LiveIndicator';
 import Modal from './Modal';
-import { getScannerToken, getNgrokUrl } from '../services/api';
+import { getScannerToken, getNgrokUrl, createEvent } from '../services/api';
 import { useTickets } from '../hooks/useTickets';
 import { useModal } from '../hooks/useModal';
 import { useEvent } from '../context/EventContext';
+import { useLanguage } from '../context/LanguageContext';
+import { parseCSV } from '../utils/csvParser';
 
 const Dashboard = () => {
-    const { modalContent, showModal, hideModal, showErrorModal, showConfirmModal, showQrCodeModal } = useModal();
+    const { modalContent, showModal, hideModal, showErrorModal, showConfirmModal, showPromptModal, showQrCodeModal } = useModal();
     const { eventId } = useEvent(); // Get global eventId
+    const { t } = useLanguage();
     
     const {
         tickets,
@@ -97,7 +100,7 @@ const Dashboard = () => {
             const message = `Event: ${eventId}${modeMessage}. Scan to configure.`;
             const config = { eventId, apiBaseUrl: selectedUrl, token: scannerToken };
             
-            showQrCodeModal('Scanner Setup Code', message, JSON.stringify(config));
+            showQrCodeModal(t('qaScanner'), message, JSON.stringify(config));
         } catch (error) {
             console.error(error);
             showErrorModal(`Setup Failed: ${error.message}.`);
@@ -120,34 +123,13 @@ const Dashboard = () => {
         reader.onload = async (event) => {
             const text = event.target.result;
             try {
-                const lines = text.split(/\r?\n/).filter(l => l.trim());
-                if (lines.length < 2) throw new Error("CSV is empty or missing data.");
-
-                // Basic CSV Parse (Assumes Header: Name, Email)
-                // Skip header if it looks like "Name,Email"
-                let startIndex = 0;
-                const firstLine = lines[0].toLowerCase();
-                if (firstLine.includes('name') && firstLine.includes('email')) {
-                    startIndex = 1;
-                }
-
-                const attendees = [];
-                for (let i = startIndex; i < lines.length; i++) {
-                    const parts = lines[i].split(',');
-                    if (parts.length >= 2) {
-                        const name = parts[0].trim();
-                        const email = parts[1].trim();
-                        if (name && email) {
-                            attendees.push({ attendeeName: name, attendeeEmail: email });
-                        }
-                    }
-                }
+                const attendees = parseCSV(text);
 
                 if (attendees.length === 0) throw new Error("No valid attendees found in CSV.");
 
                 showConfirmModal(
-                    "Import Attendees", 
-                    `Found ${attendees.length} attendees. Import now?`, 
+                    t('qaImport'), 
+                    t('importPrompt', attendees.length), 
                     async () => {
                         try {
                             const res = await import('../services/api').then(m => m.importAttendees(eventId, attendees));
@@ -180,11 +162,11 @@ const Dashboard = () => {
                         <h2 className="text-lg md:text-xl font-semibold text-white truncate">
                         {eventId ? (
                             <>
-                                <span className="text-gray-500 mr-2 hidden sm:inline">Event:</span>
+                                <span className="text-gray-500 mr-2 hidden sm:inline">{t('headerEvent')}</span>
                                 {eventId}
                             </>
                         ) : (
-                            <span className="text-gray-500">Select Event</span>
+                            <span className="text-gray-500">{t('headerSelect')}</span>
                         )}
                     </h2>
                     <LiveIndicator status={connectionStatus} error={connectionError} />
@@ -198,14 +180,14 @@ const Dashboard = () => {
                                     const { url } = await getNgrokUrl();
                                     if(url) {
                                         await navigator.clipboard.writeText(`${url}/scanner`);
-                                        alert("Scanner Link Copied to Clipboard!");
+                                        alert(t('alertLinkCopied'));
                                     } else {
-                                        alert("Could not determine URL.");
+                                        alert(t('errorBackendURL'));
                                     }
                                 } catch(e) { console.error(e); }
                             }}
                             className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-gray-700"
-                            title="Copy Scanner Link"
+                            title={t('copyScannerLink')}
                             >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
                             </button>
@@ -215,7 +197,7 @@ const Dashboard = () => {
                             className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-lg shadow-indigo-500/20"
                             >
                             <span className="text-lg">📱</span>
-                            <span className="hidden sm:inline">Scanner Setup</span>
+                            <span className="hidden sm:inline">{t('qaScanner')}</span>
                             </button>
                     </div>
                 )}
@@ -226,8 +208,8 @@ const Dashboard = () => {
                 {!eventId ? (
                     <div className="h-full flex flex-col items-center justify-center text-gray-500">
                         <div className="text-6xl mb-4 opacity-50">🎟️</div>
-                        <h3 className="text-xl font-medium text-white mb-2">No Event Selected</h3>
-                        <p className="text-center px-4">Select an event from the sidebar or create a new one to get started.</p>
+                        <h3 className="text-xl font-medium text-white mb-2">{t('limboTitle')}</h3>
+                        <p className="text-center px-4">{t('limboDesc')}</p>
                     </div>
                 ) : (
                     <div className="max-w-7xl mx-auto space-y-8 pb-20">
@@ -252,14 +234,14 @@ const Dashboard = () => {
                                 {/* Quick Actions / Settings Card */}
                                 <div className="glass-panel p-6 rounded-2xl border border-white/5">
                                     <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                        <span>⚙️</span> Quick Actions
+                                        <span>⚙️</span> {t('qaTitle')}
                                     </h3>
                                     <div className="space-y-3">
                                         <button 
                                             onClick={() => window.location.hash = '#email'}
                                             className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-left transition-colors group"
                                         >
-                                            <span className="text-gray-300 font-medium group-hover:text-white">Email Dashboard</span>
+                                            <span className="text-gray-300 font-medium group-hover:text-white">{t('qaEmail')}</span>
                                             <span className="text-gray-500 group-hover:text-white">→</span>
                                         </button>
                                         
@@ -267,12 +249,12 @@ const Dashboard = () => {
                                             onClick={generateSetupQR}
                                             className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-left transition-colors group"
                                         >
-                                            <span className="text-gray-300 font-medium group-hover:text-white">Scanner Setup</span>
+                                            <span className="text-gray-300 font-medium group-hover:text-white">{t('qaScanner')}</span>
                                             <span className="text-xl">📱</span>
                                         </button>
                                         
                                         <label className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-left transition-colors group cursor-pointer">
-                                            <span className="text-gray-300 font-medium group-hover:text-white">Import Attendees (CSV)</span>
+                                            <span className="text-gray-300 font-medium group-hover:text-white">{t('qaImport')}</span>
                                             <span className="text-xl">📂</span>
                                             <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
                                         </label>
@@ -280,11 +262,11 @@ const Dashboard = () => {
                                         <button 
                                             onClick={() => {
                                                     // Alert user to use Sidebar
-                                                    alert("To delete this event, use the trash icon in the Sidebar list.");
+                                                    alert(t('alertDelete'));
                                             }}
                                             className="w-full flex items-center justify-between p-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-left transition-colors group"
                                         >
-                                            <span className="text-red-400 font-medium group-hover:text-red-300">Delete Event</span>
+                                            <span className="text-red-400 font-medium group-hover:text-red-300">{t('qaNuke')}</span>
                                             <span className="text-red-400 group-hover:text-red-300">🗑️</span>
                                         </button>
                                     </div>

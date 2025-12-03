@@ -1,7 +1,9 @@
 import { useState, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 export const useModal = () => {
     const [modalContent, setModalContent] = useState(null);
+    const { t } = useLanguage();
 
     const showModal = useCallback((content) => {
         setModalContent(content);
@@ -12,8 +14,8 @@ export const useModal = () => {
     }, []);
 
     const showErrorModal = useCallback((message) => {
-        showModal({ type: 'alert', title: 'API Error', body: message });
-    }, [showModal]);
+        showModal({ type: 'alert', title: t('modalError'), body: message });
+    }, [showModal, t]);
 
     const showConfirmModal = useCallback((title, body, onConfirm) => {
         showModal({ type: 'confirm', title, body, onConfirm });

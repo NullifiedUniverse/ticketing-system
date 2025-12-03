@@ -1,8 +1,8 @@
-# The "I Just Want It To Work" Setup Guide 🍼
+# The "I Just Want It To Work" Setup Guide 🍼 (For the Technically Impaired)
 
 So, you want to run this ticketing system but don't know what a "Node.js" or "Terminal" is? **This guide is for you.**
 
-Follow these steps exactly. Do not skip anything.
+Follow these steps exactly. Do not skip anything. Or do, and enjoy your failure.
 
 ---
 
@@ -93,7 +93,7 @@ Now we turn it on.
         npm install
         npm start
         ```
-    *   If you see "Server running on port 3001", **IT WORKED!** Leave this window open.
+    *   If you see "Server running on port 3001", **IT WORKED!** Leave this window open. Don't touch it.
 
 3.  **Install & Start Frontend:**
     *   Open a **NEW** Terminal window (do not close the first one).
@@ -104,6 +104,16 @@ Now we turn it on.
         npm install
         npm start
         ```
-    *   A website should pop up at `http://localhost:3000`.
+    *   A website should pop up at `http://localhost:3000`... eventually.
 
-**You are done!** 🎉
+**You are done!** 🎉 Try not to break it immediately.
+
+---
+
+## Phase 7: Panic 😱
+Just kidding. (Mostly).
+
+*   **If things break:** Check the black windows (Terminals) for red text. Red is bad.
+*   **If the scanner doesn't work:** You probably ignored the HTTPS warning. Go back to Phase 6.
+*   **If the logs are empty:** Check your pulse.
+

@@ -1,8 +1,11 @@
 
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useLanguage } from '../context/LanguageContext';
 
 const AnalyticsChart = ({ tickets }) => {
+    const { t } = useLanguage();
+
     // 1. Process Data
     if (!tickets || !Array.isArray(tickets)) {
         return (
@@ -61,7 +64,7 @@ const AnalyticsChart = ({ tickets }) => {
     return (
         <div className="h-72 w-full bg-gradient-to-b from-gray-900/50 to-transparent border border-white/5 rounded-3xl p-6 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 opacity-20"></div>
-            <h3 className="text-gray-400 text-sm font-bold uppercase tracking-widest mb-6 pl-2 border-l-4 border-purple-500">Check-in Velocity</h3>
+            <h3 className="text-gray-400 text-sm font-bold uppercase tracking-widest mb-6 pl-2 border-l-4 border-purple-500">{t('chartTitle')}</h3>
             
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data}>

@@ -2,10 +2,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import StatusBadge from './StatusBadge';
+import { useLanguage } from '../context/LanguageContext';
 
 const animatedGradientStyle = { '--gradient-start': '#ec4899', '--gradient-end': '#8b5cf6' };
 
-const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => (
+const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
+    const { t } = useLanguage();
+
+    return (
     <motion.tr
         layout
         key={ticket.id}
@@ -27,7 +31,7 @@ const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => (
                     whileTap={{ scale: 0.95 }}
                     onClick={() => onShowQR(ticket.id, ticket.attendeeName)}
                     className="p-2 bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white rounded-lg transition-colors"
-                    title="View QR"
+                    title={t('btnMark')}
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg>
                 </motion.button>
@@ -38,10 +42,10 @@ const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => (
                         whileTap={{ scale: 0.95 }}
                         onClick={() => onCheckIn(ticket)}
                         className="px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold rounded-lg shadow-lg shadow-indigo-500/20 flex items-center gap-1"
-                        title="Check In"
+                        title={t('btnCapture')}
                     >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                        CHECK IN
+                        {t('btnCapture').toUpperCase()}
                     </motion.button>
                 )}
 
@@ -50,7 +54,7 @@ const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => (
                     whileTap={{ scale: 0.95 }}
                     onClick={() => onEdit(ticket)}
                     className="p-2 bg-gray-800 hover:bg-gray-700 text-blue-400 hover:text-blue-300 rounded-lg transition-colors border border-gray-700"
-                    title="Edit"
+                    title={t('btnRetcon')}
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                 </motion.button>
@@ -60,13 +64,13 @@ const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => (
                     whileTap={{ scale: 0.95 }}
                     onClick={() => onDelete(ticket)}
                     className="p-2 bg-gray-800 hover:bg-gray-700 text-red-400 hover:text-red-300 rounded-lg transition-colors border border-gray-700"
-                    title="Delete"
+                    title={t('btnPurge')}
                 >
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                 </motion.button>
             </div>
         </td>
     </motion.tr>
-);
+)};
 
 export default TicketRow;

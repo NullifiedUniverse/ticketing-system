@@ -2,15 +2,15 @@
 
 ## Environment Variables (`backend/.env`)
 
-Create a `.env` file in the `backend/` directory.
+Create a `.env` file in the `backend/` directory. **WARNING:** If you commit this file to GitHub, I will find you.
 
 ### **Server Settings**
 | Variable | Description | Default |
 | :--- | :--- | :--- |
-| `PORT` | The port the backend runs on. | `3001` |
+| `PORT` | The port the backend runs on. Change if you enjoy pain. | `3001` |
 | `NODE_ENV` | `development` or `production`. | `development` |
-| `JWT_SECRET` | Secret key for signing scanner tokens. | *(Required)* |
-| `API_KEY` | Master key for system operations. | *(Required)* |
+| `JWT_SECRET` | Secret key for signing tokens. Mash your keyboard here. | *(Required)* |
+| `API_KEY` | Master key. Don't make it '123456'. | *(Required)* |
 
 ### **Ngrok (Remote Access)**
 | Variable | Description |

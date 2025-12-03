@@ -1,11 +1,12 @@
-
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeCanvas } from 'qrcode.react';
+import { useLanguage } from '../context/LanguageContext';
 
 const animatedGradientStyle = { '--gradient-start': '#ec4899', '--gradient-end': '#8b5cf6' };
 
 const Modal = ({ isOpen, onClose, content }) => {
+    const { t } = useLanguage();
     if (!isOpen) return null;
 
     return (
@@ -27,7 +28,7 @@ const Modal = ({ isOpen, onClose, content }) => {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="p-6 border-b border-purple-500/20 flex justify-between items-center">
-                            <h3 className="text-xl font-bold text-white tracking-wider">{content?.title || 'Notification'}</h3>
+                            <h3 className="text-xl font-bold text-white tracking-wider">{content?.title || t('modalDefaultTitle')}</h3>
                             <motion.button
                                 whileHover={{ scale: 1.1, rotate: 90 }}
                                 whileTap={{ scale: 0.9 }}
@@ -39,7 +40,9 @@ const Modal = ({ isOpen, onClose, content }) => {
                             </motion.button>
                         </div>
                         <div className="p-6 text-center">
-                            <p className="text-gray-300 mb-6">{content.body}</p>
+                            {content.contentComponent ? content.contentComponent() : (
+                                <p className="text-gray-300 mb-6">{content.body}</p>
+                            )}
                             {(content.type === 'qr-code' || content.type === 'setup-qr') && (
                                 <div className="flex justify-center bg-white p-4 rounded-lg">
                                     <QRCodeCanvas value={content.qrValue} size={256} level={"H"} />
@@ -54,7 +57,7 @@ const Modal = ({ isOpen, onClose, content }) => {
                                         style={animatedGradientStyle}
                                         className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
                                     >
-                                        OK
+                                        {t('btnOk')}
                                     </motion.button>
                                 </div>
                             )}
@@ -66,7 +69,7 @@ const Modal = ({ isOpen, onClose, content }) => {
                                         onClick={onClose}
                                         className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg"
                                     >
-                                        Cancel
+                                        {t('btnCancel')}
                                     </motion.button>
                                     <motion.button
                                         whileHover={{ scale: 1.05 }}
@@ -75,7 +78,7 @@ const Modal = ({ isOpen, onClose, content }) => {
                                         style={animatedGradientStyle}
                                         className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
                                     >
-                                        Confirm
+                                        {t('btnConfirm')}
                                     </motion.button>
                                 </div>
                             )}
@@ -93,7 +96,7 @@ const Modal = ({ isOpen, onClose, content }) => {
                                             onClick={onClose}
                                             className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg"
                                         >
-                                            Cancel
+                                            {t('btnCancel')}
                                         </motion.button>
                                         <motion.button
                                             whileHover={{ scale: 1.05 }}
@@ -106,7 +109,7 @@ const Modal = ({ isOpen, onClose, content }) => {
                                             style={animatedGradientStyle}
                                             className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
                                         >
-                                            Confirm
+                                            {t('btnConfirm')}
                                         </motion.button>
                                     </div>
                                 </div>
@@ -132,7 +135,7 @@ const Modal = ({ isOpen, onClose, content }) => {
                                             onClick={onClose}
                                             className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg"
                                         >
-                                            Cancel
+                                            {t('btnCancel')}
                                         </motion.button>
                                         <motion.button
                                             whileHover={{ scale: 1.05 }}
@@ -150,7 +153,7 @@ const Modal = ({ isOpen, onClose, content }) => {
                                             style={animatedGradientStyle}
                                             className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
                                         >
-                                            Save
+                                            {t('btnSave')}
                                         </motion.button>
                                     </div>
                                 </div>

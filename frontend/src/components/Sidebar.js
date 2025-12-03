@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { deleteEvent } from '../services/api';
 import { useEvent } from '../context/EventContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const Sidebar = ({ onNewEvent }) => {
     const { events, loading, eventId: currentEventId, selectEvent, fetchEvents } = useEvent();
+    const { t, cycleLanguage, language } = useLanguage();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     const handleDelete = async (e, eventId) => {
@@ -52,16 +54,25 @@ const Sidebar = ({ onNewEvent }) => {
                     {/* Decorative Gradient Blob */}
                     <div className="absolute top-0 left-0 w-full h-32 bg-purple-600/20 blur-3xl -z-10 pointer-events-none"></div>
 
-                    <div className="mb-8 mt-2">
+                    <div className="mb-8 mt-2 flex justify-between items-center">
                         <h1 className="text-2xl font-bold flex items-center gap-2 cursor-pointer" onClick={() => window.location.hash = ''}>
                             <span className="w-8 h-8 bg-gradient-to-br from-pink-500 to-violet-600 rounded-lg flex items-center justify-center text-lg">🎫</span>
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Null's Board</span>
+                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">{t('appTitle')}</span>
                         </h1>
                     </div>
+                    
+                    {/* Language Toggle */}
+                    <button 
+                        onClick={cycleLanguage}
+                        className="mb-6 w-full py-2 px-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-xs font-bold text-gray-400 uppercase tracking-wider flex justify-between items-center transition-colors"
+                    >
+                        <span>Language</span>
+                        <span className="text-white">{language === 'en-dark' ? '💀 Dark' : language === 'en-std' ? '😊 Std' : '🇹🇼 TW'}</span>
+                    </button>
 
                     <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4 px-2">
-                            Your Events
+                            {t('yourEvents')}
                         </h3>
                         
                         {loading && (
@@ -110,7 +121,7 @@ const Sidebar = ({ onNewEvent }) => {
                         {currentEventId && (
                             <div className="mt-8 mb-4 px-1">
                                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
-                                    Quick Tools
+                                    {t('quickTools')}
                                 </h3>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button 
@@ -118,14 +129,14 @@ const Sidebar = ({ onNewEvent }) => {
                                         className="p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-center transition-all group"
                                     >
                                         <div className="text-xl mb-1 group-hover:scale-110 transition-transform">🎲</div>
-                                        <div className="text-[10px] text-gray-400 font-medium">Raffle</div>
+                                        <div className="text-[10px] text-gray-400 font-medium">{t('raffle')}</div>
                                     </button>
                                     <button 
                                         onClick={() => window.location.hash = '#email'}
                                         className="p-3 bg-white/5 hover:bg-white/10 rounded-xl border border-white/5 text-center transition-all group"
                                     >
                                         <div className="text-xl mb-1 group-hover:scale-110 transition-transform">✉️</div>
-                                        <div className="text-[10px] text-gray-400 font-medium">Email</div>
+                                        <div className="text-[10px] text-gray-400 font-medium">{t('email')}</div>
                                     </button>
                                 </div>
                             </div>
@@ -139,13 +150,13 @@ const Sidebar = ({ onNewEvent }) => {
                         >
                             <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-pink-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                             <span className="text-xl font-light relative z-10 leading-none pb-1">+</span>
-                            <span className="font-medium relative z-10">Create Event</span>
+                            <span className="font-medium relative z-10">{t('createEvent')}</span>
                         </button>
                     </div>
 
                     {/* Watermark */}
                     <div className="text-[10px] text-gray-700 text-center mt-2 select-none opacity-50">
-                        System by NullifiedGalaxy
+                        {t('sidebarFooter')}
                     </div>
                 </div>
             </div>

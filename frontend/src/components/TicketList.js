@@ -3,10 +3,15 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TicketRow from './TicketRow';
 import TicketCard from './TicketCard';
+import TicketListSkeleton from './TicketListSkeleton';
+import { useLanguage } from '../context/LanguageContext';
 
 const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 
-const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onCheckIn, onShowQR, onEdit, onDelete }) => (
+const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onCheckIn, onShowQR, onEdit, onDelete }) => {
+    const { t } = useLanguage();
+
+    return (
     <motion.div 
         layout 
         variants={itemVariants} 
@@ -24,7 +29,7 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                 </div>
                 <input
                     type="text"
-                    placeholder="Search attendees..."
+                    placeholder={t('searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full bg-gray-950/50 border border-gray-700 rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
@@ -61,58 +66,64 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
             </button>
         </div>
 
-        {/* Desktop View (Table) */}
-        <div className="hidden md:block max-h-[600px] custom-scrollbar">
-            <table className="w-full text-left border-collapse relative">
-                <thead className="sticky top-0 bg-gray-950/95 backdrop-blur-xl z-10 border-b border-gray-700/50 text-gray-400 text-sm uppercase tracking-wider shadow-sm">
-                    <tr>
-                        <th className="p-4 font-semibold rounded-tl-lg">Status</th>
-                        <th className="p-4 font-semibold">Attendee</th>
-                        <th className="p-4 font-semibold">Ticket ID</th>
-                        <th className="p-4 text-right font-semibold rounded-tr-lg">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800/50">
+        {isLoading ? (
+            <TicketListSkeleton />
+        ) : (
+            <>
+                {/* Desktop View (Table) */}
+                <div className="hidden md:block max-h-[600px] custom-scrollbar">
+                    <table className="w-full text-left border-collapse relative">
+                        <thead className="sticky top-0 bg-gray-950/95 backdrop-blur-xl z-10 border-b border-gray-700/50 text-gray-400 text-sm uppercase tracking-wider shadow-sm">
+                            <tr>
+                                <th className="p-4 font-semibold rounded-tl-lg">{t('colStatus')}</th>
+                                <th className="p-4 font-semibold">{t('colAttendee')}</th>
+                                <th className="p-4 font-semibold">{t('colTicketId')}</th>
+                                <th className="p-4 text-right font-semibold rounded-tr-lg">{t('colActions')}</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800/50">
+                            <AnimatePresence mode='popLayout'>
+                                {filteredTickets.map((ticket) => (
+                                    <TicketRow 
+                                        key={ticket.id} 
+                                        ticket={ticket} 
+                                        onCheckIn={onCheckIn} 
+                                        onShowQR={onShowQR} 
+                                        onEdit={onEdit} 
+                                        onDelete={onDelete} 
+                                    />
+                                ))}
+                            </AnimatePresence>
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Mobile View (Cards) */}
+                <div className="md:hidden space-y-4">
                     <AnimatePresence mode='popLayout'>
                         {filteredTickets.map((ticket) => (
-                            <TicketRow 
-                                key={ticket.id} 
-                                ticket={ticket} 
-                                onCheckIn={onCheckIn} 
-                                onShowQR={onShowQR} 
-                                onEdit={onEdit} 
-                                onDelete={onDelete} 
+                            <TicketCard
+                                key={ticket.id}
+                                ticket={ticket}
+                                onCheckIn={onCheckIn}
+                                onShowQR={onShowQR}
+                                onEdit={onEdit}
+                                onDelete={onDelete}
                             />
                         ))}
                     </AnimatePresence>
-                </tbody>
-            </table>
-        </div>
+                </div>
 
-        {/* Mobile View (Cards) */}
-        <div className="md:hidden space-y-4">
-            <AnimatePresence mode='popLayout'>
-                {filteredTickets.map((ticket) => (
-                    <TicketCard
-                        key={ticket.id}
-                        ticket={ticket}
-                        onCheckIn={onCheckIn}
-                        onShowQR={onShowQR}
-                        onEdit={onEdit}
-                        onDelete={onDelete}
-                    />
-                ))}
-            </AnimatePresence>
-        </div>
-
-        {!isLoading && filteredTickets.length === 0 && (
-            <div className="text-center py-12">
-                <div className="text-4xl mb-3">🔍</div>
-                <h3 className="text-lg font-medium text-white">No tickets found</h3>
-                <p className="text-gray-500">Try adjusting your search terms.</p>
-            </div>
+                {!isLoading && filteredTickets.length === 0 && (
+                    <div className="text-center py-12">
+                        <div className="text-4xl mb-3">🔍</div>
+                        <h3 className="text-lg font-medium text-white">{t('emptyTitle')}</h3>
+                        <p className="text-gray-500">{t('emptyDesc')}</p>
+                    </div>
+                )}
+            </>
         )}
     </motion.div>
-);
+)};
 
 export default TicketList;
