@@ -15,10 +15,10 @@ const DashboardStats = ({ stats }) => {
         animate="visible"
         className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
     >
-        <StatsCard title={t('statsContained')} value={stats.checkedIn} />
-        <StatsCard title={t('statsAwol')} value={stats.onLeave} />
-        <StatsCard title={t('statsCaptured')} value={stats.checkedIn + stats.onLeave} total={stats.total} showProgress={true} />
-        <StatsCard title={t('statsAtLarge')} value={stats.valid} />
+        <StatsCard title={t('statsContained')} value={stats.checkedIn} colorTheme="green" />
+        <StatsCard title={t('statsAwol')} value={stats.onLeave} colorTheme="yellow" />
+        <StatsCard title={t('statsCaptured')} value={stats.checkedIn + stats.onLeave} total={stats.total} showProgress={true} colorTheme="pink" />
+        <StatsCard title={t('statsAtLarge')} value={stats.valid} colorTheme="blue" />
     </motion.div>
 )};
 

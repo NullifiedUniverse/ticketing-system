@@ -65,8 +65,8 @@ const Sidebar = ({ onNewEvent }) => {
                         className="mb-8 mt-2 flex justify-between items-center"
                     >
                         <h1 className="text-2xl font-bold flex items-center gap-2 cursor-pointer" onClick={() => window.location.hash = ''}>
-                            <span className="w-8 h-8 bg-gradient-to-br from-pink-500 to-violet-600 rounded-lg flex items-center justify-center text-lg">🎫</span>
-                            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">{t('appTitle')}</span>
+                            <span className="w-8 h-8 bg-gradient-to-br from-pink-500 via-red-500 to-yellow-500 rounded-lg flex items-center justify-center text-lg shadow-lg shadow-pink-500/20">🎫</span>
+                            <span className="rainbow-text font-extrabold tracking-tight">{t('appTitle')}</span>
                         </h1>
                     </motion.div>
                     
@@ -76,7 +76,7 @@ const Sidebar = ({ onNewEvent }) => {
                         whileHover="hover"
                         whileTap="tap"
                         onClick={cycleLanguage}
-                        className="mb-6 w-full py-2 px-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-xs font-bold text-gray-400 uppercase tracking-wider flex justify-between items-center transition-colors"
+                        className="mb-6 w-full py-2 px-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-xs font-bold text-gray-400 uppercase tracking-wider flex justify-between items-center transition-all active:scale-95 hover:border-pink-500/30"
                     >
                         <span>Language</span>
                         <span className="text-white">{language === 'en-dark' ? '💀 Dark' : language === 'en-std' ? '😊 Std' : '🇹🇼 TW'}</span>
@@ -89,7 +89,7 @@ const Sidebar = ({ onNewEvent }) => {
                         
                         {loading && (
                             <div className="flex justify-center py-4">
-                                <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                                <div className="w-6 h-6 border-2 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
                             </div>
                         )}
 
@@ -118,7 +118,7 @@ const Sidebar = ({ onNewEvent }) => {
                                         {currentEventId === event.id && (
                                             <motion.div 
                                                 layoutId="activeIndicator"
-                                                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-pink-500 to-purple-500 rounded-r-full"
+                                                className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-pink-500 via-purple-500 to-cyan-500 rounded-r-full"
                                             />
                                         )}
                                         <span className="truncate block pl-2 pr-8">

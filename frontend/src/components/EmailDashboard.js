@@ -87,7 +87,7 @@ const EmailDashboard = () => {
     const handleBatchSend = async () => {
         showConfirmModal(
             t('modalSendBatchTitle'), 
-            t('modalSendBatchBody', tickets.length),
+            t('modalSendBatchBody', tickets.length), 
             async () => {
                 hideModal();
                 setSending(true);
@@ -156,12 +156,18 @@ const EmailDashboard = () => {
     return (
         <Layout>
             <div className="flex-1 flex flex-col h-full relative overflow-hidden">
+                <div className="fixed inset-0 pointer-events-none ambient-glow -z-10"></div>
+                
                 <div className="p-8 flex flex-col h-full max-w-7xl mx-auto w-full">
                 
+                    {/* Header *///}
                     <div className="flex flex-col md:flex-row justify-between items-end mb-8 pb-4 border-b border-white/10 gap-4 shrink-0">
                         <div>
-                            <h1 className="text-3xl font-bold text-white">{t('emailTitle')}</h1>
-                            <p className="text-gray-400 mt-1">{t('emailManageCommunications')} <span className="text-purple-400 font-mono">{eventId}</span></p>
+                            <h1 className="text-3xl font-bold text-white rainbow-text tracking-tight">{t('emailTitle')}</h1>
+                            <p className="text-gray-400 mt-1 flex items-center gap-2">
+                                {t('emailManageCommunications')} 
+                                <span className="glass-panel px-2 py-0.5 rounded text-purple-300 font-mono text-sm">{eventId}</span>
+                            </p>
                         </div>
                         <div className="flex gap-3">
                             <motion.button 
@@ -169,7 +175,7 @@ const EmailDashboard = () => {
                                 whileHover="hover"
                                 whileTap="tap"
                                 onClick={() => setShowSettings(!showSettings)}
-                                className="px-4 py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl shadow-lg transition-colors border border-gray-600 hover:border-purple-500"
+                                className="glass-interactive px-6 py-3 text-white font-bold rounded-xl shadow-lg flex items-center gap-2"
                             >
                                 ⚙️ {t('btnSettings')}
                             </motion.button>
@@ -179,7 +185,7 @@ const EmailDashboard = () => {
                                 whileTap="tap"
                                 onClick={handleBatchSend}
                                 disabled={sending || loading}
-                                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50 flex items-center gap-2"
+                                className="animated-gradient-bg px-6 py-3 text-white font-bold rounded-xl shadow-lg disabled:opacity-50 flex items-center gap-2"
                             >
                                 {sending ? 'Sending...' : `🚀 ${t('btnBatch')}`}
                             </motion.button>
@@ -189,68 +195,70 @@ const EmailDashboard = () => {
                     <AnimatePresence>
                         {showSettings && (
                             <motion.div 
-                                initial={{ height: 0, opacity: 0, marginBottom: 0 }}
-                                animate={{ height: 'auto', opacity: 1, marginBottom: 32, transition: { ease: EASING.gentle, duration: 0.4 } }}
+                                initial={{ height: 0, opacity: 0, marginBottom: 0 }} 
+                                animate={{ height: 'auto', opacity: 1, marginBottom: 32, transition: { ease: EASING.gentle, duration: 0.4 } }} 
                                 exit={{ height: 0, opacity: 0, marginBottom: 0, transition: { ease: EASING.gentle, duration: 0.3 } }}
-                                className="overflow-hidden relative z-50 shrink-0"
+                                className="overflow-hidden relative z-20 shrink-0"
                             >
-                                <div className="glass-panel p-6 rounded-2xl border border-white/10 bg-white/5 grid grid-cols-1 md:grid-cols-2 lg:col-span-4 gap-6">
+                                <div className="glass-panel p-8 rounded-3xl border border-white/10 bg-slate-900/80 grid grid-cols-1 md:grid-cols-2 lg:col-span-4 gap-8">
                                     <div className="col-span-1 md:col-span-2 lg:col-span-4">
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{t('labelBg')}</label>
-                                        <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
-                                        {bgFilename && <p className="text-xs text-green-400 mt-1">Active: {bgFilename}</p>}
+                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1 tracking-widest">{t('labelBg')}</label>
+                                        <div className="relative group">
+                                            <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-400 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-violet-500/20 file:text-violet-300 hover:file:bg-violet-500/30 cursor-pointer glass-input rounded-xl transition-all"/>
+                                        </div>
+                                        {bgFilename && <p className="text-xs text-green-400 mt-2 ml-1 flex items-center gap-1">✓ Active: {bgFilename}</p>}
                                     </div>
                                     
                                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{t('labelSubject')}</label>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1 tracking-widest">{t('labelSubject')}</label>
                                         <input 
                                             type="text"
                                             name="emailSubject" 
                                             value={config.emailSubject} 
                                             onChange={handleConfigChange}
                                             placeholder={t('emailSubjectPlaceholder')}
-                                            className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none text-sm"
+                                            className="w-full glass-input rounded-xl px-4 py-3"
                                         />
                                     </div>
                                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{t('labelSender')}</label>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1 tracking-widest">{t('labelSender')}</label>
                                         <input 
                                             type="text"
                                             name="senderName" 
                                             value={config.senderName} 
                                             onChange={handleConfigChange}
                                             placeholder={t('emailSenderPlaceholder')}
-                                            className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none text-sm"
+                                            className="w-full glass-input rounded-xl px-4 py-3"
                                         />
                                     </div>
 
                                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{t('labelPreamble')}</label>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1 tracking-widest">{t('labelPreamble')}</label>
                                         <textarea 
                                             name="messageBefore" 
                                             value={config.messageBefore} 
                                             onChange={handleConfigChange}
                                             placeholder={t('emailPreamblePlaceholder')}
-                                            className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none h-24 text-sm resize-none"
+                                            className="w-full glass-input rounded-xl px-4 py-3 h-32 resize-none"
                                         />
                                     </div>
                                     <div className="col-span-1 md:col-span-2 lg:col-span-2">
-                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{t('labelFinePrint')}</label>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1 tracking-widest">{t('labelFinePrint')}</label>
                                         <textarea 
                                             name="messageAfter" 
                                             value={config.messageAfter} 
                                             onChange={handleConfigChange}
                                             placeholder={t('emailFinePrintPlaceholder')}
-                                            className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none h-24 text-sm resize-none"
+                                            className="w-full glass-input rounded-xl px-4 py-3 h-32 resize-none"
                                         />
                                     </div>
 
                                     {['qrSize', 'qrX', 'qrY', 'fontSize', 'nameX', 'nameY'].map(key => (
                                         <div key={key}>
-                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{key}</label>
+                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2 ml-1 tracking-widest">{key}</label>
                                             <input 
                                                 type="number" name={key} value={config[key]} onChange={handleConfigChange}
-                                                className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none"
+                                                className="w-full glass-input rounded-xl px-4 py-3"
                                             />
                                         </div>
                                     ))}
@@ -259,15 +267,15 @@ const EmailDashboard = () => {
                         )}
                     </AnimatePresence>
 
-                    <div className="glass-panel rounded-2xl overflow-hidden border border-white/5 flex-1 flex flex-col min-h-0">
+                    <div className="glass-panel rounded-3xl overflow-hidden border border-white/5 flex-1 flex flex-col min-h-0">
                         <div className="overflow-y-auto custom-scrollbar flex-1">
                             <table className="w-full text-left border-collapse relative">
-                                <thead className="bg-gray-900/95 backdrop-blur text-gray-400 text-xs uppercase tracking-wider sticky top-0 z-10 shadow-sm">
+                                <thead className="bg-slate-900/90 backdrop-blur text-gray-400 text-xs uppercase tracking-wider sticky top-0 z-10 shadow-lg">
                                     <tr>
-                                        <th className="p-4">{t('colAttendee')}</th>
-                                        <th className="p-4">{t('colEmail')}</th>
-                                        <th className="p-4">{t('colStatus')}</th>
-                                        <th className="p-4 text-right">{t('colActions')}</th>
+                                        <th className="p-6 font-bold text-gray-300">{t('colAttendee')}</th>
+                                        <th className="p-6 font-bold text-gray-300">{t('colEmail')}</th>
+                                        <th className="p-6 font-bold text-gray-300">{t('colStatus')}</th>
+                                        <th className="p-6 text-right font-bold text-gray-300">{t('colActions')}</th>
                                     </tr>
                                 </thead>
                                 <motion.tbody 
@@ -281,22 +289,22 @@ const EmailDashboard = () => {
                                             key={ticket.id} 
                                             variants={fadeInUp}
                                             layout
-                                            className="hover:bg-white/5 transition-colors"
+                                            className="hover:bg-white/5 transition-all duration-200 group"
                                         >
-                                            <td className="p-4 font-medium">{ticket.attendeeName}</td>
-                                            <td className="p-4 text-gray-400">{ticket.attendeeEmail}</td>
-                                            <td className="p-4">
-                                                <span className={`px-2 py-1 rounded text-xs font-bold ${ticket.status === 'checked-in' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                            <td className="p-6 font-medium text-white text-lg">{ticket.attendeeName}</td>
+                                            <td className="p-6 text-gray-400">{ticket.attendeeEmail}</td>
+                                            <td className="p-6">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${ticket.status === 'checked-in' ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
                                                     {ticket.status}
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-right space-x-2">
+                                            <td className="p-6 text-right space-x-3 opacity-80 group-hover:opacity-100 transition-opacity">
                                                 <motion.button 
                                                     variants={buttonClick}
                                                     whileHover="hover"
                                                     whileTap="tap"
                                                     onClick={() => handlePreview(ticket)}
-                                                    className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-xs font-bold border border-white/10 transition-colors"
+                                                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold border border-white/10 transition-colors text-gray-300 hover:text-white"
                                                 >
                                                     {t('btnSimulate')}
                                                 </motion.button>
@@ -306,7 +314,7 @@ const EmailDashboard = () => {
                                                     whileTap="tap"
                                                     onClick={() => handleSendOne(ticket)}
                                                     disabled={sending}
-                                                    className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 hover:text-white border border-indigo-500/30 rounded-lg text-xs font-bold transition-colors"
+                                                    className="px-4 py-2 bg-violet-600/20 hover:bg-violet-600/40 text-violet-300 hover:text-white border border-violet-500/30 rounded-lg text-xs font-bold transition-colors"
                                                 >
                                                     {t('btnHarass')}
                                                 </motion.button>
@@ -317,7 +325,10 @@ const EmailDashboard = () => {
                             </table>
                             
                             {tickets.length === 0 && !loading && (
-                                <div className="p-12 text-center text-gray-500">{t('emptyEmail')}</div>
+                                <div className="p-20 text-center text-gray-500 flex flex-col items-center justify-center h-full">
+                                    <div className="text-6xl mb-4 grayscale opacity-30">👻</div>
+                                    <p className="text-lg font-medium">{t('emptyEmail')}</p>
+                                </div>
                             )}
                         </div>
                     </div>

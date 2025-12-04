@@ -17,7 +17,7 @@ import { buttonClick, containerStagger, fadeInUp } from '../utils/animations';
 
 const Dashboard = () => {
     const { modalContent, showModal, hideModal, showErrorModal, showConfirmModal, showPromptModal, showQrCodeModal } = useModal();
-    const { eventId } = useEvent(); // Get global eventId
+    const { eventId } = useEvent(); 
     const { t } = useLanguage();
     
     const {
@@ -33,6 +33,10 @@ const Dashboard = () => {
     } = useTickets(eventId, showErrorModal);
     
     const [searchTerm, setSearchTerm] = useState('');
+
+    // ... (Handlers remain mostly the same, just purely logic) ...
+    // I will omit repeating the exact logic functions for brevity in this tool call unless logic changes. 
+    // Re-implementing essential handlers to ensure file integrity.
 
     const handleTicketCreatedAndShowQR = (result) => {
         handleTicketCreated(result);
@@ -79,7 +83,6 @@ const Dashboard = () => {
             let modeMessage = "";
 
             if (localUrl && publicUrl && localUrl !== publicUrl) {
-                // Ask user preference
                 const useLocal = window.confirm(
                     `🚀 ${t('scannerSpeedOpt')}\n\n${t('scannerLocalQ', localUrl)}\n\n✅ ${t('scannerLocalYes')}\n❌ ${t('scannerLocalNo')}`
                 );
@@ -125,17 +128,14 @@ const Dashboard = () => {
             const text = event.target.result;
             try {
                 const attendees = parseCSV(text);
-
                 if (attendees.length === 0) throw new Error(t('errorNoValidAttendees'));
-
                 showConfirmModal(
                     t('qaImport'), 
-                    t('importPrompt', attendees.length),
+                    t('importPrompt', attendees.length), 
                     async () => {
                         try {
                             const res = await import('../services/api').then(m => m.importAttendees(eventId, attendees));
                             alert(res.message);
-                            // window.location.reload(); // Or refresh tickets
                         } catch (err) {
                             showErrorModal(`${t('importFailed')}: ${err.message}`);
                         } finally {
@@ -143,31 +143,30 @@ const Dashboard = () => {
                         }
                     }
                 );
-
             } catch (err) {
                 showErrorModal(`${t('errorCsvParse')}: ${err.message}`);
             }
         };
         reader.readAsText(file);
-        e.target.value = null; // Reset input
+        e.target.value = null;
     };
 
+    // --- RENDER ---
     return (
         <Layout>
-            {/* Sticky Header */}
-            <header className="bg-gray-950/80 backdrop-blur-xl sticky top-0 z-20 border-b border-white/10 px-4 md:px-8 py-4 flex justify-between items-center shrink-0">
-                {/* Spacer for mobile hamburger which is fixed in Sidebar/Layout */}
-                <div className="w-8 xl:hidden"></div> 
+            {/* Header with Frosted Blur and Sticky */}
+            <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-900/70 backdrop-blur-xl px-6 py-4 flex justify-between items-center shadow-sm">
+                <div className="w-8 xl:hidden"></div> {/* Spacer */}
 
                 <div className="flex items-center gap-4 overflow-hidden">
-                        <h2 className="text-lg md:text-xl font-semibold text-white truncate">
+                        <h2 className="text-xl font-semibold text-white truncate flex items-center gap-2">
                         {eventId ? (
                             <>
-                                <span className="text-gray-500 mr-2 hidden sm:inline">{t('headerEvent')}</span>
-                                {eventId}
+                                <span className="text-gray-400 text-sm hidden sm:inline uppercase tracking-wider">{t('headerEvent')}</span>
+                                <span className="rainbow-text">{eventId}</span>
                             </>
                         ) : (
-                            <span className="text-gray-500">{t('headerSelect')}</span>
+                            <span className="text-gray-500 italic">{t('headerSelect')}</span>
                         )}
                     </h2>
                     <LiveIndicator status={connectionStatus} error={connectionError} />
@@ -176,88 +175,93 @@ const Dashboard = () => {
                 {eventId && (
                     <div className="flex items-center gap-3">
                             <motion.button 
-                            variants={buttonClick}
-                            whileHover="hover"
-                            whileTap="tap"
-                            onClick={async () => {
-                                try {
-                                    const { url } = await getNgrokUrl();
-                                    if(url) {
-                                        await navigator.clipboard.writeText(`${url}/scanner`);
-                                        alert(t('alertLinkCopied'));
-                                    } else {
-                                        alert(t('errorBackendURL'));
-                                    }
-                                } catch(e) { console.error(e); }
-                            }}
-                            className="bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-gray-700"
-                            title={t('copyScannerLink')} 
+                                variants={buttonClick}
+                                whileHover="hover"
+                                whileTap="tap"
+                                onClick={async () => {
+                                    try {
+                                        const { url } = await getNgrokUrl();
+                                        if(url) {
+                                            await navigator.clipboard.writeText(`${url}/scanner`);
+                                            alert(t('alertLinkCopied'));
+                                        } else {
+                                            alert(t('errorBackendURL'));
+                                        }
+                                    } catch(e) { console.error(e); }
+                                }}
+                                className="glass-interactive px-4 py-2 rounded-xl text-sm font-medium text-gray-300 hover:text-white flex items-center gap-2"
+                                title={t('copyScannerLink')}
                             >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
                             </motion.button>
 
                             <motion.button 
-                            variants={buttonClick}
-                            whileHover="hover"
-                            whileTap="tap"
-                            onClick={generateSetupQR}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-lg shadow-indigo-500/20"
+                                variants={buttonClick}
+                                whileHover="hover"
+                                whileTap="tap"
+                                onClick={generateSetupQR}
+                                className="animated-gradient-bg text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-purple-500/20 flex items-center gap-2"
                             >
-                            <span className="text-lg">📱</span>
-                            <span className="hidden sm:inline">{t('qaScanner')}</span>
+                                <span className="text-lg">📱</span>
+                                <span className="hidden sm:inline">{t('qaScanner')}</span>
                             </motion.button>
                     </div>
                 )}
             </header>
 
-            {/* Scrollable Content */}
-            <main className="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar">
+            {/* Main Content Area */}
+            <main className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar relative">
+                {/* Ambient Background Glow */}
+                <div className="fixed inset-0 pointer-events-none ambient-glow -z-10"></div>
+
                 {!eventId ? (
                     <div className="h-full flex flex-col items-center justify-center text-gray-500">
-                        <div className="text-6xl mb-4 opacity-50">🎟️</div>
-                        <h3 className="text-xl font-medium text-white mb-2">{t('limboTitle')}</h3>
-                        <p className="text-center px-4">{t('limboDesc')}</p>
+                        <div className="text-8xl mb-6 opacity-20 animate-pulse">🎟️</div>
+                        <h3 className="text-3xl font-bold text-white mb-3">{t('limboTitle')}</h3>
+                        <p className="text-center px-4 max-w-md text-lg opacity-70">{t('limboDesc')}</p>
                     </div>
                 ) : (
                     <motion.div 
                         variants={containerStagger}
                         initial="hidden"
                         animate="visible"
-                        className="max-w-7xl mx-auto space-y-8 pb-20"
+                        className="max-w-7xl mx-auto space-y-10 pb-24"
                     >
-                        
-                        {/* Stats Grid */}
+                        {/* Stats */}
                         <motion.section variants={fadeInUp}>
                             <DashboardStats stats={stats} />
                         </motion.section>
 
-                            {/* Analytics Chart */}
+                        {/* Chart */}
                         <motion.section variants={fadeInUp}>
                             <AnalyticsChart tickets={tickets} />
                         </motion.section>
 
-                        {/* Management Grid */}
+                        {/* Grid: Create Ticket + Quick Actions + List */}
                         <motion.div variants={fadeInUp} className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                             
-                            {/* Creation Form & Quick Settings */}
+                            {/* Left Column: Actions */}
                             <div className="xl:col-span-1 space-y-8">
                                 <CreateTicket eventId={eventId} onTicketCreated={handleTicketCreatedAndShowQR} onApiError={showErrorModal} />
                                 
-                                {/* Quick Actions / Settings Card */}
-                                <motion.div variants={fadeInUp} className="glass-panel p-6 rounded-2xl border border-white/5">
-                                    <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                        <span>⚙️</span> {t('qaTitle')}
+                                {/* Quick Actions Card */}
+                                <motion.div variants={fadeInUp} className="glass-panel p-6 rounded-3xl">
+                                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
+                                        <span className="text-2xl">⚡</span> {t('qaTitle')}
                                     </h3>
-                                    <div className="space-y-3">
+                                    <div className="space-y-4">
                                         <motion.button 
                                             variants={buttonClick}
                                             whileHover="hover"
                                             whileTap="tap"
                                             onClick={() => window.location.hash = '#email'}
-                                            className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-left transition-colors group"
+                                            className="glass-interactive w-full flex items-center justify-between p-4 rounded-xl text-left group"
                                         >
-                                            <span className="text-gray-300 font-medium group-hover:text-white">{t('qaEmail')}</span>
-                                            <span className="text-gray-500 group-hover:text-white">→</span>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl">📨</span>
+                                                <span className="text-gray-200 font-medium group-hover:text-white">{t('qaEmail')}</span>
+                                            </div>
+                                            <span className="text-gray-500 group-hover:text-white transition-colors">→</span>
                                         </motion.button>
                                         
                                         <motion.button 
@@ -265,20 +269,25 @@ const Dashboard = () => {
                                             whileHover="hover"
                                             whileTap="tap"
                                             onClick={generateSetupQR}
-                                            className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-left transition-colors group"
+                                            className="glass-interactive w-full flex items-center justify-between p-4 rounded-xl text-left group"
                                         >
-                                            <span className="text-gray-300 font-medium group-hover:text-white">{t('qaScanner')}</span>
-                                            <span className="text-xl">📱</span>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl">📱</span>
+                                                <span className="text-gray-200 font-medium group-hover:text-white">{t('qaScanner')}</span>
+                                            </div>
+                                            <span className="text-gray-500 group-hover:text-white transition-colors">→</span>
                                         </motion.button>
                                         
                                         <motion.label 
                                             variants={buttonClick}
                                             whileHover="hover"
                                             whileTap="tap"
-                                            className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-left transition-colors group cursor-pointer"
+                                            className="glass-interactive w-full flex items-center justify-between p-4 rounded-xl text-left group cursor-pointer"
                                         >
-                                            <span className="text-gray-300 font-medium group-hover:text-white">{t('qaImport')}</span>
-                                            <span className="text-xl">📂</span>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl">📂</span>
+                                                <span className="text-gray-200 font-medium group-hover:text-white">{t('qaImport')}</span>
+                                            </div>
                                             <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
                                         </motion.label>
 
@@ -287,19 +296,20 @@ const Dashboard = () => {
                                             whileHover="hover"
                                             whileTap="tap"
                                             onClick={() => {
-                                                    // Alert user to use Sidebar
                                                     alert(t('alertDelete'));
                                             }}
-                                            className="w-full flex items-center justify-between p-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-left transition-colors group"
+                                            className="w-full flex items-center justify-between p-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-left transition-all group"
                                         >
-                                            <span className="text-red-400 font-medium group-hover:text-red-300">{t('qaNuke')}</span>
-                                            <span className="text-red-400 group-hover:text-red-300">🗑️</span>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl">☢️</span>
+                                                <span className="text-red-400 font-medium group-hover:text-red-300">{t('qaNuke')}</span>
+                                            </div>
                                         </motion.button>
                                     </div>
                                 </motion.div>
                             </div>
 
-                            {/* List - Takes more space */}
+                            {/* Right Column: List */}
                             <div className="xl:col-span-2">
                                     <TicketList
                                     filteredTickets={filteredTickets}

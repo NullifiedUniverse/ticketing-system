@@ -42,7 +42,7 @@ const TicketRow = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
                         whileHover="hover"
                         whileTap="tap"
                         onClick={() => onCheckIn(ticket)}
-                        className="px-3 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold rounded-lg shadow-lg shadow-indigo-500/20 flex items-center gap-1"
+                        className="px-3 py-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:brightness-110 text-white text-xs font-bold rounded-lg shadow-lg shadow-indigo-500/20 flex items-center gap-1 transition-all"
                         title={t('btnCapture')}
                     >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
