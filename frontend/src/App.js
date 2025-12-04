@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import Dashboard from './components/Dashboard';
-import EmailDashboard from './components/EmailDashboard';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { EventProvider } from './context/EventContext';
 import { LanguageProvider } from './context/LanguageContext';
+
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const EmailDashboard = lazy(() => import('./components/EmailDashboard'));
 
 const App = () => {
     const [route, setRoute] = useState(window.location.hash || '#dashboard');
@@ -16,9 +17,13 @@ const App = () => {
     return (
         <LanguageProvider>
             <EventProvider>
-                <div>
+                <Suspense fallback={
+                    <div className="flex h-screen w-full items-center justify-center bg-gray-950 text-white">
+                        <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                }>
                     {route === '#email' ? <EmailDashboard /> : <Dashboard />}
-                </div>
+                </Suspense>
             </EventProvider>
         </LanguageProvider>
     );

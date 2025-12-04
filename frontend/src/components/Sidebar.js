@@ -53,7 +53,7 @@ const Sidebar = ({ onNewEvent }) => {
             {/* Sidebar Container - Desktop (Always visible) & Mobile (Drawer) */}
             {/* We handle mobile visibility via CSS transform for performance, but can use motion for the internal list */}
             <div 
-                className={`fixed inset-y-0 left-0 z-50 w-72 bg-gray-950/90 backdrop-blur-xl border-r border-white/5 hover:border-white/10 transform transition-all duration-300 ease-out xl:translate-x-0 ${isMobileOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}
+                className={`fixed inset-y-0 left-0 z-50 w-72 bg-gray-900/60 backdrop-blur-2xl border-r border-white/10 shadow-2xl transform transition-all duration-300 ease-out xl:translate-x-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
             >
                 <div className="p-6 flex flex-col h-full relative overflow-hidden">
                     {/* Decorative Gradient Blob */}
@@ -106,13 +106,13 @@ const Sidebar = ({ onNewEvent }) => {
                                     className="relative group flex items-center"
                                 >
                                     <motion.button
-                                        whileHover={{ x: 4, backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+                                        whileHover={{ x: 4 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={() => { onSelectEvent(event.id); setIsMobileOpen(false); }}
-                                        className={`flex-grow text-left px-4 py-3.5 rounded-xl transition-colors duration-200 relative ${
+                                        className={`flex-grow text-left px-4 py-3.5 rounded-xl transition-all duration-200 relative ${
                                             currentEventId === event.id 
-                                            ? 'bg-white/10 text-white font-semibold shadow-lg ring-1 ring-white/10' 
-                                            : 'text-gray-400 hover:text-white'
+                                            ? 'bg-gradient-to-r from-white/10 to-transparent border border-white/10 text-white font-bold shadow-lg backdrop-blur-sm' 
+                                            : 'text-gray-400 hover:text-white hover:bg-white/5'
                                         }`}
                                     >
                                         {currentEventId === event.id && (
