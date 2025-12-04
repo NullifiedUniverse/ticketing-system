@@ -36,6 +36,9 @@ async function callApi(endpoint, options, baseUrlOverride = null) {
         }
     } catch (error) {
         console.error(`Network or unexpected error for ${endpoint}:`, error);
+        if (error.message.includes('Failed to fetch')) {
+            throw new Error("Backend Unreachable: Is the server running?");
+        }
         throw error; // Re-throw to be caught by component
     }
 }
