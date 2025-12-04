@@ -12,15 +12,15 @@ export const useLanguage = () => {
 };
 
 export const LanguageProvider = ({ children }) => {
-    // Default to 'en-dark' (funny)
-    const [language, setLanguage] = useState(localStorage.getItem('appLanguage') || 'en-dark');
+    // Default to 'en'
+    const [language, setLanguage] = useState(localStorage.getItem('appLanguage') || 'en');
 
     useEffect(() => {
         localStorage.setItem('appLanguage', language);
     }, [language]);
 
     const t = (key, ...args) => {
-        const langPack = translations[language] || translations['en-dark'];
+        const langPack = translations[language] || translations['en'];
         const value = langPack[key];
         
         if (typeof value === 'function') {
@@ -31,9 +31,8 @@ export const LanguageProvider = ({ children }) => {
 
     const cycleLanguage = () => {
         setLanguage(prev => {
-            if (prev === 'en-dark') return 'en-std';
-            if (prev === 'en-std') return 'zh-TW';
-            return 'en-dark';
+            if (prev === 'en') return 'zh-TW';
+            return 'en';
         });
     };
 

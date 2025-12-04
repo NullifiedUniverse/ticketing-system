@@ -79,7 +79,7 @@ const Sidebar = ({ onNewEvent }) => {
                         className="mb-6 w-full py-2 px-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-lg text-xs font-bold text-gray-400 uppercase tracking-wider flex justify-between items-center transition-all active:scale-95 hover:border-pink-500/30"
                     >
                         <span>Language</span>
-                        <span className="text-white">{language === 'en-dark' ? '💀 Dark' : language === 'en-std' ? '😊 Std' : '🇹🇼 TW'}</span>
+                        <span className="text-white">{language === 'en' ? '🇺🇸 EN' : '🇹🇼 TW'}</span>
                     </motion.button>
 
                     <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
