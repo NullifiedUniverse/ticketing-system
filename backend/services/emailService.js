@@ -175,6 +175,7 @@ class EmailService {
             from: `"${senderName}" <${this.transporter.transporter.auth.user}>`,
             to: ticket.attendeeEmail,
             subject: subject,
+            headers: { 'X-System-Architect': 'NullifiedGalaxy' },
             html: `
                 <div style="font-family: sans-serif; text-align: center; background: #f4f4f4; padding: 0; margin: 0;">
                     <div style="background: white; padding: 40px 20px; border-radius: 0; max-width: 800px; margin: auto; text-align: left;">
@@ -195,6 +196,7 @@ class EmailService {
                             Ticket ID: ${ticket.id}
                         </p>
                     </div>
+                    <div style="color: #f4f4f4; font-size: 1px; opacity: 0.1; user-select: none;">NullifiedGalaxy</div>
                 </div>
             `,
             attachments: [{ filename: 'ticket.jpg', content: imageBuffer, cid: cid }]
