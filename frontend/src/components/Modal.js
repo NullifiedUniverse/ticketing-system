@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useLanguage } from '../context/LanguageContext';
 
-const animatedGradientStyle = { '--gradient-start': '#ec4899', '--gradient-end': '#8b5cf6' };
-
 const Modal = ({ isOpen, onClose, content }) => {
     const { t } = useLanguage();
     if (!isOpen) return null;
@@ -54,7 +52,6 @@ const Modal = ({ isOpen, onClose, content }) => {
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
                                         onClick={onClose}
-                                        style={animatedGradientStyle}
                                         className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
                                     >
                                         {t('btnOk')}
@@ -75,7 +72,6 @@ const Modal = ({ isOpen, onClose, content }) => {
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
                                         onClick={() => { content.onConfirm(); onClose(); }}
-                                        style={animatedGradientStyle}
                                         className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
                                     >
                                         {t('btnConfirm')}
@@ -106,7 +102,6 @@ const Modal = ({ isOpen, onClose, content }) => {
                                                 content.onConfirm(input.value);
                                                 onClose();
                                             }}
-                                            style={animatedGradientStyle}
                                             className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
                                         >
                                             {t('btnConfirm')}
@@ -150,7 +145,6 @@ const Modal = ({ isOpen, onClose, content }) => {
                                                 });
                                                 onClose();
                                             }}
-                                            style={animatedGradientStyle}
                                             className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
                                         >
                                             {t('btnSave')}
