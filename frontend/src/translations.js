@@ -103,7 +103,11 @@ export const translations = {
         emailDefaultMsgBefore: "Here is your ticket for",
         emailDefaultMsgAfter: "Please present this QR code at the entrance.",
         errorUploadFailed: "Upload failed",
-        colEmail: "Email"
+        colEmail: "Email",
+        emailSubjectPlaceholder: "e.g. Your Mandatory Summons",
+        emailSenderPlaceholder: "e.g. The Overlords",
+        emailPreamblePlaceholder: "e.g. You have been chosen...",
+        emailFinePrintPlaceholder: "e.g. Do not resist..."
     },
     'en-std': {
         appTitle: "TicketControl",
@@ -185,12 +189,15 @@ export const translations = {
         modalCheckInBody: (name) => `Are you sure you want to check in ${name}?`,
         modalSendBatchTitle: "Send Batch Emails?",
         modalSendBatchBody: (count) => `This will send QR codes to ALL ${count} attendees.`,
-        emailSent: (email) => `Email sent to ${email}!`, 
-        modalPromptTitle: "Create New Event"
-    },
-    'zh-TW': {
-        appTitle: "Null's Board",
-        sidebarFooter: "系統開發：NullifiedGalaxy",
+                emailSent: (email) => `Email sent to ${email}!`,
+                modalPromptTitle: "Create New Event",
+                emailSubjectPlaceholder: "e.g. Your Ticket for Winter Gala",
+                emailSenderPlaceholder: "e.g. Ticket System",
+                emailPreamblePlaceholder: "e.g. Here is your ticket...",
+                emailFinePrintPlaceholder: "e.g. Please present this at the gate..."
+            },
+            'zh-TW': {
+                appTitle: "Null's Board",        sidebarFooter: "系統開發：NullifiedGalaxy",
         headerSelect: "選擇活動",
         headerEvent: "活動：",
         limboTitle: "未選擇活動",
@@ -247,6 +254,12 @@ export const translations = {
         btnCancel: "取消",
         btnConfirm: "確認",
         btnSave: "儲存",
-        modalDefaultTitle: "通知"
+        modalDefaultTitle: "通知",
+        emailSent: (email) => `Email 已發送至 ${email}！`,
+        modalPromptTitle: "建立新活動",
+        emailSubjectPlaceholder: "例如：冬季晚宴入場券",
+        emailSenderPlaceholder: "例如：票務系統",
+        emailPreamblePlaceholder: "例如：這是您的入場券...",
+        emailFinePrintPlaceholder: "例如：請在入口出示此 QR Code..."
     }
 };
