@@ -14,6 +14,10 @@ class TicketService {
         
         // Track listeners to unsubscribe on shutdown/cleanup if needed
         this.listeners = new Map();
+        
+        // State Tracking
+        this.loadingPromises = new Map(); // eventId -> Promise (resolves when initial sync done)
+        this.cacheStatus = new Map(); // eventId -> 'init' | 'syncing' | 'ready' | 'error'
 
         // Performance Metrics
         this.metrics = {
@@ -47,55 +51,74 @@ class TicketService {
     // --- CACHE & REAL-TIME SYNC ---
 
     /**
-     * Ensures the cache is initialized for an event.
-     * Sets up a real-time listener if one doesn't exist.
+     * Ensures the cache is initialized and syncing.
+     * Non-blocking by default, but starts the hydration process.
      */
     async ensureCache(eventId) {
-        if (this.cache.has(eventId) && this.listeners.has(eventId)) {
+        if (this.listeners.has(eventId)) {
             return; 
         }
 
         logger.info(`[Cache] Initializing Real-Time Sync for Event: ${eventId}`);
+        this.cacheStatus.set(eventId, 'init');
         
         // 1. Initialize Storage
         if (!this.cache.has(eventId)) {
             this.cache.set(eventId, new Map());
         }
 
-        // 2. Setup Firestore Listener
+        // 2. Create Resolution Promise for Initial Load
+        let resolveInitialLoad;
+        const initialLoadPromise = new Promise(resolve => resolveInitialLoad = resolve);
+        this.loadingPromises.set(eventId, initialLoadPromise);
+
+        // 3. Setup Firestore Listener
         const collectionRef = db.collection('events').doc(eventId).collection('tickets');
         
         const unsubscribe = collectionRef.onSnapshot(snapshot => {
             const eventCache = this.cache.get(eventId);
+            let isInitial = this.cacheStatus.get(eventId) === 'init';
             
+            // Log large updates
+            if (snapshot.docChanges().length > 50) {
+                logger.info(`[Cache] Processing batch update of ${snapshot.docChanges().length} tickets for ${eventId}...`);
+            }
+
             snapshot.docChanges().forEach(change => {
                 const ticket = change.doc.data();
                 const ticketId = change.doc.id;
 
                 if (change.type === 'added' || change.type === 'modified') {
-                    // Update Cache
                     eventCache.set(ticketId, ticket);
-                    // logger.debug(`[Sync] Updated ${ticketId} in cache.`);
                 }
                 if (change.type === 'removed') {
                     eventCache.delete(ticketId);
-                    // logger.debug(`[Sync] Removed ${ticketId} from cache.`);
                 }
             });
+
+            // Resolve promise on first callback (Initial State Synced)
+            if (resolveInitialLoad) {
+                logger.info(`[Cache] Hydration Complete. Total tickets: ${eventCache.size}`);
+                this.cacheStatus.set(eventId, 'ready');
+                resolveInitialLoad();
+                resolveInitialLoad = null; // Ensure it only fires once
+            }
         }, error => {
             logger.error(`[Sync] Listener Error for ${eventId}: ${error.message}`);
+            this.cacheStatus.set(eventId, 'error');
         });
 
         this.listeners.set(eventId, unsubscribe);
-        
-        // Wait for initial load? onSnapshot fires immediately with current state.
-        // However, for the very first request, we might want to ensure data is there.
-        // We can trust the listener to populate it very quickly.
-        // To be safe for the *very first* synchronous call, we can do a get() if empty.
-        if (this.cache.get(eventId).size === 0) {
-             const snap = await collectionRef.get();
-             snap.forEach(doc => this.cache.get(eventId).set(doc.id, doc.data()));
-             logger.info(`[Cache] Pre-loaded ${snap.size} tickets.`);
+    }
+
+    /**
+     * Waits for the cache to be fully hydrated (used by Dashboard/Exports).
+     */
+    async loadCacheForEvent(eventId) {
+        await this.ensureCache(eventId);
+        if (this.loadingPromises.has(eventId)) {
+            // Wait for the initial onSnapshot to complete
+            await this.loadingPromises.get(eventId);
         }
     }
 
@@ -112,6 +135,8 @@ class TicketService {
         if (ticket) {
             this.metrics.hits++;
         } else {
+            // If cache is ready but ticket missing -> genuinely 404
+            // If cache is init/syncing -> might be loading
             this.metrics.misses++;
         }
         return ticket;
@@ -121,7 +146,7 @@ class TicketService {
 
     async createEvent(eventId) {
         await this.createEventMetadata(eventId);
-        await this.ensureCache(eventId); // Start sync immediately
+        await this.ensureCache(eventId); 
         return { id: eventId, name: eventId, createdAt: new Date() };
     }
 
@@ -132,6 +157,8 @@ class TicketService {
             this.listeners.delete(eventId);
         }
         this.cache.delete(eventId);
+        this.loadingPromises.delete(eventId);
+        this.cacheStatus.delete(eventId);
 
         // DB Deletion
         await db.collection('events_meta').doc(eventId).delete();
@@ -150,10 +177,6 @@ class TicketService {
         const snapshot = await eventsRef.get();
         let events = [];
         snapshot.forEach(doc => events.push(doc.data()));
-        
-        // Pre-warm caches for known events?
-        // events.forEach(e => this.ensureCache(e.id)); // Optional: Warm up all on startup
-        
         return events;
     }
 
@@ -251,63 +274,73 @@ class TicketService {
     }
 
     async updateTicketStatus(eventId, ticketId, action, scannedBy) {
+        // Ensure cache is initialized (non-blocking check if already warm)
         await this.ensureCache(eventId);
         
-        // Use Firestore Transaction for Atomicity
-        // This prevents race conditions if two scanners scan the same ticket simultaneously
-        const ticketRef = db.collection('events').doc(eventId).collection('tickets').doc(ticketId);
-        let finalTicketData = null;
-        let message = '';
+        // 1. FAST VALIDATION (In-Memory)
+        // On a single-instance server, RAM is the source of truth.
+        // We skip the DB Read step entirely.
+        let ticketData = this.getCachedTicket(eventId, ticketId);
 
-        await db.runTransaction(async (t) => {
-            const doc = await t.get(ticketRef);
+        // Cold Cache Fallback: If not in RAM, fetch from DB
+        if (!ticketData) {
+            const doc = await db.collection('events').doc(eventId).collection('tickets').doc(ticketId).get();
             if (!doc.exists) throw new AppError("Ticket not found.", 404);
-            
-            const ticketData = doc.data();
-            const now = new Date();
-            let newStatus = ticketData.status;
-
-            if (action === 'check-in') {
-                if (ticketData.status === 'checked-in') throw new AppError('Ticket already checked in.', 400);
-                if (ticketData.status !== 'valid' && ticketData.status !== 'on-leave') throw new AppError('Ticket cannot be checked in.', 400);
-                newStatus = 'checked-in';
-                message = `Checked In: ${ticketData.attendeeName}`;
-            } else if (action === 'check-out') {
-                if (ticketData.status !== 'checked-in') throw new AppError('Can only check out an already checked-in ticket.', 400);
-                newStatus = 'on-leave';
-                message = `On Leave: ${ticketData.attendeeName}`;
-            } else {
-                 throw new AppError(`Invalid action: ${action}`, 400);
+            ticketData = doc.data();
+            if (this.cache.has(eventId)) {
+                this.cache.get(eventId).set(ticketId, ticketData);
             }
-
-            const historyEntry = { action, timestamp: now, scannedBy };
-            const updatedData = {
-                status: newStatus,
-                checkInHistory: admin.firestore.FieldValue.arrayUnion(historyEntry)
-            };
-
-            t.update(ticketRef, updatedData);
-            
-            // Prepare return data (cannot rely on doc.data() after update inside txn)
-            finalTicketData = { 
-                ...ticketData, 
-                status: newStatus,
-                checkInHistory: [...(ticketData.checkInHistory || []), historyEntry]
-            };
-        });
-
-        const start = performance.now();
-
-        // Transaction successful -> Update Cache
-        // (Ideally the listener would catch this, but optimistic update is faster for UI response)
-        if (finalTicketData) {
-            this.cache.get(eventId).set(ticketId, finalTicketData);
         }
 
-        this.metrics.writes++;
-        this.recordLatency(performance.now() - start);
+        // 2. LOGIC CHECK
+        let newStatus = ticketData.status;
+        let message = '';
+
+        if (action === 'check-in') {
+            if (ticketData.status === 'checked-in') throw new AppError('Ticket already checked in.', 400);
+            if (ticketData.status !== 'valid' && ticketData.status !== 'on-leave') throw new AppError('Ticket cannot be checked in.', 400);
+            newStatus = 'checked-in';
+            message = `Checked In: ${ticketData.attendeeName}`;
+        } else if (action === 'check-out') {
+            if (ticketData.status !== 'checked-in') throw new AppError('Can only check out an already checked-in ticket.', 400);
+            newStatus = 'on-leave';
+            message = `On Leave: ${ticketData.attendeeName}`;
+        } else {
+             throw new AppError(`Invalid action: ${action}`, 400);
+        }
+
+        // 3. UPDATE
+        const now = new Date();
+        const historyEntry = { action, timestamp: now, scannedBy };
         
-        return { ...finalTicketData, message };
+        const updatedTicketData = { 
+            ...ticketData, 
+            status: newStatus,
+            checkInHistory: [...(ticketData.checkInHistory || []), historyEntry]
+        };
+        
+        // Optimistic Cache Update
+        if (this.cache.has(eventId)) {
+            this.cache.get(eventId).set(ticketId, updatedTicketData);
+        }
+
+        // 4. PERSIST (1 RTT)
+        // We await this to ensure data safety, but we saved 50% latency by skipping the Transaction Read.
+        const ticketRef = db.collection('events').doc(eventId).collection('tickets').doc(ticketId);
+        try {
+            await ticketRef.update({
+                status: newStatus,
+                checkInHistory: admin.firestore.FieldValue.arrayUnion(historyEntry)
+            });
+        } catch (error) {
+            // Rollback on error
+            if (this.cache.has(eventId)) {
+                this.cache.get(eventId).set(ticketId, ticketData);
+            }
+            throw error;
+        }
+        
+        return { ...updatedTicketData, message };
     }
 
     async updateTicket(eventId, ticketId, updateData) {
@@ -344,7 +377,8 @@ class TicketService {
     }
 
     async getTickets(eventId) {
-        await this.ensureCache(eventId);
+        // Ensure we wait for the full list before returning
+        await this.loadCacheForEvent(eventId);
         return Array.from(this.cache.get(eventId).values());
     }
 

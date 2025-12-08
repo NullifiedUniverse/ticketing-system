@@ -74,12 +74,19 @@ app.get('/scanner', (req, res) => {
 
 app.get('/html5-qrcode.min.js', (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
-    res.sendFile(path.join(__dirname, '../scanner/html5-qrcode.min.js'));
+    // Serve from node_modules for reliability
+    res.sendFile(path.join(__dirname, 'node_modules/html5-qrcode/html5-qrcode.min.js'));
 });
 
 // --- SERVE STATIC FRONTEND (Production) ---
 // Serve static files from the React app build directory
 app.use(express.static(path.join(__dirname, '../frontend/build')));
+
+// Handle API 404s explicitly BEFORE the React catch-all
+// This prevents API errors from returning the HTML index page
+app.all('/api/*', (req, res, next) => {
+    next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
+});
 
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.

@@ -38,19 +38,21 @@ const start = async () => {
         console.log("Attempting to start ngrok tunnel...");
         
         const token = process.env.NGROK_AUTHTOKEN;
+        const region = process.env.NGROK_REGION || 'us'; // Default to US, allow override
+        
         if (!token) {
              console.warn("WARNING: No NGROK_AUTHTOKEN found in environment variables.");
-             // We can try without token, but it likely fails or has limits.
-             // The new library typically requires a token or setup.
              throw new Error("NGROK_AUTHTOKEN is required for @ngrok/ngrok.");
         }
         
         console.log(`Ngrok Token found: ${token.substring(0, 4)}... (hidden)`);
+        console.log(`Ngrok Region: ${region.toUpperCase()}`);
 
         // Using the new @ngrok/ngrok API
         listener = await ngrok.connect({ 
             addr: config.port, 
-            authtoken: token 
+            authtoken: token,
+            region: region // Specify the region here
         });
         
         url = listener.url();

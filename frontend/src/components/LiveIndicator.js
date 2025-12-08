@@ -3,16 +3,28 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
 
-const LiveIndicator = ({ status, error }) => {
+const LiveIndicator = ({ status, error, isSyncing }) => {
     const { t } = useLanguage();
-    const color = status === 'connected' ? '#22c55e' : '#ef4444';
-    const text = status === 'connected' ? t('liveConnected') : t('liveOffline');
+    
+    let color = '#22c55e'; // connected (green)
+    let text = t('liveConnected');
+    let animate = { scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] };
+
+    if (status === 'error') {
+        color = '#ef4444';
+        text = t('liveOffline');
+        animate = { opacity: [1, 0.5, 1] };
+    } else if (isSyncing) {
+        color = '#3b82f6'; // blue
+        text = 'Syncing...';
+        animate = { scale: [1, 1.3, 1], opacity: [0.8, 1, 0.8] };
+    }
 
     return (
         <div className="relative group flex items-center gap-2">
             <motion.div
-                animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                animate={animate}
+                transition={{ duration: isSyncing ? 1 : 2, repeat: Infinity, ease: "easeInOut" }}
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
             />

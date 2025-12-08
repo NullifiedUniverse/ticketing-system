@@ -5,25 +5,30 @@ import TicketRow from './TicketRow';
 import TicketCard from './TicketCard';
 import TicketListSkeleton from './TicketListSkeleton';
 import { useLanguage } from '../context/LanguageContext';
+import { exportToCSV, formatTicketsForCSV } from '../utils/exportUtils';
 
 const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 
 const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onCheckIn, onShowQR, onEdit, onDelete }) => {
     const { t } = useLanguage();
 
+    const handleExport = () => {
+        const formattedData = formatTicketsForCSV(filteredTickets);
+        exportToCSV(formattedData, 'tickets_export.csv');
+    };
+
     return (
     <motion.div 
-        layout 
         variants={itemVariants} 
         initial="hidden"
         animate="visible"
         className="glass-panel p-6 rounded-2xl"
     >
         {/* Search Bar */}
-        <div className="relative mb-6 flex gap-4">
-            <div className="relative flex-1">
+        <div className="relative mb-6 flex flex-wrap gap-4">
+            <div className="relative flex-1 min-w-[200px]">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </div>
@@ -32,37 +37,27 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                     placeholder={t('searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-gray-950/50 border border-gray-700 rounded-xl pl-10 pr-4 py-3 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                    className="w-full glass-input pl-10 pr-10"
                 />
+                {searchTerm && (
+                    <button
+                        onClick={() => setSearchTerm('')}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-white transition-colors"
+                        aria-label="Clear Search"
+                    >
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                )}
             </div>
             
             <button 
-                onClick={() => {
-                    const headers = ["ID,Name,Email,Status,LastActionTime,LastActionBy"];
-                    const rows = filteredTickets.map(t => {
-                        const lastAction = t.checkInHistory && t.checkInHistory.length > 0 ? t.checkInHistory[t.checkInHistory.length - 1] : null;
-                        return [
-                            t.id, 
-                            `"${t.attendeeName}"`, 
-                            t.attendeeEmail, 
-                            t.status, 
-                            lastAction ? new Date(lastAction.timestamp._seconds * 1000 || lastAction.timestamp).toLocaleString() : '',
-                            lastAction ? lastAction.scannedBy : ''
-                        ].join(',');
-                    });
-                    const csvContent = "data:text/csv;charset=utf-8," + [headers, ...rows].join("\n");
-                    const encodedUri = encodeURI(csvContent);
-                    const link = document.createElement("a");
-                    link.setAttribute("href", encodedUri);
-                    link.setAttribute("download", "tickets_export.csv");
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                }}
-                className="px-4 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-medium transition-colors flex items-center gap-2 shadow-lg border border-gray-700 whitespace-nowrap"
+                onClick={handleExport}
+                className="glass-interactive px-4 py-3 text-white rounded-xl font-bold flex items-center gap-2 whitespace-nowrap"
             >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                Export CSV
+                {t('btnExportCsv')}
             </button>
         </div>
 

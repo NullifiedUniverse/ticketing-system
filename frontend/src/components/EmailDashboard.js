@@ -15,6 +15,7 @@ const EmailDashboard = () => {
     const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    const [selectedTicketIds, setSelectedTicketIds] = useState(new Set());
     
     const [bgFilename, setBgFilename] = useState(null);
     const [config, setConfig] = useState({
@@ -34,6 +35,7 @@ const EmailDashboard = () => {
         try {
             const data = await getTickets(eventId);
             setTickets(data);
+            setSelectedTicketIds(new Set()); // Reset selection on refresh
         } catch (err) {
             console.error("Failed to fetch tickets", err);
             showErrorModal(`${t('errorCsvEmpty')}: ${err.message}`);
@@ -70,6 +72,21 @@ const EmailDashboard = () => {
         }));
     };
 
+    const toggleSelectAll = () => {
+        if (selectedTicketIds.size === tickets.length) {
+            setSelectedTicketIds(new Set());
+        } else {
+            setSelectedTicketIds(new Set(tickets.map(t => t.id)));
+        }
+    };
+
+    const toggleSelection = (id) => {
+        const newSet = new Set(selectedTicketIds);
+        if (newSet.has(id)) newSet.delete(id);
+        else newSet.add(id);
+        setSelectedTicketIds(newSet);
+    };
+
     const handleSendOne = async (ticket) => {
         if (!ticket.attendeeEmail) return showErrorModal("This ticket has no email address.");
 
@@ -85,19 +102,36 @@ const EmailDashboard = () => {
     };
 
     const handleBatchSend = async () => {
+        const targetTickets = selectedTicketIds.size > 0 
+            ? tickets.filter(t => selectedTicketIds.has(t.id)) 
+            : tickets;
+
+        if (targetTickets.length === 0) return showErrorModal("No tickets available to send.");
+
         showConfirmModal(
             t('modalSendBatchTitle'), 
-            t('modalSendBatchBody', tickets.length), 
+            t('modalSendBatchBody', targetTickets.length),
             async () => {
                 hideModal();
                 setSending(true);
                 try {
-                    const res = await sendBatchEmails(eventId, bgFilename, config, config.messageBefore, config.messageAfter, config.emailSubject, config.senderName);
+                    const res = await sendBatchEmails(
+                        eventId, 
+                        bgFilename, 
+                        config, 
+                        config.messageBefore, 
+                        config.messageAfter, 
+                        config.emailSubject, 
+                        config.senderName,
+                        selectedTicketIds.size > 0 ? Array.from(selectedTicketIds) : null // Pass IDs if selected
+                    );
+                    
                     let msg = `Batch Complete!\nSuccess: ${res.result.success}\nFailed: ${res.result.failed}`;
                     if (res.result.errors && res.result.errors.length > 0) {
                         msg += `\n\nErrors:\n${res.result.errors.join('\n')}`;
                     }
                     alert(msg);
+                    fetchTickets(); // Refresh statuses
                 } catch (err) {
                     showErrorModal(`${t('importFailed')}: ${err.message}`);
                 } finally {
@@ -186,7 +220,7 @@ const EmailDashboard = () => {
                                 disabled={sending || loading}
                                 className="animated-gradient-bg px-6 py-3 text-white font-bold rounded-xl shadow-lg disabled:opacity-50 flex items-center gap-2"
                             >
-                                {sending ? 'Sending...' : `🚀 ${t('btnBatch')}`}
+                                {sending ? 'Sending...' : (selectedTicketIds.size > 0 ? `🚀 Send to ${selectedTicketIds.size}` : `🚀 ${t('btnBatch')}`)}
                             </motion.button>
                         </div>
                     </div>
@@ -269,6 +303,14 @@ const EmailDashboard = () => {
                             <table className="w-full text-left border-collapse relative">
                                 <thead className="bg-gray-900/95 backdrop-blur text-gray-400 text-xs uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                                     <tr>
+                                        <th className="p-4 w-10">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={tickets.length > 0 && selectedTicketIds.size === tickets.length}
+                                                onChange={toggleSelectAll}
+                                                className="rounded border-gray-600 bg-transparent focus:ring-indigo-500"
+                                            />
+                                        </th>
                                         <th className="p-4">{t('colAttendee')}</th>
                                         <th className="p-4">{t('colEmail')}</th>
                                         <th className="p-4">{t('colStatus')}</th>
@@ -286,16 +328,26 @@ const EmailDashboard = () => {
                                             key={ticket.id} 
                                             variants={fadeInUp}
                                             layout
-                                            className="hover:bg-white/5 transition-colors"
+                                            className={`hover:bg-white/5 transition-colors ${selectedTicketIds.has(ticket.id) ? 'bg-indigo-500/10' : ''}`}
+                                            onClick={() => toggleSelection(ticket.id)}
                                         >
+                                            <td className="p-4">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={selectedTicketIds.has(ticket.id)}
+                                                    onChange={() => {}} // Handled by row click
+                                                    className="rounded border-gray-600 bg-transparent focus:ring-indigo-500 pointer-events-none"
+                                                />
+                                            </td>
                                             <td className="p-4 font-medium">{ticket.attendeeName}</td>
                                             <td className="p-4 text-gray-400">{ticket.attendeeEmail}</td>
                                             <td className="p-4">
                                                 <span className={`px-2 py-1 rounded text-xs font-bold ${ticket.status === 'checked-in' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
                                                     {ticket.status}
                                                 </span>
+                                                {ticket.emailStatus === 'sent' && <span className="ml-2 text-xs">✅ Sent</span>}
                                             </td>
-                                            <td className="p-4 text-right space-x-2">
+                                            <td className="p-4 text-right space-x-2" onClick={e => e.stopPropagation()}>
                                                 <motion.button 
                                                     variants={buttonClick}
                                                     whileHover="hover"

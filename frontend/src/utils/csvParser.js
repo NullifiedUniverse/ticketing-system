@@ -16,7 +16,13 @@ export const parseCSV = (text) => {
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
             if (char === '"') {
-                inQuotes = !inQuotes;
+                // Handle escaped quotes ("") inside quoted string
+                if (inQuotes && line[i + 1] === '"') {
+                    current += '"';
+                    i++; // Skip next quote
+                } else {
+                    inQuotes = !inQuotes;
+                }
             } else if (char === ',' && !inQuotes) {
                 result.push(current.trim());
                 current = '';
@@ -26,7 +32,7 @@ export const parseCSV = (text) => {
         }
         result.push(current.trim());
         // Clean up quotes from edges if they exist
-        return result.map(val => val.replace(/^"|"$/g, '').replace(/""/g, '"'));
+        return result.map(val => val.replace(/^"|"$/g, ''));
     };
 
     // Detect Header

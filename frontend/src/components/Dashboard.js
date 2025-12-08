@@ -23,6 +23,7 @@ const Dashboard = () => {
     const {
         tickets,
         isLoading,
+        isSyncing,
         connectionStatus,
         connectionError,
         handleTicketCreated,
@@ -155,21 +156,21 @@ const Dashboard = () => {
     return (
         <Layout>
             {/* Header with Frosted Blur and Sticky */}
-            <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-900/70 backdrop-blur-xl px-6 py-4 flex justify-between items-center shadow-sm">
+            <header className="sticky top-0 z-30 border-b border-white/5 bg-slate-900/50 backdrop-blur-xl px-6 py-4 flex justify-between items-center shadow-md">
                 <div className="w-8 xl:hidden"></div> {/* Spacer */}
 
                 <div className="flex items-center gap-4 overflow-hidden">
                         <h2 className="text-xl font-semibold text-white truncate flex items-center gap-2">
                         {eventId ? (
                             <>
-                                <span className="text-gray-400 text-sm hidden sm:inline uppercase tracking-wider">{t('headerEvent')}</span>
-                                <span className="rainbow-text">{eventId}</span>
+                                <span className="text-slate-400 text-xs hidden sm:inline uppercase tracking-widest font-bold">{t('headerEvent')}</span>
+                                <span className="rainbow-text text-2xl">{eventId}</span>
                             </>
                         ) : (
-                            <span className="text-gray-500 italic">{t('headerSelect')}</span>
+                            <span className="text-slate-500 italic">{t('headerSelect')}</span>
                         )}
                     </h2>
-                    <LiveIndicator status={connectionStatus} error={connectionError} />
+                    <LiveIndicator status={connectionStatus} error={connectionError} isSyncing={isSyncing} />
                 </div>
 
                 {eventId && (
@@ -189,7 +190,7 @@ const Dashboard = () => {
                                         }
                                     } catch(e) { console.error(e); }
                                 }}
-                                className="glass-interactive px-4 py-2 rounded-xl text-sm font-medium text-gray-300 hover:text-white flex items-center gap-2"
+                                className="glass-interactive px-4 py-2 text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2 shadow-lg"
                                 title={t('copyScannerLink')}
                             >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
@@ -200,7 +201,7 @@ const Dashboard = () => {
                                 whileHover="hover"
                                 whileTap="tap"
                                 onClick={generateSetupQR}
-                                className="animated-gradient-bg text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-purple-500/20 flex items-center gap-2"
+                                className="animated-gradient-bg px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2"
                             >
                                 <span className="text-lg">📱</span>
                                 <span className="hidden sm:inline">{t('qaScanner')}</span>
@@ -215,8 +216,8 @@ const Dashboard = () => {
                 <div className="fixed inset-0 pointer-events-none ambient-glow -z-10"></div>
 
                 {!eventId ? (
-                    <div className="h-full flex flex-col items-center justify-center text-gray-500">
-                        <div className="text-8xl mb-6 opacity-20 animate-pulse">🎟️</div>
+                    <div className="h-full flex flex-col items-center justify-center text-slate-500">
+                        <div className="text-8xl mb-6 opacity-20 animate-pulse grayscale">🎟️</div>
                         <h3 className="text-3xl font-bold text-white mb-3">{t('limboTitle')}</h3>
                         <p className="text-center px-4 max-w-md text-lg opacity-70">{t('limboDesc')}</p>
                     </div>
@@ -245,8 +246,8 @@ const Dashboard = () => {
                                 <CreateTicket eventId={eventId} onTicketCreated={handleTicketCreatedAndShowQR} onApiError={showErrorModal} />
                                 
                                 {/* Quick Actions Card */}
-                                <motion.div variants={fadeInUp} className="glass-panel p-6 rounded-3xl">
-                                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3">
+                                <motion.div variants={fadeInUp} className="glass-panel p-6">
+                                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3 border-b border-white/5 pb-4">
                                         <span className="text-2xl">⚡</span> {t('qaTitle')}
                                     </h3>
                                     <div className="space-y-4">
@@ -258,10 +259,10 @@ const Dashboard = () => {
                                             className="glass-interactive w-full flex items-center justify-between p-4 rounded-xl text-left group"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <span className="text-2xl">📨</span>
-                                                <span className="text-gray-200 font-medium group-hover:text-white">{t('qaEmail')}</span>
+                                                <span className="text-2xl group-hover:scale-110 transition-transform">📨</span>
+                                                <span className="text-slate-200 font-medium group-hover:text-white">{t('qaEmail')}</span>
                                             </div>
-                                            <span className="text-gray-500 group-hover:text-white transition-colors">→</span>
+                                            <span className="text-slate-500 group-hover:text-white transition-colors">→</span>
                                         </motion.button>
                                         
                                         <motion.button 
@@ -272,10 +273,10 @@ const Dashboard = () => {
                                             className="glass-interactive w-full flex items-center justify-between p-4 rounded-xl text-left group"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <span className="text-2xl">📱</span>
-                                                <span className="text-gray-200 font-medium group-hover:text-white">{t('qaScanner')}</span>
+                                                <span className="text-2xl group-hover:scale-110 transition-transform">📱</span>
+                                                <span className="text-slate-200 font-medium group-hover:text-white">{t('qaScanner')}</span>
                                             </div>
-                                            <span className="text-gray-500 group-hover:text-white transition-colors">→</span>
+                                            <span className="text-slate-500 group-hover:text-white transition-colors">→</span>
                                         </motion.button>
                                         
                                         <motion.label 
@@ -285,8 +286,8 @@ const Dashboard = () => {
                                             className="glass-interactive w-full flex items-center justify-between p-4 rounded-xl text-left group cursor-pointer"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <span className="text-2xl">📂</span>
-                                                <span className="text-gray-200 font-medium group-hover:text-white">{t('qaImport')}</span>
+                                                <span className="text-2xl group-hover:scale-110 transition-transform">📂</span>
+                                                <span className="text-slate-200 font-medium group-hover:text-white">{t('qaImport')}</span>
                                             </div>
                                             <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
                                         </motion.label>
@@ -298,10 +299,10 @@ const Dashboard = () => {
                                             onClick={() => {
                                                     alert(t('alertDelete'));
                                             }}
-                                            className="w-full flex items-center justify-between p-4 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-left transition-all group"
+                                            className="w-full flex items-center justify-between p-4 rounded-xl bg-red-500/5 hover:bg-red-500/20 border border-red-500/10 hover:border-red-500/30 text-left transition-all group"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <span className="text-2xl">☢️</span>
+                                                <span className="text-2xl group-hover:rotate-12 transition-transform">☢️</span>
                                                 <span className="text-red-400 font-medium group-hover:text-red-300">{t('qaNuke')}</span>
                                             </div>
                                         </motion.button>
@@ -312,6 +313,7 @@ const Dashboard = () => {
                             {/* Right Column: List */}
                             <div className="xl:col-span-2">
                                     <TicketList
+                                    key={eventId}
                                     filteredTickets={filteredTickets}
                                     isLoading={isLoading}
                                     searchTerm={searchTerm}

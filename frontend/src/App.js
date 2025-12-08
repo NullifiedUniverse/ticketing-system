@@ -1,6 +1,8 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { EventProvider } from './context/EventContext';
 import { LanguageProvider } from './context/LanguageContext';
+import PageSkeleton from './components/PageSkeleton';
+import Gatekeeper from './components/Gatekeeper';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const EmailDashboard = lazy(() => import('./components/EmailDashboard'));
@@ -17,13 +19,11 @@ const App = () => {
     return (
         <LanguageProvider>
             <EventProvider>
-                <Suspense fallback={
-                    <div className="flex h-screen w-full items-center justify-center bg-gray-950 text-white">
-                        <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-                }>
-                    {route === '#email' ? <EmailDashboard /> : <Dashboard />}
-                </Suspense>
+                <Gatekeeper>
+                    <Suspense fallback={<PageSkeleton />}>
+                        {route === '#email' ? <EmailDashboard /> : <Dashboard />}
+                    </Suspense>
+                </Gatekeeper>
             </EventProvider>
         </LanguageProvider>
     );

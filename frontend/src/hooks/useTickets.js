@@ -4,6 +4,7 @@ import { getTickets, updateTicketStatus, updateTicket, deleteTicket } from '../s
 export const useTickets = (eventId, handleApiError) => {
     const [tickets, setTickets] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('disconnected');
     const [connectionError, setConnectionError] = useState(null);
 
@@ -12,6 +13,7 @@ export const useTickets = (eventId, handleApiError) => {
             setConnectionStatus('disconnected');
             setTickets([]);
             setIsLoading(false);
+            setIsSyncing(false);
             return;
         }
 
@@ -20,6 +22,8 @@ export const useTickets = (eventId, handleApiError) => {
                 setIsLoading(true);
                 setConnectionStatus('connecting');
                 setConnectionError(null);
+            } else {
+                setIsSyncing(true);
             }
 
             try {
@@ -36,6 +40,7 @@ export const useTickets = (eventId, handleApiError) => {
                 }
             } finally {
                 if (!isPolling) setIsLoading(false);
+                else setIsSyncing(false);
             }
         };
 
@@ -106,6 +111,7 @@ export const useTickets = (eventId, handleApiError) => {
         handleManualCheckIn,
         handleUpdateTicket,
         handleDeleteTicket,
-        stats
+        stats,
+        isSyncing
     };
 };

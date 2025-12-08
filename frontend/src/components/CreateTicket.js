@@ -60,7 +60,7 @@ const CreateTicket = ({ eventId, onTicketCreated, onApiError }) => {
                         <motion.input
                             whileFocus={{ scale: 1.01, borderColor: '#ec4899' }}
                             type="email"
-                            placeholder="alice@example.com"
+                            placeholder={t('placeholderEmail')}
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required

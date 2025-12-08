@@ -4,11 +4,25 @@
     <!-- System Generation by NullifiedGalaxy -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Security: Content Security Policy -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src 'self' https://fonts.gstatic.com;
+        img-src 'self' data: blob:;
+        media-src 'self' data:;
+        connect-src *;
+        object-src 'none';
+        base-uri 'self';
+    ">
+
     <title>Ticket Scanner</title>
     
     <!-- Dependencies -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/html5-qrcode.min.js" onerror="this.src='https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'"></script>
+    <script src="/html5-qrcode.min.js" id="lib-qr"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
@@ -126,6 +140,26 @@
     </style>
 </head>
 <body>
+    <!-- Security: Anti-Tamper -->
+    <script>
+        // Disable Context Menu
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // Disable DevTools Shortcuts
+        document.addEventListener('keydown', event => {
+            if (
+                event.key === 'F12' || 
+                (event.ctrlKey && event.shiftKey && (event.key === 'I' || event.key === 'J' || event.key === 'C')) || 
+                (event.ctrlKey && event.key === 'u')
+            ) {
+                event.preventDefault();
+                return false;
+            }
+        });
+
+        // Clear Console
+        console.clear();
+    </script>
 
     <!-- Camera Container -->
     <div id="reader"></div>
@@ -174,9 +208,9 @@
             </div>
         </div>
 
-        <!-- Result Card Area (Bottom-Center) -->
-        <div id="result-area" class="mt-auto px-4 pb-4 hidden flex justify-center w-full">
-            <div class="glass rounded-[2rem] p-6 w-full max-w-sm text-center shadow-2xl border-l-[6px] popup-enter relative overflow-hidden" id="result-card">
+        <!-- Result Card Area (Fixed above controls) -->
+        <div id="result-area" class="fixed bottom-32 left-0 right-0 px-4 hidden flex justify-center w-full z-30 pointer-events-none">
+            <div class="glass rounded-[2rem] p-6 w-full max-w-sm text-center shadow-2xl border-l-[6px] popup-enter relative overflow-hidden pointer-events-auto" id="result-card">
                 <!-- Background Glow -->
                 <div class="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-50 pointer-events-none"></div>
                 
@@ -186,11 +220,11 @@
             </div>
         </div>
 
-        <!-- Controls Area (Bottom) -->
-        <div class="pointer-events-auto px-4 pb-6 pt-2" id="controls-area">
+        <!-- Controls Area (Fixed Bottom) -->
+        <div class="fixed bottom-0 left-0 right-0 z-40 p-4 pb-8 glass border-t border-white/10 rounded-t-[2rem] backdrop-blur-xl transition-transform duration-300 pointer-events-auto" id="controls-area">
             
             <!-- Toggle Switch (Check-In / Check-Out) -->
-            <div id="mode-toggle" class="glass p-1.5 rounded-2xl flex hidden mb-3">
+            <div id="mode-toggle" class="glass p-1.5 rounded-2xl flex hidden mb-3 bg-black/40">
                 <button onclick="setMode('check-in')" id="btn-in" class="flex-1 py-3 rounded-xl text-sm font-extrabold shadow-lg transition-all relative overflow-hidden">
                     Check In
                 </button>
@@ -216,28 +250,63 @@
         let mode = 'check-in';
         let isProcessing = false;
         let isCameraRunning = false;
+        let shouldCameraRun = false; // Tracks user intent
         let isTorchOn = false;
         let isMuted = false;
 
         // Preload Audio
         const audioSuccess = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'); // Placeholder
-        // Real implementation would use distinct short beeps
 
-        window.onload = () => {
-            // LibraryShim
+        window.onload = async () => {
+            // 1. Try Shim
             if (typeof Html5QrCode === 'undefined' && window.__Html5QrcodeLibrary__) {
                 window.Html5QrCode = window.__Html5QrcodeLibrary__.Html5Qrcode;
             }
             
+            // 2. Check & Fallback
+            if (typeof Html5QrCode === 'undefined') {
+                console.warn("Local library failed. Attempting CDN fallback...");
+                try {
+                    await loadScript('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js');
+                    if (typeof Html5QrCode === 'undefined' && window.__Html5QrcodeLibrary__) {
+                        window.Html5QrCode = window.__Html5QrcodeLibrary__.Html5Qrcode;
+                    }
+                } catch (e) {
+                    console.error("CDN Fallback failed", e);
+                }
+            }
+
+            // 3. Final Init
             if (typeof Html5QrCode !== 'undefined') {
                 document.getElementById('start-btn').innerText = "Tap to Start";
                 loadConfig();
             } else {
-                const btn = document.getElementById('start-btn');
-                btn.innerText = "Library Error";
-                btn.classList.add('bg-red-500', 'text-white');
+                showErrorButton();
             }
+
+            // Lifecycle Listeners
+            document.addEventListener("visibilitychange", handleVisibilityChange);
+            window.addEventListener("pagehide", stopCameraInternal);
         };
+
+        function showErrorButton() {
+            const btn = document.getElementById('start-btn');
+            btn.innerText = "Library Error";
+            btn.classList.remove('hidden');
+            btn.classList.add('bg-red-500', 'text-white');
+            btn.disabled = true;
+            alert("Could not load QR Library. Check internet connection.");
+        }
+
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const s = document.createElement('script');
+                s.src = src;
+                s.onload = resolve;
+                s.onerror = reject;
+                document.head.appendChild(s);
+            });
+        }
 
         function loadConfig() {
             try {
@@ -256,31 +325,56 @@
             }
         }
 
+        async function handleVisibilityChange() {
+            if (document.hidden) {
+                await stopCameraInternal();
+            } else {
+                // Small delay to ensure browser is ready
+                setTimeout(() => {
+                    if (shouldCameraRun && !isCameraRunning) {
+                        startScanner();
+                    }
+                }, 300);
+            }
+        }
+
+        async function stopCameraInternal() {
+            if (html5QrCode && isCameraRunning) {
+                try {
+                    await html5QrCode.stop();
+                    isCameraRunning = false;
+                    // UI update: Show start button if we stopped? 
+                    // No, if it's just backgrounding, we want to keep the "scanning" UI state mostly 
+                    // or show a "Paused" state? 
+                    // For simplicity, we just stop the feed. When resuming, we restart.
+                    // If we stop, the video element goes blank.
+                } catch (err) {
+                    console.error("Failed to stop camera", err);
+                }
+            }
+        }
+
         async function startScanner() {
             const btn = document.getElementById('start-btn');
+            
+            // User intent confirmed
+            shouldCameraRun = true;
+
             if (isCameraRunning) return;
 
             btn.innerText = "Accessing Camera...";
             btn.disabled = true;
 
             try {
-                // 1. Request Permissions
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                // 1. Request Permissions (if not already granted)
+                // Note: getUserMedia might fail if app is not focused, but we are calling this on click or resume (visible).
                 
-                // Check torch capability
-                const track = stream.getVideoTracks()[0];
-                const capabilities = track.getCapabilities();
-                if (capabilities.torch) {
-                    document.getElementById('btn-torch').classList.remove('hidden');
+                // 2. Init Lib (Reuse if exists)
+                if (!html5QrCode) {
+                    html5QrCode = new Html5QrCode("reader");
                 }
                 
-                stream.getTracks().forEach(t => t.stop()); // Stop initial test stream
-
-                // 2. Init Lib
-                html5QrCode = new Html5QrCode("reader");
-                
                 // 3. Calculate optimal box size
-                // This matches the CSS .scanner-overlay (65vmin)
                 const getQrBoxSize = (viewfinderWidth, viewfinderHeight) => {
                     const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
                     return { 
@@ -293,9 +387,8 @@
                 await html5QrCode.start(
                     { facingMode: "environment" },
                     { 
-                        fps: 30, 
+                        fps: 15, // Optimized
                         qrbox: getQrBoxSize,
-                        // aspectRatio: undefined, // Let library determine best fit
                         disableFlip: false,
                         formatsToSupport: [ 0 ] // QR_CODE
                     },
@@ -306,15 +399,40 @@
                 isCameraRunning = true;
                 btn.classList.add('hidden'); // Hide button
                 document.getElementById('scan-box').style.opacity = "1"; 
-
+                
+                // Tap to Scan Next (Speed Mode)
+                // Remove existing listener to avoid duplicates? 
+                // document.body.removeEventListener... (Need named function for that)
+                // Ideally we add this once in init, but we need isProcessing check.
+                // Let's define the handler outside or check if added.
+                // For simplicity in this script block, we can leave it or optimize.
+                // Better: Define handler once.
+                
             } catch (err) {
                 console.error(err);
-                alert("Camera Error: " + (err.message || "Permission Denied"));
+                // Only alert if user explicitly clicked (not on auto-resume)?
+                // But auto-resume failure is also bad.
+                // Let's show the button again.
                 btn.disabled = false;
                 btn.innerText = "Retry Camera";
+                btn.classList.remove('hidden');
                 btn.classList.add('bg-red-100', 'text-red-900');
+                isCameraRunning = false;
+                // If error occurs, maybe we shouldn't auto-retry endlessly?
+                // Keep shouldCameraRun = true? No, maybe false to force user interaction.
+                if (document.visibilityState === 'visible') {
+                     alert("Camera Error: " + (err.message || "Permission Denied"));
+                     shouldCameraRun = false; 
+                }
             }
         }
+
+        // Setup Global Click Listener once
+        document.body.addEventListener('click', () => {
+            if (isProcessing && document.getElementById('result-area').classList.contains('hidden') === false) {
+                resetState(0);
+            }
+        });
 
         async function toggleTorch() {
             if (!html5QrCode || !isCameraRunning) return;
@@ -361,11 +479,13 @@
             isProcessing = true;
 
             // Immediate Feedback
-            try { html5QrCode.pause(true); } catch(e){}
             if (!isMuted && navigator.vibrate) navigator.vibrate(40);
             
             const box = document.getElementById('scan-box');
             box.classList.add('active'); // Visual flash
+
+            // OPTIMISTIC UI: Show "Processing" immediately
+            showResult('loading', 'Processing...', 'Verifying Ticket');
 
             if (!config) {
                 await handleSetup(text);
@@ -396,17 +516,18 @@
         }
 
         async function handleTicket(id) {
-            showResult('loading', 'Checking...', 'Verifying ID');
+            // Note: 'loading' state is already set in onScan for immediate feedback.
 
             try {
                 const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 4000); // 4s Timeout
+                const timeout = setTimeout(() => controller.abort(), 10000); // 10s Timeout for stability
 
                 const res = await fetch(`${config.apiBaseUrl}/api/scanner/update-ticket-status/${config.eventId}/${id}`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json', 
-                        'Authorization': `Bearer ${config.token}` 
+                        'Authorization': `Bearer ${config.token}`,
+                        'ngrok-skip-browser-warning': 'true'
                     },
                     body: JSON.stringify({ action: mode }),
                     signal: controller.signal
@@ -422,6 +543,9 @@
                 
                 showResult('success', data.data?.attendeeName || "Valid Ticket", data.message);
 
+                // Auto-dismiss faster for success (Speed Mode)
+                resetState(700);
+
             } catch (e) {
                 // Long vibrate for error
                 if(navigator.vibrate) navigator.vibrate(300);
@@ -434,8 +558,7 @@
                 } else {
                     showResult('error', 'Invalid', e.message || "Unknown Error");
                 }
-            } finally {
-                resetState(isProcessing ? 1200 : 500);
+                resetState(2000); // Keep errors visible longer
             }
         }
 
@@ -488,17 +611,15 @@
             if (type === 'success') box.classList.add('active');
         }
 
+        let resetTimer = null;
         function resetState(delay) {
-            setTimeout(() => {
+            if (resetTimer) clearTimeout(resetTimer);
+            
+            resetTimer = setTimeout(() => {
                 isProcessing = false;
                 document.getElementById('result-area').classList.add('hidden');
                 const box = document.getElementById('scan-box');
                 box.classList.remove('active', 'error');
-                
-                // Resume Camera
-                if (isCameraRunning) {
-                    try { html5QrCode.resume(); } catch(e){}
-                }
             }, delay);
         }
 

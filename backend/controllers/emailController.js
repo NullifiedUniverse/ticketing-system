@@ -81,7 +81,7 @@ class EmailController {
     });
 
     sendBatch = catchAsync(async (req, res, next) => {
-        const { eventId, bgFilename, config: reqConfig, messageBefore, messageAfter, emailSubject, senderName } = req.body;
+        const { eventId, bgFilename, config: reqConfig, messageBefore, messageAfter, emailSubject, senderName, ticketIds } = req.body;
         
         // 1. Load & Merge
         const storedConfig = await ticketService.getEmailConfig(eventId) || {};
@@ -122,8 +122,15 @@ class EmailController {
         };
 
         logger.info(`[Email Batch] Syncing user list for event: ${eventId}`);
-        const tickets = await ticketService.getTickets(eventId);
-        logger.info(`[Email Batch] Found ${tickets.length} potential recipients.`);
+        let tickets = await ticketService.getTickets(eventId);
+        
+        // Filter for specific tickets if IDs provided
+        if (ticketIds && Array.isArray(ticketIds) && ticketIds.length > 0) {
+            tickets = tickets.filter(t => ticketIds.includes(t.id));
+            logger.info(`[Email Batch] Filtered to ${tickets.length} selected recipients.`);
+        } else {
+            logger.info(`[Email Batch] Found ${tickets.length} potential recipients (All).`);
+        }
 
         const bgPath = mergedBgFilename ? path.join(uploadDir, mergedBgFilename) : null;
         

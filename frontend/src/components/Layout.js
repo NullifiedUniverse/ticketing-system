@@ -4,12 +4,12 @@ import Modal from './Modal';
 import PageTransition from './PageTransition';
 import { useEvent } from '../context/EventContext';
 import { useModal } from '../hooks/useModal';
-import { createEvent } from '../services/api';
+import { createEvent, deleteEvent, drawRaffleWinner } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 
 const Layout = ({ children }) => {
-    const { eventId, selectEvent, triggerRefresh } = useEvent();
-    const { modalContent, hideModal, showErrorModal, showPromptModal } = useModal();
+    const { eventId, selectEvent, triggerRefresh, fetchEvents } = useEvent();
+    const { modalContent, hideModal, showErrorModal, showPromptModal, showConfirmModal, showModal } = useModal();
     const { t } = useLanguage();
     
     const handleNewEvent = () => {
@@ -28,12 +28,56 @@ const Layout = ({ children }) => {
         });
     };
 
+    const handleDeleteEvent = (targetEventId) => {
+        showConfirmModal(
+            t('modalDeleteEventTitle'), 
+            t('modalDeleteEventBody', targetEventId),
+            async () => {
+                try {
+                    await deleteEvent(targetEventId);
+                    if (eventId === targetEventId) {
+                        selectEvent(null);
+                    }
+                    fetchEvents(); // Force refresh
+                    hideModal();
+                } catch (error) {
+                    showErrorModal("Failed to delete event: " + error.message);
+                }
+            }
+        );
+    };
+
+    const handleRaffle = async () => {
+        if (!eventId) return;
+        try {
+            const result = await drawRaffleWinner(eventId);
+            showModal({
+                type: 'alert',
+                title: t('raffleWinnerTitle'),
+                contentComponent: () => (
+                    <div className="text-center">
+                        <div className="text-6xl mb-4 animate-bounce">🏆</div>
+                        <h3 className="text-2xl font-bold text-white mb-2">{result.winner.name}</h3>
+                        <p className="text-gray-400">{result.winner.email}</p>
+                        <div className="mt-6 text-xs text-gray-600 uppercase tracking-widest">
+                            {t('poolSize')} {result.poolSize}
+                        </div>
+                    </div>
+                )
+            });
+        } catch (error) {
+            showErrorModal(error.message);
+        }
+    };
+
     return (
-        <div className="flex h-screen bg-black text-gray-100 font-sans overflow-hidden">
+        <div className="flex h-screen bg-transparent text-slate-200 font-sans overflow-hidden">
             <Sidebar 
                 currentEventId={eventId} 
                 onSelectEvent={selectEvent} 
                 onNewEvent={handleNewEvent} 
+                onDeleteEvent={handleDeleteEvent}
+                onRaffle={handleRaffle}
                 refreshTrigger={0} 
             />
 

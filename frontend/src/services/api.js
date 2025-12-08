@@ -129,6 +129,11 @@ export const updateTicketStatus = async (eventId, ticketId, action) => {
     return result;
 };
 
+export const drawRaffleWinner = async (eventId) => {
+    const result = await callApi(`/api/admin/raffle/draw/${eventId}`, { headers: getAuthHeaders() });
+    return result;
+};
+
 // --- SYSTEM ---
 export const getScannerToken = async () => {
     const result = await callApi('/auth/scanner-token', {
