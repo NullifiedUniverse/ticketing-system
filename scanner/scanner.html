@@ -254,8 +254,61 @@
         let isTorchOn = false;
         let isMuted = false;
 
-        // Preload Audio
-        const audioSuccess = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'); // Placeholder
+        // Audio Assets (Base64 for standalone performance)
+        // Success: High-pitch "Ding" (Sine wave 880Hz)
+        const audioSuccess = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
+        // Error: Low-pitch "Buzz" (Sawtooth 150Hz) - Placeholder, replaced with actual short beep logic below for compactness or actual base64 if available. 
+        // Actually, let's use the AudioContext API for procedurally generating sounds to save file size and network payload.
+        
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (isMuted) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'success') {
+                // Success: High rising chirp
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'error') {
+                // Error: Low descending buzz
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'warning') {
+                // Warning: Double beep
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+                
+                const osc2 = audioCtx.createOscillator();
+                const gain2 = audioCtx.createGain();
+                osc2.connect(gain2);
+                gain2.connect(audioCtx.destination);
+                osc2.type = 'square';
+                osc2.frequency.setValueAtTime(440, audioCtx.currentTime + 0.15);
+                gain2.gain.setValueAtTime(0.05, audioCtx.currentTime + 0.15);
+                osc2.start(audioCtx.currentTime + 0.15);
+                osc2.stop(audioCtx.currentTime + 0.25);
+            }
+        }
 
         window.onload = async () => {
             // 1. Try Shim
@@ -477,8 +530,10 @@
         async function onScan(text) {
             if (isProcessing) return;
             isProcessing = true;
+            markStart('Total Scan Loop');
 
             // Immediate Feedback
+            markStart('UI Feedback (Vibrate/DOM)');
             if (!isMuted && navigator.vibrate) navigator.vibrate(40);
             
             const box = document.getElementById('scan-box');
@@ -486,12 +541,65 @@
 
             // OPTIMISTIC UI: Show "Processing" immediately
             showResult('loading', 'Processing...', 'Verifying Ticket');
+            markEnd('UI Feedback (Vibrate/DOM)');
 
             if (!config) {
                 await handleSetup(text);
             } else {
                 await handleTicket(text);
             }
+            const totalDuration = markEnd('Total Scan Loop');
+
+            // Collect and send performance metrics to backend
+            if (config && config.eventId) {
+                const perfMetrics = {
+                    'Total Scan Loop': totalDuration,
+                    'API Network Request': perfMetricsData['API Network Request'],
+                    'Response Parse': perfMetricsData['Response Parse'],
+                    'UI Feedback (Vibrate/DOM)': perfMetricsData['UI Feedback (Vibrate/DOM)']
+                };
+                logPerformanceMetrics(config.eventId, perfMetrics, config);
+            }
+        }
+        
+        // Store metrics temporarily
+        const perfMetricsData = {};
+        function markStart(label) {
+            perfMetricsData[label] = performance.now();
+        }
+        function markEnd(label) {
+            const start = perfMetricsData[label];
+            if (start) {
+                const duration = performance.now() - start;
+                perfMetricsData[label] = duration; // Store duration
+                console.log(`[Perf] ${label}: ${duration.toFixed(2)}ms`);
+                return duration;
+            }
+            return 0;
+        }
+
+        function logPerformanceMetrics(eventId, metrics, scannerConfig) {
+            if (!config || !config.apiBaseUrl || !config.token) return;
+
+            fetch(`${config.apiBaseUrl}/api/scanner/log-perf`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${config.token}`,
+                    'ngrok-skip-browser-warning': 'true'
+                },
+                body: JSON.stringify({
+                    eventId: eventId,
+                    metrics: metrics,
+                    timestamp: Date.now(),
+                    config: {
+                        apiBaseUrl: scannerConfig.apiBaseUrl,
+                        mode: mode,
+                        fps: 15 // Assuming this is static
+                    }
+                }),
+                keepalive: true // Send even if page is closing
+            }).catch(e => console.error("Failed to log performance to backend:", e));
         }
 
         async function handleSetup(text) {
@@ -522,6 +630,7 @@
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 10000); // 10s Timeout for stability
 
+                markStart('API Network Request');
                 const res = await fetch(`${config.apiBaseUrl}/api/scanner/update-ticket-status/${config.eventId}/${id}`, {
                     method: 'POST',
                     headers: { 
@@ -533,13 +642,19 @@
                     signal: controller.signal
                 });
                 clearTimeout(timeout);
+                const duration = markEnd('API Network Request');
                 
+                markStart('Response Parse');
                 const data = await res.json();
+                markEnd('Response Parse');
                 
                 if (!res.ok) throw new Error(data.message || "Scan Failed");
 
                 // Double-Vibrate for success
                 if(navigator.vibrate) navigator.vibrate([50, 50, 50]);
+                
+                // Sound Effect
+                playSound('success');
                 
                 showResult('success', data.data?.attendeeName || "Valid Ticket", data.message);
 
@@ -555,8 +670,10 @@
                 
                 if (isCheckedIn) {
                     showResult('warning', 'Already In', 'Ticket Used');
+                    playSound('warning');
                 } else {
                     showResult('error', 'Invalid', e.message || "Unknown Error");
+                    playSound('error');
                 }
                 resetState(2000); // Keep errors visible longer
             }
