@@ -234,8 +234,13 @@
             </div>
 
             <!-- Initialization Button -->
-            <button id="start-btn" onclick="startScanner()" class="w-full bg-white hover:bg-gray-100 active:bg-gray-200 text-black font-black text-lg py-4 rounded-2xl shadow-xl active:scale-95 transition-all disabled:opacity-50 disabled:scale-100">
+            <button id="start-btn" onclick="startScanner()" class="w-full bg-white hover:bg-gray-100 active:bg-gray-200 text-black font-black text-lg py-4 rounded-2xl shadow-xl active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 mb-3">
                 Initialize Camera
+            </button>
+            
+            <!-- Report Issue Button -->
+            <button onclick="reportIssue()" class="w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 font-bold py-3 rounded-xl border border-red-500/30 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
+                <span>⚠️ Report Issue to Dashboard</span>
             </button>
             
             <div class="text-center mt-2 text-[10px] text-white/20 font-mono pointer-events-none">
@@ -254,61 +259,38 @@
         let isTorchOn = false;
         let isMuted = false;
 
-        // Audio Assets (Base64 for standalone performance)
-        // Success: High-pitch "Ding" (Sine wave 880Hz)
-        const audioSuccess = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU"); 
-        // Error: Low-pitch "Buzz" (Sawtooth 150Hz) - Placeholder, replaced with actual short beep logic below for compactness or actual base64 if available. 
-        // Actually, let's use the AudioContext API for procedurally generating sounds to save file size and network payload.
-        
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // --- Sound Manager (Low Latency) ---
+        class SoundManager {
+            constructor() {
+                this.sounds = {
+                    success: new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd"), // Placeholder Short Beep
+                    error: new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd"), // Placeholder Buzz
+                    warning: new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd") // Placeholder Double
+                };
+                // Preload
+                Object.values(this.sounds).forEach(s => s.load());
+            }
 
-        function playSound(type) {
-            if (isMuted) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+            play(type) {
+                if (isMuted) return;
+                const sound = this.sounds[type];
+                if (sound) {
+                    sound.currentTime = 0; // Reset to start for rapid fire
+                    sound.play().catch(e => console.warn("Audio play failed", e));
+                }
+            }
             
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            if (type === 'success') {
-                // Success: High rising chirp
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.1);
-            } else if (type === 'error') {
-                // Error: Low descending buzz
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.3);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.3);
-            } else if (type === 'warning') {
-                // Warning: Double beep
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.1);
-                
-                const osc2 = audioCtx.createOscillator();
-                const gain2 = audioCtx.createGain();
-                osc2.connect(gain2);
-                gain2.connect(audioCtx.destination);
-                osc2.type = 'square';
-                osc2.frequency.setValueAtTime(440, audioCtx.currentTime + 0.15);
-                gain2.gain.setValueAtTime(0.05, audioCtx.currentTime + 0.15);
-                osc2.start(audioCtx.currentTime + 0.15);
-                osc2.stop(audioCtx.currentTime + 0.25);
+            // Unlock audio context on mobile
+            unlock() {
+                const s = this.sounds.success;
+                s.play().then(() => {
+                    s.pause();
+                    s.currentTime = 0;
+                }).catch(() => {});
             }
         }
+        
+        const soundManager = new SoundManager();
 
         window.onload = async () => {
             // 1. Try Shim
@@ -412,6 +394,9 @@
             
             // User intent confirmed
             shouldCameraRun = true;
+            
+            // Unlock Audio Context on user gesture
+            soundManager.unlock();
 
             if (isCameraRunning) return;
 
@@ -654,7 +639,7 @@
                 if(navigator.vibrate) navigator.vibrate([50, 50, 50]);
                 
                 // Sound Effect
-                playSound('success');
+                soundManager.play('success');
                 
                 showResult('success', data.data?.attendeeName || "Valid Ticket", data.message);
 
@@ -670,10 +655,10 @@
                 
                 if (isCheckedIn) {
                     showResult('warning', 'Already In', 'Ticket Used');
-                    playSound('warning');
+                    soundManager.play('warning');
                 } else {
                     showResult('error', 'Invalid', e.message || "Unknown Error");
-                    playSound('error');
+                    soundManager.play('error');
                 }
                 resetState(2000); // Keep errors visible longer
             }
@@ -780,6 +765,41 @@
             if (confirm("Unlink scanner from current event?")) {
                 localStorage.removeItem('ticketScannerConfig');
                 location.reload();
+            }
+        }
+
+        async function reportIssue() {
+            if (!config || !config.eventId) return alert("Link to an event first!");
+            
+            // Visual feedback
+            if (navigator.vibrate) navigator.vibrate(50);
+            
+            try {
+                const res = await fetch(`${config.apiBaseUrl}/api/scanner/report-issue/${config.eventId}`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${config.token}`,
+                        'ngrok-skip-browser-warning': 'true'
+                    },
+                    body: JSON.stringify({ deviceId: 'scanner-web-client' })
+                });
+                
+                const data = await res.json();
+
+                if (res.ok) {
+                    showResult('warning', 'Reported', 'Issue notified to dashboard');
+                    soundManager.play('warning');
+                    setTimeout(() => resetState(0), 1500);
+                } else {
+                    console.error("Report Error:", data);
+                    alert("Failed to report: " + (data.message || "Unknown Server Error"));
+                    soundManager.play('error');
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Network Error: " + e.message);
+                soundManager.play('error');
             }
         }
     </script>
