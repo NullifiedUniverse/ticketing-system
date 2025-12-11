@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Layout from './Layout';
 import DashboardStats from './DashboardStats';
 import AnalyticsChart from './AnalyticsChart';
@@ -13,7 +13,7 @@ import { useModal } from '../hooks/useModal';
 import { useEvent } from '../context/EventContext';
 import { useLanguage } from '../context/LanguageContext';
 import { parseCSV } from '../utils/csvParser';
-import { buttonClick, containerStagger, fadeInUp } from '../utils/animations';
+import { bentoBounce, buttonClick, containerStagger, fadeInUp } from '../utils/animations';
 
 const Dashboard = () => {
     const { modalContent, showModal, hideModal, showErrorModal, showConfirmModal, showPromptModal, showQrCodeModal } = useModal();
@@ -39,7 +39,7 @@ const Dashboard = () => {
                     showModal({
                         type: 'alert',
                         title: '⚠️ Scanner Reported Issue',
-                        body: `A volunteer reported an issue at ${new Date(latest.timestamp).toLocaleTimeString()}. Please check the gate.`,
+                        body: `A volunteer reported an issue at ${new Date(latest.timestamp).toLocaleTimeString()}. Please check the gate.`, 
                         onConfirm: hideModal
                     });
                 }
@@ -79,10 +79,6 @@ const Dashboard = () => {
             clearTimeout(handler);
         };
     }, [searchTerm]);
-
-    // ... (Handlers remain mostly the same, just purely logic) ...
-    // I will omit repeating the exact logic functions for brevity in this tool call unless logic changes. 
-    // Re-implementing essential handlers to ensure file integrity.
 
     const handleTicketCreatedAndShowQR = (result) => {
         handleTicketCreated(result);
@@ -177,7 +173,7 @@ const Dashboard = () => {
                 if (attendees.length === 0) throw new Error(t('errorNoValidAttendees'));
                 showConfirmModal(
                     t('qaImport'), 
-                    t('importPrompt', attendees.length), 
+                    t('importPrompt', attendees.length),
                     async () => {
                         try {
                             const res = await import('../services/api').then(m => m.importAttendees(eventId, attendees));
@@ -260,119 +256,136 @@ const Dashboard = () => {
                 {/* Ambient Background Glow */}
                 <div className="fixed inset-0 pointer-events-none ambient-glow -z-10"></div>
 
-                {!eventId ? (
-                    <div className="h-full flex flex-col items-center justify-center text-slate-500">
-                        <div className="text-8xl mb-6 opacity-20 animate-pulse grayscale">🎟️</div>
-                        <h3 className="text-3xl font-bold text-white mb-3">{t('limboTitle')}</h3>
-                        <p className="text-center px-4 max-w-md text-lg opacity-70">{t('limboDesc')}</p>
-                    </div>
-                ) : (
-                    <motion.div 
-                        variants={containerStagger}
-                        initial="hidden"
-                        animate="visible"
-                        className="max-w-7xl mx-auto space-y-10 pb-24"
-                    >
-                        {/* Stats */}
-                        <motion.section variants={fadeInUp}>
-                            <DashboardStats stats={stats} />
-                        </motion.section>
-
-                        {/* Chart */}
-                        <motion.section variants={fadeInUp}>
-                            <AnalyticsChart tickets={tickets} />
-                        </motion.section>
-
-                        {/* Grid: Create Ticket + Quick Actions + List */}
-                        <motion.div variants={fadeInUp} className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                            
-                            {/* Left Column: Actions */}
-                            <div className="xl:col-span-1 space-y-8">
-                                <CreateTicket eventId={eventId} onTicketCreated={handleTicketCreatedAndShowQR} onApiError={showErrorModal} />
-                                
-                                {/* Quick Actions Card */}
-                                <motion.div variants={fadeInUp} className="glass-panel p-6">
-                                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3 border-b border-white/5 pb-4">
-                                        <span className="text-2xl">⚡</span> {t('qaTitle')}
-                                    </h3>
-                                    <div className="space-y-4">
-                                        <motion.button 
-                                            variants={buttonClick}
-                                            whileHover="hover"
-                                            whileTap="tap"
-                                            onClick={() => window.location.hash = '#email'}
-                                            className="glass-interactive w-full flex items-center justify-between p-4 rounded-xl text-left group"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-2xl group-hover:scale-110 transition-transform">📨</span>
-                                                <span className="text-slate-200 font-medium group-hover:text-white">{t('qaEmail')}</span>
-                                            </div>
-                                            <span className="text-slate-500 group-hover:text-white transition-colors">→</span>
-                                        </motion.button>
-                                        
-                                        <motion.button 
-                                            variants={buttonClick}
-                                            whileHover="hover"
-                                            whileTap="tap"
-                                            onClick={generateSetupQR}
-                                            className="glass-interactive w-full flex items-center justify-between p-4 rounded-xl text-left group"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-2xl group-hover:scale-110 transition-transform">📱</span>
-                                                <span className="text-slate-200 font-medium group-hover:text-white">{t('qaScanner')}</span>
-                                            </div>
-                                            <span className="text-slate-500 group-hover:text-white transition-colors">→</span>
-                                        </motion.button>
-                                        
-                                        <motion.label 
-                                            variants={buttonClick}
-                                            whileHover="hover"
-                                            whileTap="tap"
-                                            className="glass-interactive w-full flex items-center justify-between p-4 rounded-xl text-left group cursor-pointer"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-2xl group-hover:scale-110 transition-transform">📂</span>
-                                                <span className="text-slate-200 font-medium group-hover:text-white">{t('qaImport')}</span>
-                                            </div>
-                                            <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
-                                        </motion.label>
-
-                                        <motion.button 
-                                            variants={buttonClick}
-                                            whileHover="hover"
-                                            whileTap="tap"
-                                            onClick={() => {
-                                                    alert(t('alertDelete'));
-                                            }}
-                                            className="w-full flex items-center justify-between p-4 rounded-xl bg-red-500/5 hover:bg-red-500/20 border border-red-500/10 hover:border-red-500/30 text-left transition-all group"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-2xl group-hover:rotate-12 transition-transform">☢️</span>
-                                                <span className="text-red-400 font-medium group-hover:text-red-300">{t('qaNuke')}</span>
-                                            </div>
-                                        </motion.button>
-                                    </div>
-                                </motion.div>
-                            </div>
-
-                            {/* Right Column: List */}
-                            <div className="xl:col-span-2">
-                                    <TicketList
-                                    key={eventId}
-                                    filteredTickets={filteredTickets}
-                                    isLoading={isLoading}
-                                    searchTerm={searchTerm}
-                                    setSearchTerm={setSearchTerm}
-                                    onCheckIn={handleCheckIn}
-                                    onShowQR={(ticketId, attendeeName) => showQrCodeModal(t('modalQrCodeTitle'), `${t('modalQrCodeBodyPrefix')} ${attendeeName}`, ticketId)}
-                                    onEdit={handleEdit}
-                                    onDelete={handleDelete}
-                                />
-                            </div>
+                <AnimatePresence mode="wait">
+                    {!eventId ? (
+                        <motion.div 
+                            key="limbo"
+                            className="h-full flex flex-col items-center justify-center p-4"
+                            exit={{ opacity: 0, scale: 0.95, filter: "blur(10px)", transition: { duration: 0.3 } }}
+                        >
+                            <motion.div 
+                                variants={bentoBounce}
+                                initial="hidden"
+                                animate="visible"
+                                whileHover="hover"
+                                className="glass-panel p-12 rounded-[2.5rem] max-w-lg w-full text-center border border-white/10 relative overflow-hidden"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-tr from-violet-500/10 via-transparent to-pink-500/10 pointer-events-none"></div>
+                                <div className="text-8xl mb-6 opacity-30 animate-pulse grayscale filter blur-sm">🎟️</div>
+                                <h3 className="text-3xl font-black text-white mb-3 tracking-tight">{t('limboTitle')}</h3>
+                                <p className="text-lg text-slate-400 leading-relaxed">{t('limboDesc')}</p>
+                            </motion.div>
                         </motion.div>
+                    ) : (
+                        <motion.div 
+                            key="dashboard"
+                            variants={containerStagger}
+                            initial="hidden"
+                            animate="visible"
+                            exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
+                            className="max-w-7xl mx-auto space-y-10 pb-24"
+                        >
+                            {/* Stats */}
+                            <motion.section variants={fadeInUp}>
+                                <DashboardStats stats={stats} />
+                            </motion.section>
 
-                    </motion.div>
-                )}
+                            {/* Chart */}
+                            <motion.section variants={fadeInUp}>
+                                <AnalyticsChart tickets={tickets} />
+                            </motion.section>
+
+                            {/* Grid: Create Ticket + Quick Actions + List */}
+                            <motion.div variants={fadeInUp} className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                                
+                                {/* Left Column: Actions */}
+                                <div className="xl:col-span-1 space-y-8">
+                                    <CreateTicket eventId={eventId} onTicketCreated={handleTicketCreatedAndShowQR} onApiError={showErrorModal} />
+                                    
+                                    {/* Quick Actions Card */}
+                                    <motion.div variants={fadeInUp} className="glass-panel p-6">
+                                        <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-3 border-b border-white/5 pb-4">
+                                            <span className="text-2xl">⚡</span> {t('qaTitle')}
+                                        </h3>
+                                        <div className="space-y-4">
+                                            <motion.button 
+                                                variants={buttonClick}
+                                                whileHover="hover"
+                                                whileTap="tap"
+                                                onClick={() => window.location.hash = '#email'}
+                                                className="glass-interactive w-full flex items-center justify-between p-4 rounded-xl text-left group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-2xl group-hover:scale-110 transition-transform">📨</span>
+                                                    <span className="text-slate-200 font-medium group-hover:text-white">{t('qaEmail')}</span>
+                                                </div>
+                                                <span className="text-slate-500 group-hover:text-white transition-colors">→</span>
+                                            </motion.button>
+                                            
+                                            <motion.button 
+                                                variants={buttonClick}
+                                                whileHover="hover"
+                                                whileTap="tap"
+                                                onClick={generateSetupQR}
+                                                className="glass-interactive w-full flex items-center justify-between p-4 rounded-xl text-left group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-2xl group-hover:scale-110 transition-transform">📱</span>
+                                                    <span className="text-slate-200 font-medium group-hover:text-white">{t('qaScanner')}</span>
+                                                </div>
+                                                <span className="text-slate-500 group-hover:text-white transition-colors">→</span>
+                                            </motion.button>
+                                            
+                                            <motion.label 
+                                                variants={buttonClick}
+                                                whileHover="hover"
+                                                whileTap="tap"
+                                                className="glass-interactive w-full flex items-center justify-between p-4 rounded-xl text-left group cursor-pointer"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-2xl group-hover:scale-110 transition-transform">📂</span>
+                                                    <span className="text-slate-200 font-medium group-hover:text-white">{t('qaImport')}</span>
+                                                </div>
+                                                <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
+                                            </motion.label>
+
+                                            <motion.button 
+                                                variants={buttonClick}
+                                                whileHover="hover"
+                                                whileTap="tap"
+                                                onClick={() => {
+                                                        alert(t('alertDelete'));
+                                                }}
+                                                className="w-full flex items-center justify-between p-4 rounded-xl bg-red-500/5 hover:bg-red-500/20 border border-red-500/10 hover:border-red-500/30 text-left transition-all group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-2xl group-hover:rotate-12 transition-transform">☢️</span>
+                                                    <span className="text-red-400 font-medium group-hover:text-red-300">{t('qaNuke')}</span>
+                                                </div>
+                                            </motion.button>
+                                        </div>
+                                    </motion.div>
+                                </div>
+
+                                {/* Right Column: List */}
+                                <div className="xl:col-span-2">
+                                        <TicketList
+                                        key={eventId}
+                                        filteredTickets={filteredTickets}
+                                        isLoading={isLoading}
+                                        searchTerm={searchTerm}
+                                        setSearchTerm={setSearchTerm}
+                                        onCheckIn={handleCheckIn}
+                                        onShowQR={(ticketId, attendeeName) => showQrCodeModal(t('modalQrCodeTitle'), `${t('modalQrCodeBodyPrefix')} ${attendeeName}`, ticketId)}
+                                        onEdit={handleEdit}
+                                        onDelete={handleDelete}
+                                    />
+                                </div>
+                            </motion.div>
+
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </main>
             
             <Modal isOpen={!!modalContent} onClose={hideModal} content={modalContent || {}} />

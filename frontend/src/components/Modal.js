@@ -2,10 +2,10 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useLanguage } from '../context/LanguageContext';
+import { EASING } from '../utils/animations';
 
 const Modal = ({ isOpen, onClose, content }) => {
     const { t } = useLanguage();
-    if (!isOpen) return null;
 
     return (
         <AnimatePresence>
@@ -13,16 +13,16 @@ const Modal = ({ isOpen, onClose, content }) => {
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-black/90 backdrop-blur-sm flex justify-center items-center z-50 p-4"
+                    exit={{ opacity: 0, transition: { duration: 0.2 } }}
+                    className="fixed inset-0 bg-black/80 backdrop-blur-md flex justify-center items-center z-50 p-4"
                     onClick={onClose}
                 >
                     <motion.div
-                        initial={{ scale: 0.9, opacity: 0, y: 30 }}
+                        initial={{ scale: 0.95, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.9, opacity: 0, y: 30 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="bg-gray-900 rounded-2xl shadow-2xl shadow-purple-500/10 w-full max-w-md border border-purple-500/20"
+                        exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                        transition={EASING.spring}
+                        className="glass-panel w-full max-w-md border border-white/10"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="p-6 border-b border-purple-500/20 flex justify-between items-center">

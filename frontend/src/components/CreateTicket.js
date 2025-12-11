@@ -28,14 +28,14 @@ const CreateTicket = ({ eventId, onTicketCreated, onApiError }) => {
     return (
         <motion.div 
             layout 
-            className="bg-gray-950/50 backdrop-blur-md border border-pink-500/30 p-6 rounded-3xl shadow-xl relative overflow-hidden group"
+            className="glass-panel p-6 relative overflow-hidden group"
         >
             {/* Decorative background glow */}
-            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-gradient-to-tr from-pink-500/20 via-purple-500/20 to-blue-500/20 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-500"></div>
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-gradient-to-tr from-violet-500/20 via-pink-500/20 to-blue-500/20 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-500"></div>
 
             <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="p-3 bg-gradient-to-br from-pink-500/20 to-purple-500/20 rounded-xl text-white">
+                    <div className="p-3 bg-gradient-to-br from-violet-500/20 to-pink-500/20 rounded-xl text-white">
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>
                     </div>
                     <h2 className="text-xl font-bold text-white">{t('createTitle')}</h2>
