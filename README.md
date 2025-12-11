@@ -81,11 +81,13 @@ TicketSystem is a real-time event management and ticketing solution. It consists
 
 ## Architecture
 
-### "Deep Cosmos" Design System
-The UI features a custom "Deep Cosmos" theme using Tailwind CSS.
-*   **Glassmorphism:** Heavy use of `backdrop-blur` and semi-transparent gradients (`glass-panel` class).
-*   **Animations:** Powered by Framer Motion (`layoutId` for shared element transitions).
-*   **Performance:** Interactions use `will-change-transform` to ensure 60fps animations.
+### "Rainbow Bento" Design System
+The UI features a custom "Deep Cosmos" theme upgraded with a **Rainbow Bento** design language.
+*   **Visuals:** Full-spectrum rainbow gradients, `rounded-3xl` cards, and high-fidelity glassmorphism (`backdrop-blur-3xl`, `bg-slate-900/60`).
+*   **Layout:** A responsive "Bento Grid" with collapsible widgets (`Stats`, `Charts`, `Actions`) and a floating dock-style sidebar.
+*   **Animations:** Powered by Framer Motion with **physics-based spring transitions** (stiffness: 400, damping: 25) for a premium, tactile feel. Elements morph smoothly (`layout` prop) when the dashboard is customized.
+*   **Performance:** Extensive use of `will-change: transform` and `opacity` optimizations to ensure 60fps+ rendering even with complex blur effects.
+*   **Design Tokens:** CSS variables manage colors (`--color-brand-*`), spacing, and glass surfaces for strict consistency.
 
 ### "Cache-First" Backend
 The `ticketService.js` implements a sophisticated caching strategy for speed:
