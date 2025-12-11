@@ -12,6 +12,7 @@ const TicketListSkeleton = () => {
 
             {/* Table Header Skeleton */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/5">
+                <Skeleton height="16px" width="30px" />
                 <Skeleton height="16px" width="60px" />
                 <Skeleton height="16px" width="100px" />
                 <Skeleton height="16px" width="80px" />
@@ -23,6 +24,7 @@ const TicketListSkeleton = () => {
                 {[...Array(5)].map((_, i) => (
                     <div key={i} className="flex items-center justify-between p-4 border-b border-white/5 last:border-0">
                         <div className="flex items-center gap-4">
+                            <Skeleton height="16px" width="20px" />
                             <Skeleton height="24px" width="80px" className="rounded-full" />
                             <div>
                                 <Skeleton height="20px" width="150px" className="mb-2" />

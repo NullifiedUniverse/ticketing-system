@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import StatusBadge from './StatusBadge';
 
-const TicketCard = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
+const TicketCard = ({ ticket, index, onCheckIn, onShowQR, onEdit, onDelete }) => {
     return (
         <motion.div 
             layout
@@ -16,7 +16,10 @@ const TicketCard = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
 
             <div className="flex justify-between items-start mb-3 pl-3">
                 <div>
-                    <h3 className="font-bold text-white text-lg tracking-tight selectable">{ticket.attendeeName}</h3>
+                    <h3 className="font-bold text-white text-lg tracking-tight selectable">
+                        <span className="text-slate-500 mr-2 text-sm">#{index}</span>
+                        {ticket.attendeeName}
+                    </h3>
                     <p className="text-slate-400 text-sm selectable">{ticket.attendeeEmail}</p>
                 </div>
                 <StatusBadge status={ticket.status} />

@@ -108,7 +108,8 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                         <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-left border-collapse relative">                        <thead className="sticky top-0 bg-slate-950/70 backdrop-blur-xl z-10 border-b border-white/10 text-slate-400 text-sm uppercase tracking-wider shadow-sm">
                             <tr>
-                                <th className="p-4 font-semibold rounded-tl-lg">{t('colStatus')}</th>
+                                <th className="p-4 font-semibold rounded-tl-lg w-16">#</th>
+                                <th className="p-4 font-semibold">{t('colStatus')}</th>
                                 <th className="p-4 font-semibold">{t('colAttendee')}</th>
                                 <th className="p-4 font-semibold">{t('colTicketId')}</th>
                                 <th className="p-4 text-right font-semibold rounded-tr-lg">{t('colActions')}</th>
@@ -116,9 +117,10 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                         </thead>
                         <tbody className="divide-y divide-gray-800/50">
                             <AnimatePresence mode='popLayout'>
-                                {visibleTickets.map((ticket) => (
+                                {visibleTickets.map((ticket, i) => (
                                     <TicketRow 
                                         key={ticket.id} 
+                                        index={i + 1}
                                         ticket={ticket} 
                                         onCheckIn={onCheckIn} 
                                         onShowQR={onShowQR} 
@@ -134,9 +136,10 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                 {/* Mobile View (Cards) */}
                 <div className="md:hidden space-y-4">
                     <AnimatePresence mode='popLayout'>
-                        {visibleTickets.map((ticket) => (
+                        {visibleTickets.map((ticket, i) => (
                             <TicketCard
                                 key={ticket.id}
+                                index={i + 1}
                                 ticket={ticket}
                                 onCheckIn={onCheckIn}
                                 onShowQR={onShowQR}

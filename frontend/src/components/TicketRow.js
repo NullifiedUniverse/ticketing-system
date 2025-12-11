@@ -5,7 +5,7 @@ import StatusBadge from './StatusBadge';
 import { useLanguage } from '../context/LanguageContext';
 import { buttonClick, fadeInUp } from '../utils/animations'; // Use standard fadeInUp instead of local variant if possible, but parent controls stagger.
 
-const TicketRow = memo(({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
+const TicketRow = memo(({ ticket, index, onCheckIn, onShowQR, onEdit, onDelete }) => {
     const { t } = useLanguage();
 
     return (
@@ -17,6 +17,7 @@ const TicketRow = memo(({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
         exit="exit"
         className="border-b border-white/5 hover:bg-white/5 transition-colors"
     >
+        <td className="p-4 text-slate-500 font-mono text-xs">{index}</td>
         <td className="p-4"><StatusBadge status={ticket.status} /></td>
         <td className="p-4 font-medium text-slate-200 selectable">
             {ticket.attendeeName}<br />

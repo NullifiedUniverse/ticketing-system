@@ -99,7 +99,7 @@ const Dashboard = () => {
                     return newHistory;
                 });
             }
-        }, 300); // 300ms delay
+        }, 150); // 150ms delay for snappier feel
 
         return () => {
             clearTimeout(handler);
