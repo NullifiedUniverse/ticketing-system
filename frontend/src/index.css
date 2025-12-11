@@ -114,31 +114,39 @@ input, textarea, .selectable {
     
     /* Interactive Glass */
     .glass-interactive {
-        background-color: var(--surface-glass-light);
-        border: 1px solid var(--border-glass-subtle);
-        border-radius: var(--radius-button);
-        @apply relative overflow-hidden transition-all duration-200 backdrop-blur-md cursor-pointer will-change-transform;
+        @apply relative overflow-hidden bg-white/5 hover:bg-white/10 active:bg-white/5 border border-white/5 hover:border-white/20 transition-all duration-200 rounded-xl backdrop-blur-md cursor-pointer will-change-transform;
         box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
     }
+    .glass-interactive::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 60%);
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+        transition: transform 0.4s, opacity 0.4s;
+    }
+    .glass-interactive:active::after {
+        transform: translate(-50%, -50%) scale(2);
+        opacity: 1;
+        transition: 0s;
+    }
     .glass-interactive:hover {
-        background-color: rgba(255, 255, 255, 0.1);
-        border-color: var(--border-glass-highlight);
         box-shadow: 
             0 8px 20px -6px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
         transform: translateY(-2px);
     }
     .glass-interactive:active {
-        background-color: var(--surface-glass-light);
         transform: translateY(0) scale(0.98);
     }
 
     /* Precision Inputs */
     .glass-input {
-        background-color: rgba(0, 0, 0, 0.3);
-        border: 1px solid var(--border-glass-subtle);
-        border-radius: var(--radius-button);
-        @apply px-4 py-3.5 text-white placeholder-slate-500 focus:border-violet-500 focus:bg-slate-900/80 focus:ring-4 focus:ring-violet-500/10 transition-all duration-200 outline-none backdrop-blur-sm;
+        @apply bg-black/30 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:border-violet-500 focus:bg-slate-900/80 focus:ring-4 focus:ring-violet-500/10 transition-all duration-200 outline-none backdrop-blur-sm;
         box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
     }
 
@@ -148,7 +156,21 @@ input, textarea, .selectable {
         background-size: 300% 300%;
         animation: aurora-flow 6s ease infinite;
         border: 1px solid var(--border-glass-subtle);
-        @apply text-white shadow-lg shadow-blue-500/30 will-change-transform font-bold tracking-wide;
+        @apply text-white shadow-lg shadow-blue-500/30 will-change-transform font-bold tracking-wide relative overflow-hidden;
+    }
+    .animated-gradient-bg::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.2);
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    .animated-gradient-bg:active::after {
+        opacity: 1;
     }
     .animated-gradient-bg:hover {
         @apply shadow-blue-500/50 brightness-110 scale-[1.02];

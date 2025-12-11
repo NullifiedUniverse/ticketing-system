@@ -4,7 +4,7 @@ let API_BASE_URL = DEFAULT_API_BASE_URL;
 
 export const setApiBaseUrl = (url) => {
     API_BASE_URL = url;
-    console.log(`API Base URL updated to: ${API_BASE_URL}`);
+    // console.log(`API Base URL updated to: ${API_BASE_URL}`);
 };
 
 export const getApiBaseUrl = () => API_BASE_URL;

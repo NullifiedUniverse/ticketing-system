@@ -53,7 +53,14 @@ export const useTickets = (eventId, handleApiError) => {
             try {
                 const ticketsData = await getTickets(eventId);
                 // Safety check
-                setTickets(Array.isArray(ticketsData) ? ticketsData : []);
+                const newTickets = Array.isArray(ticketsData) ? ticketsData : [];
+                
+                setTickets(prev => {
+                    // Deep compare to prevent unnecessary re-renders
+                    if (JSON.stringify(prev) === JSON.stringify(newTickets)) return prev;
+                    return newTickets;
+                });
+
                 if (!isPolling) setConnectionStatus('connected');
             } catch (err) {
                 console.error("API Error:", err);

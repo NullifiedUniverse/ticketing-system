@@ -11,11 +11,12 @@ const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 
 const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onCheckIn, onShowQR, onEdit, onDelete, onImport }) => {
     const { t } = useLanguage();
     const [displayLimit, setDisplayLimit] = useState(50);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-    // Reset pagination on search or filter change
+    // Reset pagination ONLY on search term change
     useEffect(() => {
         setDisplayLimit(50);
-    }, [filteredTickets, searchTerm]);
+    }, [searchTerm]);
 
     const visibleTickets = filteredTickets.slice(0, displayLimit);
     const hasMore = displayLimit < filteredTickets.length;
@@ -25,11 +26,16 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
     useEffect(() => {
         const observer = new IntersectionObserver(
             entries => {
-                if (entries[0].isIntersecting && hasMore) {
-                    setDisplayLimit(prev => prev + 50);
+                if (entries[0].isIntersecting && hasMore && !isLoadingMore) {
+                    setIsLoadingMore(true);
+                    // Artificial delay for smooth UX or just state update
+                    setTimeout(() => {
+                        setDisplayLimit(prev => prev + 50);
+                        setIsLoadingMore(false);
+                    }, 500); 
                 }
             },
-            { threshold: 1.0 }
+            { threshold: 0.1 } // Trigger earlier
         );
 
         const currentTarget = observerTarget.current;
@@ -42,7 +48,7 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                 observer.unobserve(currentTarget);
             }
         };
-    }, [hasMore]);
+    }, [hasMore, isLoadingMore]);
 
     const handleExport = () => {
         const formattedData = formatTicketsForCSV(filteredTickets);
@@ -150,7 +156,11 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                     </AnimatePresence>
                 </div>
 
-                <div ref={observerTarget} className="h-4 w-full" />
+                <div ref={observerTarget} className="h-16 w-full flex justify-center items-center">
+                    {isLoadingMore && (
+                        <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    )}
+                </div>
 
                 {!isLoading && filteredTickets.length === 0 && (
                     <div className="text-center py-12">
