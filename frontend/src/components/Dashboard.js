@@ -71,8 +71,15 @@ const Dashboard = () => {
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     
     // Layout Customization State
-    const [layout, setLayout] = useState({ stats: true, chart: true, actions: true });
+    const [layout, setLayout] = useState(() => {
+        const saved = localStorage.getItem('dashboardLayout');
+        return saved ? JSON.parse(saved) : { stats: true, chart: true, actions: true };
+    });
     const [isEditing, setIsEditing] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem('dashboardLayout', JSON.stringify(layout));
+    }, [layout]);
 
     // Debounce Search Term
     useEffect(() => {
