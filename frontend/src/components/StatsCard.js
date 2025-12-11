@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
-import { bentoBounce } from '../utils/animations';
+import BentoCard from './BentoCard';
 import AnimatedCounter from './AnimatedCounter';
 
 const themes = {
@@ -36,14 +35,11 @@ const StatsCard = ({ title, value, total, showProgress, colorTheme = 'blue' }) =
     const theme = themes[colorTheme] || themes.blue;
 
     return (
-        <motion.div 
-            variants={bentoBounce}
-            whileHover="hover"
-            whileTap="tap"
-            className={`glass-panel p-6 relative overflow-hidden group transition-colors duration-300 rounded-3xl border ${theme.border} backdrop-blur-xl bg-slate-900/40`}
+        <BentoCard 
+            className={`group transition-colors duration-300 border ${theme.border} bg-slate-900/40`}
         >
             {/* Animated Glow Blob */}
-            <div className={`absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl transition-all duration-700 opacity-20 group-hover:opacity-50 group-hover:scale-110 ${theme.glow}`}></div>
+            <div className={`absolute -top-10 -right-10 w-40 h-40 rounded-full blur-3xl transition-all duration-700 opacity-20 group-hover:opacity-50 group-hover:scale-110 ${theme.glow} pointer-events-none`}></div>
             
             <h3 className={`text-[10px] font-bold uppercase tracking-widest mb-3 relative z-10 ${theme.text} opacity-90`}>{title}</h3>
             
@@ -66,7 +62,7 @@ const StatsCard = ({ title, value, total, showProgress, colorTheme = 'blue' }) =
                     />
                 </div>
             )}
-        </motion.div>
+        </BentoCard>
     );
 };
 
