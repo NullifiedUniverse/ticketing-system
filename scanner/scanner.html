@@ -26,7 +26,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        /* Optimized Dark Theme */
+        /* Optimized Dark Theme - Deep Cosmos Match */
         :root {
             --color-primary: #6366f1; /* Indigo 500 */
             --color-success: #22c55e; /* Green 500 */
@@ -38,10 +38,15 @@
 
         html, body {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            font-family: 'Inter', sans-serif; 
-            background: black; 
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #020617; /* Slate 950 */
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
             overflow: hidden; 
-            color: white;
+            color: #e2e8f0;
             -webkit-tap-highlight-color: transparent;
         }
         
@@ -683,8 +688,8 @@
                 
                 showResult('success', data.data?.attendeeName || "Valid Ticket", data.message);
 
-                // Auto-dismiss faster for success (Speed Mode)
-                resetState(700);
+                // Auto-dismiss with delay (1.5s) for better UX
+                resetState(1500);
 
             } catch (e) {
                 // Long vibrate for error

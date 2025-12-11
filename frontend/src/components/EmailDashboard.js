@@ -87,6 +87,15 @@ const EmailDashboard = () => {
         setSelectedTicketIds(newSet);
     };
 
+    const selectUnsent = () => {
+        const unsent = tickets.filter(t => t.emailStatus !== 'sent').map(t => t.id);
+        if (unsent.length > 0) {
+            setSelectedTicketIds(new Set(unsent));
+        } else {
+            alert("All tickets have been sent!");
+        }
+    };
+
     const handleSendOne = async (ticket) => {
         if (!ticket.attendeeEmail) return showErrorModal("This ticket has no email address.");
 
@@ -207,6 +216,15 @@ const EmailDashboard = () => {
                                 variants={buttonClick}
                                 whileHover="hover"
                                 whileTap="tap"
+                                onClick={selectUnsent}
+                                className="glass-interactive px-4 py-3 text-slate-300 font-bold rounded-xl shadow-lg text-sm"
+                            >
+                                Select Unsent
+                            </motion.button>
+                            <motion.button 
+                                variants={buttonClick}
+                                whileHover="hover"
+                                whileTap="tap"
                                 onClick={() => setShowSettings(!showSettings)}
                                 className="glass-interactive px-6 py-3 text-white font-bold rounded-xl shadow-lg flex items-center gap-2"
                             >
@@ -233,7 +251,7 @@ const EmailDashboard = () => {
                                 exit={{ height: 0, opacity: 0, marginBottom: 0, transition: { ease: EASING.gentle, duration: 0.3 } }}
                                 className="overflow-hidden relative z-50 shrink-0"
                             >
-                                <div className="glass-panel p-6 rounded-2xl border border-white/10 bg-white/5 grid grid-cols-1 md:grid-cols-2 lg:col-span-4 gap-6">
+                                <div className="glass-panel p-6 rounded-3xl border border-white/10 bg-white/5 grid grid-cols-1 md:grid-cols-2 lg:col-span-4 gap-6">
                                     <div className="col-span-1 md:col-span-2 lg:col-span-4">
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{t('labelBg')}</label>
                                         <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
@@ -298,10 +316,10 @@ const EmailDashboard = () => {
                         )}
                     </AnimatePresence>
 
-                    <div className="glass-panel rounded-2xl overflow-hidden border border-white/5 flex-1 flex flex-col min-h-0">
+                    <div className="glass-panel rounded-3xl overflow-hidden border border-white/5 flex-1 flex flex-col min-h-0">
                         <div className="overflow-y-auto custom-scrollbar flex-1">
                             <table className="w-full text-left border-collapse relative">
-                                <thead className="bg-gray-900/95 backdrop-blur text-gray-400 text-xs uppercase tracking-wider sticky top-0 z-10 shadow-sm">
+                                <thead className="bg-gray-950/95 backdrop-blur text-gray-400 text-xs uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                                     <tr>
                                         <th className="p-4 w-10">
                                             <input 
@@ -339,8 +357,8 @@ const EmailDashboard = () => {
                                                     className="rounded border-gray-600 bg-transparent focus:ring-indigo-500 pointer-events-none"
                                                 />
                                             </td>
-                                            <td className="p-4 font-medium">{ticket.attendeeName}</td>
-                                            <td className="p-4 text-gray-400">{ticket.attendeeEmail}</td>
+                                            <td className="p-4 font-medium selectable">{ticket.attendeeName}</td>
+                                            <td className="p-4 text-gray-400 selectable">{ticket.attendeeEmail}</td>
                                             <td className="p-4">
                                                 <span className={`px-2 py-1 rounded text-xs font-bold ${ticket.status === 'checked-in' ? 'bg-green-500/20 text-green-400' : 'bg-blue-500/20 text-blue-400'}`}>
                                                     {ticket.status}
