@@ -33,10 +33,10 @@ const Sidebar = ({ onNewEvent, onDeleteEvent, onRaffle }) => {
                 </motion.button>
             </div>
 
-            {/* Sidebar Container - Desktop (Always visible) & Mobile (Drawer) */}
+            {/* Sidebar Container - Desktop (Floating Dock) & Mobile (Drawer) */}
             {/* We handle mobile visibility via CSS transform for performance, but can use motion for the internal list */}
             <div 
-                className={`fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-slate-900/90 to-slate-950/90 backdrop-blur-xl border-r border-white/10 shadow-2xl transform transition-all duration-300 ease-out xl:translate-x-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                className={`fixed z-50 w-72 bg-gradient-to-b from-slate-900/80 to-slate-950/80 backdrop-blur-2xl border border-white/10 shadow-2xl transform transition-all duration-300 ease-out xl:translate-x-0 xl:top-4 xl:left-4 xl:bottom-4 xl:rounded-[2.5rem] inset-y-0 left-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
             >
                 <div className="p-6 flex flex-col h-full relative overflow-hidden">
                     {/* Decorative Gradient Blob */}

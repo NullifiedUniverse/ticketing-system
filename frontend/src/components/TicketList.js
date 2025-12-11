@@ -42,7 +42,7 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                 {searchTerm && (
                     <button
                         onClick={() => setSearchTerm('')}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-white transition-colors"
+                        className="absolute inset-y-0 right-0 pr-3 pl-3 flex items-center text-slate-500 hover:text-white transition-colors"
                         aria-label="Clear Search"
                     >
                         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -67,7 +67,7 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
             <>
                         {/* Desktop View (Table) */}
                         <div className="hidden md:block overflow-x-auto">
-                            <table className="w-full text-left border-collapse relative">                        <thead className="sticky top-0 bg-gray-950/95 backdrop-blur-xl z-10 border-b border-gray-700/50 text-gray-400 text-sm uppercase tracking-wider shadow-sm">
+                            <table className="w-full text-left border-collapse relative">                        <thead className="sticky top-0 bg-slate-950/70 backdrop-blur-xl z-10 border-b border-white/10 text-slate-400 text-sm uppercase tracking-wider shadow-sm">
                             <tr>
                                 <th className="p-4 font-semibold rounded-tl-lg">{t('colStatus')}</th>
                                 <th className="p-4 font-semibold">{t('colAttendee')}</th>
