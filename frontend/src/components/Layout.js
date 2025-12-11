@@ -2,7 +2,6 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import Modal from './Modal';
 import PageTransition from './PageTransition';
-import ParallaxBackground from './ParallaxBackground';
 import { useEvent } from '../context/EventContext';
 import { useModal } from '../hooks/useModal';
 import { createEvent, deleteEvent, drawRaffleWinner } from '../services/api';
@@ -73,7 +72,6 @@ const Layout = ({ children }) => {
 
     return (
         <div className="flex h-screen bg-transparent text-slate-200 font-sans overflow-hidden">
-            <ParallaxBackground />
             <Sidebar 
                 currentEventId={eventId} 
                 onSelectEvent={selectEvent} 
