@@ -162,16 +162,27 @@ describe('TicketService', () => {
     describe('Metrics', () => {
         it('should record hits and writes', async () => {
              const mockTicket = { id: 't1', status: 'valid' };
+             // Manually setup cache state
              ticketService.cache.set(eventId, new Map([['t1', mockTicket]]));
+             ticketService.cacheStatus.set(eventId, 'ready');
              
-             // Hit
+             // Hit (Found)
              ticketService.getCachedTicket(eventId, 't1');
-             // Miss
+             // Hit (Definite 404 - Cache is Ready, so we know it's not there without DB)
              ticketService.getCachedTicket(eventId, 't2');
              
-             const m = ticketService.getMetrics();
+             let m = ticketService.getMetrics();
              expect(m.totalOps).toBe(2);
-             expect(m.hitRatio).toBe("50.00%");
+             expect(m.hitRatio).toBe("100.00%"); // Both resolved via Cache
+
+             // True Miss (Cache not ready)
+             ticketService.cacheStatus.delete('event-unknown');
+             ticketService.getCachedTicket('event-unknown', 't1');
+             
+             m = ticketService.getMetrics();
+             expect(m.totalOps).toBe(3);
+             // 2 hits, 1 miss. 2/3 = 66.66%
+             expect(m.hitRatio).toBe("66.67%");
         });
     });
 });

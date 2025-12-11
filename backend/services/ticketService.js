@@ -18,6 +18,11 @@ class TicketService {
         // State Tracking
         this.loadingPromises = new Map(); // eventId -> Promise (resolves when initial sync done)
         this.cacheStatus = new Map(); // eventId -> 'init' | 'syncing' | 'ready' | 'error'
+        this.alerts = new Map(); // eventId -> Array of Alert Objects
+        
+        // Internals for concurrency & cleanup
+        this.initializing = new Set(); // Set<eventId> - locks for ensureCache
+        this.lastAccessed = new Map(); // eventId -> timestamp
 
         // Performance Metrics
         this.metrics = {
@@ -44,71 +49,129 @@ class TicketService {
             hitRatio: `${ratio}%`,
             totalOps: total,
             writes: this.metrics.writes,
-            avgWriteLatencyMs: avgLatency
+            avgWriteLatencyMs: avgLatency,
+            activeEvents: this.cache.size
         };
+    }
+
+    // --- ALERTS SYSTEM ---
+    async reportIssue(eventId, deviceId) {
+        if (!this.alerts.has(eventId)) {
+            this.alerts.set(eventId, []);
+        }
+        
+        const alert = {
+            id: uuidv4(),
+            timestamp: Date.now(),
+            deviceId: deviceId || 'Unknown Scanner',
+            type: 'issue',
+            message: 'Scanner Reported Issue'
+        };
+
+        const eventAlerts = this.alerts.get(eventId);
+        eventAlerts.push(alert);
+        
+        // Keep only last 50 alerts
+        if (eventAlerts.length > 50) eventAlerts.shift();
+        
+        return alert;
+    }
+
+    async getAlerts(eventId, since = 0) {
+        const eventAlerts = this.alerts.get(eventId) || [];
+        return eventAlerts.filter(a => a.timestamp > since);
     }
 
     // --- CACHE & REAL-TIME SYNC ---
 
     /**
      * Ensures the cache is initialized and syncing.
-     * Non-blocking by default, but starts the hydration process.
+     * Thread-safe(ish): Uses a Set lock to prevent concurrent listener attachments.
      */
     async ensureCache(eventId) {
-        if (this.listeners.has(eventId)) {
-            return; 
+        this.lastAccessed.set(eventId, Date.now());
+
+        // 1. If already listening/ready, just return.
+        if (this.listeners.has(eventId) && this.cacheStatus.get(eventId) === 'ready') {
+            return;
         }
 
+        // 2. If already initializing, wait for the existing promise
+        if (this.initializing.has(eventId)) {
+            if (this.loadingPromises.has(eventId)) {
+                await this.loadingPromises.get(eventId);
+            }
+            return;
+        }
+
+        // 3. Start Initialization
+        this.initializing.add(eventId);
         logger.info(`[Cache] Initializing Real-Time Sync for Event: ${eventId}`);
         this.cacheStatus.set(eventId, 'init');
         
-        // 1. Initialize Storage
+        // Initialize Storage if missing
         if (!this.cache.has(eventId)) {
             this.cache.set(eventId, new Map());
         }
 
-        // 2. Create Resolution Promise for Initial Load
+        // Create Resolution Promise
         let resolveInitialLoad;
-        const initialLoadPromise = new Promise(resolve => resolveInitialLoad = resolve);
+        let rejectInitialLoad;
+        const initialLoadPromise = new Promise((resolve, reject) => {
+            resolveInitialLoad = resolve;
+            rejectInitialLoad = reject;
+        });
         this.loadingPromises.set(eventId, initialLoadPromise);
 
-        // 3. Setup Firestore Listener
-        const collectionRef = db.collection('events').doc(eventId).collection('tickets');
-        
-        const unsubscribe = collectionRef.onSnapshot(snapshot => {
-            const eventCache = this.cache.get(eventId);
-            let isInitial = this.cacheStatus.get(eventId) === 'init';
+        try {
+            const collectionRef = db.collection('events').doc(eventId).collection('tickets');
             
-            // Log large updates
-            if (snapshot.docChanges().length > 50) {
-                logger.info(`[Cache] Processing batch update of ${snapshot.docChanges().length} tickets for ${eventId}...`);
-            }
-
-            snapshot.docChanges().forEach(change => {
-                const ticket = change.doc.data();
-                const ticketId = change.doc.id;
-
-                if (change.type === 'added' || change.type === 'modified') {
-                    eventCache.set(ticketId, ticket);
+            const unsubscribe = collectionRef.onSnapshot(snapshot => {
+                const eventCache = this.cache.get(eventId);
+                
+                // Log large updates
+                if (snapshot.docChanges().length > 50) {
+                    logger.info(`[Cache] Processing batch update of ${snapshot.docChanges().length} tickets for ${eventId}...`);
                 }
-                if (change.type === 'removed') {
-                    eventCache.delete(ticketId);
+
+                snapshot.docChanges().forEach(change => {
+                    const ticket = change.doc.data();
+                    const ticketId = change.doc.id;
+
+                    if (change.type === 'added' || change.type === 'modified') {
+                        eventCache.set(ticketId, ticket);
+                    }
+                    if (change.type === 'removed') {
+                        eventCache.delete(ticketId);
+                    }
+                });
+
+                // Resolve promise on first callback (Initial State Synced)
+                if (resolveInitialLoad) {
+                    logger.info(`[Cache] Hydration Complete. Total tickets: ${eventCache.size}`);
+                    this.cacheStatus.set(eventId, 'ready');
+                    this.initializing.delete(eventId); // Unlock
+                    resolveInitialLoad();
+                    resolveInitialLoad = null; // Ensure it only fires once
                 }
+            }, error => {
+                logger.error(`[Sync] Listener Error for ${eventId}: ${error.message}`);
+                this.cacheStatus.set(eventId, 'error');
+                this.initializing.delete(eventId);
+                if (rejectInitialLoad) rejectInitialLoad(error);
             });
 
-            // Resolve promise on first callback (Initial State Synced)
-            if (resolveInitialLoad) {
-                logger.info(`[Cache] Hydration Complete. Total tickets: ${eventCache.size}`);
-                this.cacheStatus.set(eventId, 'ready');
-                resolveInitialLoad();
-                resolveInitialLoad = null; // Ensure it only fires once
-            }
-        }, error => {
-            logger.error(`[Sync] Listener Error for ${eventId}: ${error.message}`);
-            this.cacheStatus.set(eventId, 'error');
-        });
+            this.listeners.set(eventId, unsubscribe);
+            
+            // Await the initial load so the caller knows it's ready
+            await initialLoadPromise;
 
-        this.listeners.set(eventId, unsubscribe);
+        } catch (error) {
+            logger.error(`[Cache] Setup failed for ${eventId}: ${error.message}`);
+            this.initializing.delete(eventId);
+            this.cacheStatus.set(eventId, 'error');
+            throw error;
+        }
     }
 
     /**
@@ -116,28 +179,33 @@ class TicketService {
      */
     async loadCacheForEvent(eventId) {
         await this.ensureCache(eventId);
-        if (this.loadingPromises.has(eventId)) {
-            // Wait for the initial onSnapshot to complete
-            await this.loadingPromises.get(eventId);
-        }
     }
 
     /**
      * Retrieves a ticket from the cache (Read-Through).
+     * Returns undefined if ticket not found in a READY cache.
+     * Returns null if cache is not ready/found.
      */
     getCachedTicket(eventId, ticketId) {
+        this.lastAccessed.set(eventId, Date.now());
+
         if (!this.cache.has(eventId)) {
             this.metrics.misses++;
-            return null;
+            return null; // Cache miss / Event not loaded
         }
         
         const ticket = this.cache.get(eventId).get(ticketId);
         if (ticket) {
             this.metrics.hits++;
         } else {
-            // If cache is ready but ticket missing -> genuinely 404
-            // If cache is init/syncing -> might be loading
-            this.metrics.misses++;
+            // Check if cache is actually ready. If ready, it's a 404.
+            if (this.cacheStatus.get(eventId) === 'ready') {
+                // It's a "hit" on the cache (we know it's not there), but for metrics we might count as hit? 
+                // Or "valid miss"? Let's count as hit because we avoided DB.
+                 this.metrics.hits++;
+            } else {
+                this.metrics.misses++;
+            }
         }
         return ticket;
     }

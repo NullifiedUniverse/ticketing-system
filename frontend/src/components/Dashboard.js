@@ -7,7 +7,7 @@ import CreateTicket from './CreateTicket';
 import TicketList from './TicketList';
 import LiveIndicator from './LiveIndicator';
 import Modal from './Modal';
-import { getScannerToken, getNgrokUrl } from '../services/api';
+import { getScannerToken, getNgrokUrl, getAlerts } from '../services/api';
 import { useTickets } from '../hooks/useTickets';
 import { useModal } from '../hooks/useModal';
 import { useEvent } from '../context/EventContext';
@@ -19,6 +19,39 @@ const Dashboard = () => {
     const { modalContent, showModal, hideModal, showErrorModal, showConfirmModal, showPromptModal, showQrCodeModal } = useModal();
     const { eventId } = useEvent(); 
     const { t } = useLanguage();
+    
+    // Alert Polling State
+    const [lastAlertTime, setLastAlertTime] = useState(Date.now());
+
+    // Poll for Scanner Alerts
+    useEffect(() => {
+        if (!eventId) return;
+
+        const pollAlerts = async () => {
+            try {
+                const alerts = await getAlerts(eventId, lastAlertTime);
+                if (alerts && alerts.length > 0) {
+                    const latest = alerts[alerts.length - 1];
+                    setLastAlertTime(latest.timestamp);
+                    
+                    // Trigger Notification
+                    // We play a sound if possible or just show the modal
+                    showModal({
+                        type: 'alert',
+                        title: '⚠️ Scanner Reported Issue',
+                        body: `A volunteer reported an issue at ${new Date(latest.timestamp).toLocaleTimeString()}. Please check the gate.`,
+                        onConfirm: hideModal
+                    });
+                }
+            } catch (e) {
+                // Silent fail on poll error
+                console.warn("Alert poll failed", e);
+            }
+        };
+
+        const interval = setInterval(pollAlerts, 5000);
+        return () => clearInterval(interval);
+    }, [eventId, lastAlertTime, showModal, hideModal]);
     
     const {
         tickets,
@@ -34,6 +67,18 @@ const Dashboard = () => {
     } = useTickets(eventId, showErrorModal);
     
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+
+    // Debounce Search Term
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 300); // 300ms delay
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [searchTerm]);
 
     // ... (Handlers remain mostly the same, just purely logic) ...
     // I will omit repeating the exact logic functions for brevity in this tool call unless logic changes. 
@@ -115,10 +160,10 @@ const Dashboard = () => {
     const filteredTickets = useMemo(() =>
         tickets.filter(
             (ticket) =>
-                (ticket.attendeeName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                (ticket.attendeeEmail?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-                ticket.id.toLowerCase().includes(searchTerm.toLowerCase())
-        ), [tickets, searchTerm]);
+                (ticket.attendeeName?.toLowerCase() || '').includes(debouncedSearchTerm.toLowerCase()) ||
+                (ticket.attendeeEmail?.toLowerCase() || '').includes(debouncedSearchTerm.toLowerCase()) ||
+                ticket.id.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+        ), [tickets, debouncedSearchTerm]);
 
     const handleImportCSV = (e) => {
         const file = e.target.files[0];
