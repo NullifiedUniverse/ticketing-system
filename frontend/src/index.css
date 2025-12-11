@@ -4,6 +4,32 @@
 
 :root {
     color-scheme: dark;
+
+    /* --- Design Tokens --- */
+    
+    /* Brand / Rainbow Spectrum */
+    --color-brand-red: #ef4444;
+    --color-brand-orange: #f97316;
+    --color-brand-yellow: #eab308;
+    --color-brand-green: #22c55e;
+    --color-brand-blue: #3b82f6;
+    --color-brand-indigo: #6366f1;
+    --color-brand-violet: #8b5cf6;
+    --color-brand-purple: #a855f7;
+    --color-brand-pink: #ec4899;
+
+    /* Surfaces (Glass) */
+    --surface-glass-heavy: rgba(2, 6, 23, 0.8); /* Slate 950 / 80% */
+    --surface-glass-medium: rgba(2, 6, 23, 0.6); /* Slate 950 / 60% */
+    --surface-glass-light: rgba(255, 255, 255, 0.05);
+    
+    /* Borders */
+    --border-glass-subtle: rgba(255, 255, 255, 0.08);
+    --border-glass-highlight: rgba(255, 255, 255, 0.15);
+
+    /* Spacing & Radius */
+    --radius-bento: 1.5rem; /* 3xl */
+    --radius-button: 0.75rem; /* xl */
 }
 
 body {
@@ -34,7 +60,7 @@ body {
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 99px; backdrop-filter: blur(4px); }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
 
-::selection { background: rgba(236, 72, 153, 0.3); color: white; } /* Pink selection */
+::selection { background: var(--color-brand-pink); opacity: 0.3; color: white; }
 ::placeholder { color: #64748b !important; opacity: 1; }
 
 /* Restore interaction for Inputs & Content */
@@ -47,40 +73,53 @@ input, textarea, .selectable {
 @layer components {
     /* Premium Glass Material - High Contrast & Depth */
     .glass-panel {
-        @apply bg-gradient-to-br from-slate-900/60 to-slate-950/60 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-3xl;
+        background-image: linear-gradient(to bottom right, var(--surface-glass-medium), var(--surface-glass-medium));
+        border: 1px solid var(--border-glass-subtle);
+        border-radius: var(--radius-bento);
+        @apply backdrop-blur-3xl shadow-2xl;
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
-        will-change: transform, opacity; /* Hardware Acceleration Hint */
+            inset 0 1px 0 0 var(--border-glass-subtle);
+        will-change: transform, opacity;
     }
     
     /* Interactive Glass */
     .glass-interactive {
-        @apply relative overflow-hidden bg-white/5 hover:bg-white/10 active:bg-white/5 border border-white/5 hover:border-white/20 transition-all duration-200 rounded-xl backdrop-blur-md cursor-pointer will-change-transform;
+        background-color: var(--surface-glass-light);
+        border: 1px solid var(--border-glass-subtle);
+        border-radius: var(--radius-button);
+        @apply relative overflow-hidden transition-all duration-200 backdrop-blur-md cursor-pointer will-change-transform;
         box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
     }
     .glass-interactive:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-color: var(--border-glass-highlight);
         box-shadow: 
             0 8px 20px -6px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
         transform: translateY(-2px);
     }
     .glass-interactive:active {
+        background-color: var(--surface-glass-light);
         transform: translateY(0) scale(0.98);
     }
 
     /* Precision Inputs */
     .glass-input {
-        @apply bg-black/30 border border-white/10 rounded-xl px-4 py-3.5 text-white placeholder-slate-500 focus:border-violet-500 focus:bg-slate-900/80 focus:ring-4 focus:ring-violet-500/10 transition-all duration-200 outline-none backdrop-blur-sm;
+        background-color: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border-glass-subtle);
+        border-radius: var(--radius-button);
+        @apply px-4 py-3.5 text-white placeholder-slate-500 focus:border-violet-500 focus:bg-slate-900/80 focus:ring-4 focus:ring-violet-500/10 transition-all duration-200 outline-none backdrop-blur-sm;
         box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.3);
     }
 
     /* Aurora Gradient Button - Rainbow Spectrum */
     .animated-gradient-bg {
-        background: linear-gradient(135deg, #ef4444 0%, #eab308 25%, #22c55e 50%, #3b82f6 75%, #a855f7 100%);
+        background: linear-gradient(135deg, var(--color-brand-red) 0%, var(--color-brand-yellow) 25%, var(--color-brand-green) 50%, var(--color-brand-blue) 75%, var(--color-brand-purple) 100%);
         background-size: 300% 300%;
         animation: aurora-flow 6s ease infinite;
-        @apply text-white shadow-lg shadow-blue-500/30 border border-white/10 will-change-transform font-bold tracking-wide;
+        border: 1px solid var(--border-glass-subtle);
+        @apply text-white shadow-lg shadow-blue-500/30 will-change-transform font-bold tracking-wide;
     }
     .animated-gradient-bg:hover {
         @apply shadow-blue-500/50 brightness-110 scale-[1.02];
@@ -91,7 +130,8 @@ input, textarea, .selectable {
 
     /* Typography & Accents */
     .rainbow-text {
-        @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-orange-400 font-extrabold tracking-tight filter drop-shadow-sm;
+        background-image: linear-gradient(to right, var(--color-brand-blue), var(--color-brand-purple), var(--color-brand-orange));
+        @apply bg-clip-text text-transparent font-extrabold tracking-tight filter drop-shadow-sm;
     }
     
     .status-dot {

@@ -10,6 +10,7 @@ const TicketRow = memo(({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
 
     return (
     <motion.tr
+        layout
         variants={fadeInUp}
         initial="hidden"
         animate="visible"
@@ -17,11 +18,11 @@ const TicketRow = memo(({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
         className="border-b border-white/5 hover:bg-white/5 transition-colors"
     >
         <td className="p-4"><StatusBadge status={ticket.status} /></td>
-        <td className="p-4 font-medium text-slate-200">
+        <td className="p-4 font-medium text-slate-200 selectable">
             {ticket.attendeeName}<br />
-            <span className="text-slate-500 text-sm">{ticket.attendeeEmail}</span>
+            <span className="text-slate-500 text-sm selectable">{ticket.attendeeEmail}</span>
         </td>
-        <td className="p-4 text-slate-600 text-xs font-mono uppercase tracking-wider">{ticket.id.substring(0, 8)}...</td>
+        <td className="p-4 text-slate-600 text-xs font-mono uppercase tracking-wider selectable">{ticket.id.substring(0, 8)}...</td>
         <td className="p-4 text-right">
             <div className="flex items-center justify-end gap-2">
                 <motion.button
