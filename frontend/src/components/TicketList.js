@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TicketRow from './TicketRow';
 import TicketCard from './TicketCard';
@@ -11,6 +10,19 @@ const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 
 
 const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onCheckIn, onShowQR, onEdit, onDelete }) => {
     const { t } = useLanguage();
+    const [displayLimit, setDisplayLimit] = useState(50);
+
+    // Reset pagination on search or filter change
+    useEffect(() => {
+        setDisplayLimit(50);
+    }, [filteredTickets, searchTerm]);
+
+    const visibleTickets = filteredTickets.slice(0, displayLimit);
+    const hasMore = displayLimit < filteredTickets.length;
+
+    const handleLoadMore = () => {
+        setDisplayLimit(prev => prev + 50);
+    };
 
     const handleExport = () => {
         const formattedData = formatTicketsForCSV(filteredTickets);
@@ -77,7 +89,7 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                         </thead>
                         <tbody className="divide-y divide-gray-800/50">
                             <AnimatePresence mode='popLayout'>
-                                {filteredTickets.map((ticket) => (
+                                {visibleTickets.map((ticket) => (
                                     <TicketRow 
                                         key={ticket.id} 
                                         ticket={ticket} 
@@ -95,7 +107,7 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                 {/* Mobile View (Cards) */}
                 <div className="md:hidden space-y-4">
                     <AnimatePresence mode='popLayout'>
-                        {filteredTickets.map((ticket) => (
+                        {visibleTickets.map((ticket) => (
                             <TicketCard
                                 key={ticket.id}
                                 ticket={ticket}
@@ -107,6 +119,17 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                         ))}
                     </AnimatePresence>
                 </div>
+
+                {hasMore && (
+                    <div className="flex justify-center pt-6 pb-2">
+                        <button 
+                            onClick={handleLoadMore}
+                            className="glass-interactive px-6 py-2 text-sm font-bold text-slate-300 hover:text-white rounded-xl shadow-lg transition-all"
+                        >
+                            Load More ({filteredTickets.length - displayLimit} remaining)
+                        </button>
+                    </div>
+                )}
 
                 {!isLoading && filteredTickets.length === 0 && (
                     <div className="text-center py-12">

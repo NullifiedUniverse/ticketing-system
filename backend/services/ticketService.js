@@ -24,6 +24,9 @@ class TicketService {
         this.initializing = new Set(); // Set<eventId> - locks for ensureCache
         this.lastAccessed = new Map(); // eventId -> timestamp
 
+        // Cleanup Interval (every hour)
+        setInterval(() => this.cleanupIdleCaches(), 60 * 60 * 1000);
+
         // Performance Metrics
         this.metrics = {
             hits: 0,
@@ -31,6 +34,29 @@ class TicketService {
             writes: 0,
             latencies: [] // Keep last 100 write latencies
         };
+    }
+
+    // --- CLEANUP ---
+    cleanupIdleCaches() {
+        const IDLE_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
+        const now = Date.now();
+        let cleaned = 0;
+
+        for (const [eventId, lastAccess] of this.lastAccessed.entries()) {
+            if (now - lastAccess > IDLE_TIMEOUT) {
+                logger.info(`[Cache] Cleaning up idle event: ${eventId}`);
+                if (this.listeners.has(eventId)) {
+                    this.listeners.get(eventId)(); // Unsubscribe
+                    this.listeners.delete(eventId);
+                }
+                this.cache.delete(eventId);
+                this.loadingPromises.delete(eventId);
+                this.cacheStatus.delete(eventId);
+                this.lastAccessed.delete(eventId);
+                cleaned++;
+            }
+        }
+        if (cleaned > 0) logger.info(`[Cache] Cleaned ${cleaned} idle events.`);
     }
 
     // --- METRICS ---
