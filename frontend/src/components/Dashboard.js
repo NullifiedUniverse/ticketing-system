@@ -35,8 +35,6 @@ const Dashboard = () => {
                     const latest = alerts[alerts.length - 1];
                     setLastAlertTime(latest.timestamp);
                     
-                    // Trigger Notification
-                    // We play a sound if possible or just show the modal
                     showModal({
                         type: 'alert',
                         title: '⚠️ Scanner Reported Issue',
@@ -45,7 +43,6 @@ const Dashboard = () => {
                     });
                 }
             } catch (e) {
-                // Silent fail on poll error
                 console.warn("Alert poll failed", e);
             }
         };
@@ -67,15 +64,25 @@ const Dashboard = () => {
         stats
     } = useTickets(eventId, showErrorModal);
     
+    // Search & History
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-    
+    const [searchHistory, setSearchHistory] = useState(() => {
+        return JSON.parse(localStorage.getItem('searchHistory') || '[]');
+    });
+    const [showSearchHistory, setShowSearchHistory] = useState(false);
+
     // Layout Customization State
     const [layout, setLayout] = useState(() => {
         const saved = localStorage.getItem('dashboardLayout');
         return saved ? JSON.parse(saved) : { stats: true, chart: true, actions: true };
     });
     const [isEditing, setIsEditing] = useState(false);
+
+    // Adaptive Actions State
+    const [actionStats, setActionStats] = useState(() => {
+        return JSON.parse(localStorage.getItem('actionStats') || '{}');
+    });
 
     useEffect(() => {
         localStorage.setItem('dashboardLayout', JSON.stringify(layout));
@@ -85,12 +92,30 @@ const Dashboard = () => {
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedSearchTerm(searchTerm);
+            if (searchTerm.trim().length > 2) {
+                setSearchHistory(prev => {
+                    const newHistory = [searchTerm, ...prev.filter(s => s !== searchTerm)].slice(0, 5);
+                    localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+                    return newHistory;
+                });
+            }
         }, 300); // 300ms delay
 
         return () => {
             clearTimeout(handler);
         };
     }, [searchTerm]);
+
+    const trackAction = (actionName) => {
+        const newStats = { ...actionStats, [actionName]: (actionStats[actionName] || 0) + 1 };
+        setActionStats(newStats);
+        localStorage.setItem('actionStats', JSON.stringify(newStats));
+    };
+
+    const getTopAction = () => {
+        return Object.keys(actionStats).reduce((a, b) => actionStats[a] > actionStats[b] ? a : b, null);
+    };
+    const topAction = getTopAction();
 
     const handleTicketCreatedAndShowQR = (result) => {
         handleTicketCreated(result);
@@ -125,6 +150,7 @@ const Dashboard = () => {
     };
     
     const generateSetupQR = async () => {
+        trackAction('scanner');
         if (!eventId) {
             showErrorModal(t('errorNoEventSelected'));
             return;
@@ -174,6 +200,7 @@ const Dashboard = () => {
         ), [tickets, debouncedSearchTerm]);
 
     const handleImportCSV = (e) => {
+        trackAction('import');
         const file = e.target.files[0];
         if (!file) return;
 
@@ -185,7 +212,7 @@ const Dashboard = () => {
                 if (attendees.length === 0) throw new Error(t('errorNoValidAttendees'));
                 showConfirmModal(
                     t('qaImport'), 
-                    t('importPrompt', attendees.length), 
+                    t('importPrompt', attendees.length),
                     async () => {
                         try {
                             const res = await import('../services/api').then(m => m.importAttendees(eventId, attendees));
@@ -208,9 +235,8 @@ const Dashboard = () => {
     // --- RENDER ---
     return (
         <Layout>
-            {/* Header with Frosted Blur and Sticky */}
             <header className="sticky top-4 z-30 mx-4 sm:mx-6 rounded-3xl border border-white/10 bg-slate-900/60 backdrop-blur-3xl px-6 py-4 flex justify-between items-center shadow-2xl mb-4">
-                <div className="w-8 xl:hidden"></div> {/* Spacer */}
+                <div className="w-8 xl:hidden"></div>
 
                 <div className="flex items-center gap-4 overflow-hidden">
                         <h2 className="text-xl font-semibold text-white truncate flex items-center gap-2">
@@ -228,6 +254,45 @@ const Dashboard = () => {
 
                 {eventId && (
                     <div className="flex items-center gap-3">
+                            {/* Search with History Dropdown */}
+                            <div className="relative group hidden md:block">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg className="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder={t('searchPlaceholder') || "Search..."}
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    onFocus={() => setShowSearchHistory(true)}
+                                    onBlur={() => setTimeout(() => setShowSearchHistory(false), 200)}
+                                    className="glass-input pl-9 pr-4 py-2 w-48 focus:w-64 transition-all text-sm rounded-xl"
+                                />
+                                <AnimatePresence>
+                                    {showSearchHistory && searchHistory.length > 0 && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 10 }}
+                                            className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-white/10 rounded-xl shadow-xl overflow-hidden z-50"
+                                        >
+                                            <div className="p-2">
+                                                <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 px-2">Recent</div>
+                                                {searchHistory.map((term, i) => (
+                                                    <button
+                                                        key={i}
+                                                        onClick={() => setSearchTerm(term)}
+                                                        className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2"
+                                                    >
+                                                        <span className="text-slate-500">↺</span> {term}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+
                             <motion.button 
                                 variants={buttonClick}
                                 whileHover="hover"
@@ -274,9 +339,7 @@ const Dashboard = () => {
                 )}
             </header>
 
-            {/* Main Content Area */}
             <main className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar relative">
-                {/* Ambient Background Glow */}
                 <div className="fixed inset-0 pointer-events-none ambient-glow -z-10"></div>
 
                 <AnimatePresence mode="wait">
@@ -308,7 +371,6 @@ const Dashboard = () => {
                             exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
                             className="max-w-7xl mx-auto space-y-10 pb-24"
                         >
-                            {/* Customization Panel */}
                             <AnimatePresence>
                                 {isEditing && (
                                     <motion.div
@@ -339,7 +401,6 @@ const Dashboard = () => {
                                 )}
                             </AnimatePresence>
 
-                            {/* Stats */}
                             <AnimatePresence>
                                 {layout.stats && (
                                     <motion.section 
@@ -354,7 +415,6 @@ const Dashboard = () => {
                                 )}
                             </AnimatePresence>
 
-                            {/* Chart */}
                             <AnimatePresence>
                                 {layout.chart && (
                                     <motion.section 
@@ -369,10 +429,8 @@ const Dashboard = () => {
                                 )}
                             </AnimatePresence>
 
-                            {/* Grid: Create Ticket + Quick Actions + List */}
                             <motion.div variants={fadeInUp} className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                                 
-                                {/* Left Column: Actions */}
                                 <div className="xl:col-span-1 space-y-8">
                                     <CreateTicket eventId={eventId} onTicketCreated={handleTicketCreatedAndShowQR} onApiError={showErrorModal} />
                                     
@@ -384,7 +442,6 @@ const Dashboard = () => {
                                                 animate={{ opacity: 1, height: "auto" }}
                                                 exit={{ opacity: 0, height: 0 }}
                                             >
-                                                {/* Quick Actions Card */}
                                                 <BentoCard 
                                                     title={t('qaTitle')} 
                                                     icon="⚡"
@@ -396,12 +453,15 @@ const Dashboard = () => {
                                                             variants={buttonClick}
                                                             whileHover="hover"
                                                             whileTap="tap"
-                                                            onClick={() => window.location.hash = '#email'}
+                                                            onClick={() => { trackAction('email'); window.location.hash = '#email'; }}
                                                             className="glass-interactive w-full flex items-center justify-between p-4 rounded-xl text-left group"
                                                         >
                                                             <div className="flex items-center gap-3">
                                                                 <span className="text-2xl group-hover:scale-110 transition-transform">📨</span>
-                                                                <span className="text-slate-200 font-medium group-hover:text-white">{t('qaEmail')}</span>
+                                                                <span className="text-slate-200 font-medium group-hover:text-white">
+                                                                    {t('qaEmail')} 
+                                                                    {topAction === 'email' && <span className="ml-2 text-[10px] bg-purple-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider">Top Pick</span>}
+                                                                </span>
                                                             </div>
                                                             <span className="text-slate-500 group-hover:text-white transition-colors">→</span>
                                                         </motion.button>
@@ -415,7 +475,10 @@ const Dashboard = () => {
                                                         >
                                                             <div className="flex items-center gap-3">
                                                                 <span className="text-2xl group-hover:scale-110 transition-transform">📱</span>
-                                                                <span className="text-slate-200 font-medium group-hover:text-white">{t('qaScanner')}</span>
+                                                                <span className="text-slate-200 font-medium group-hover:text-white">
+                                                                    {t('qaScanner')}
+                                                                    {topAction === 'scanner' && <span className="ml-2 text-[10px] bg-purple-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider">Top Pick</span>}
+                                                                </span>
                                                             </div>
                                                             <span className="text-slate-500 group-hover:text-white transition-colors">→</span>
                                                         </motion.button>
@@ -428,7 +491,10 @@ const Dashboard = () => {
                                                         >
                                                             <div className="flex items-center gap-3">
                                                                 <span className="text-2xl group-hover:scale-110 transition-transform">📂</span>
-                                                                <span className="text-slate-200 font-medium group-hover:text-white">{t('qaImport')}</span>
+                                                                <span className="text-slate-200 font-medium group-hover:text-white">
+                                                                    {t('qaImport')}
+                                                                    {topAction === 'import' && <span className="ml-2 text-[10px] bg-purple-500 text-white px-1.5 py-0.5 rounded-full uppercase tracking-wider">Top Pick</span>}
+                                                                </span>
                                                             </div>
                                                             <input type="file" accept=".csv" onChange={handleImportCSV} className="hidden" />
                                                         </motion.label>
@@ -454,7 +520,6 @@ const Dashboard = () => {
                                     </AnimatePresence>
                                 </div>
 
-                                {/* Right Column: List */}
                                 <div className="xl:col-span-2">
                                         <TicketList
                                         key={eventId}

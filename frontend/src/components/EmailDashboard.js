@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from './Layout';
 import Modal from './Modal';
@@ -52,6 +52,18 @@ const EmailDashboard = () => {
             setTickets([]);
         }
     }, [eventId, fetchTickets]);
+
+    // Intelligent Sorting: Error > Unsent > Sent
+    const sortedTickets = useMemo(() => {
+        return [...tickets].sort((a, b) => {
+            const getPriority = (t) => {
+                if (t.emailStatus === 'error') return 0;
+                if (!t.emailStatus || t.emailStatus !== 'sent') return 1;
+                return 2;
+            };
+            return getPriority(a) - getPriority(b);
+        });
+    }, [tickets]);
 
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
@@ -340,7 +352,7 @@ const EmailDashboard = () => {
                                     animate="visible"
                                     className="divide-y divide-white/5"
                                 >
-                                    {tickets.map(ticket => (
+                                    {sortedTickets.map(ticket => (
                                         <motion.tr 
                                             key={ticket.id} 
                                             variants={fadeInUp}
