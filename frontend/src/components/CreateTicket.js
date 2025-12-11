@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { createTicket } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
-import { buttonClick } from '../utils/animations';
+import SmartButton from './SmartButton';
 
 const CreateTicket = ({ eventId, onTicketCreated, onApiError }) => {
     const [name, setName] = useState('');
@@ -68,23 +68,14 @@ const CreateTicket = ({ eventId, onTicketCreated, onApiError }) => {
                         />
                     </div>
 
-                    <motion.button
+                    <SmartButton
                         type="submit"
-                        disabled={isLoading}
-                        variants={buttonClick}
-                        whileHover="hover"
-                        whileTap="tap"
-                        className="w-full mt-6 animated-gradient-bg hover:brightness-110 text-white font-bold py-3.5 px-4 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/20 flex items-center justify-center gap-2"
+                        loading={isLoading}
+                        icon="✨"
+                        loadingText={t('btnProcessing') || "Processing..."}
                     >
-                        {isLoading ? (
-                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        ) : (
-                            <>
-                                <span>{t('btnCreate')}</span>
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                            </>
-                        )}
-                    </motion.button>
+                        {t('btnCreate')}
+                    </SmartButton>
                 </form>
             </div>
         </motion.div>

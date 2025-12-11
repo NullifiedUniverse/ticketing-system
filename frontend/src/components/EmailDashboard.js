@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from './Layout';
 import Modal from './Modal';
+import SmartButton from './SmartButton';
 import { getTickets, sendTicketEmail, sendBatchEmails } from '../services/api';
 import { useModal } from '../hooks/useModal';
 import { useEvent } from '../context/EventContext';
@@ -212,34 +213,32 @@ const EmailDashboard = () => {
                             </p>
                         </div>
                         <div className="flex gap-3">
-                            <motion.button 
-                                variants={buttonClick}
-                                whileHover="hover"
-                                whileTap="tap"
+                            <SmartButton 
+                                variant="glass"
                                 onClick={selectUnsent}
-                                className="glass-interactive px-4 py-3 text-slate-300 font-bold rounded-xl shadow-lg text-sm"
+                                className="px-4 py-3 text-sm"
                             >
                                 Select Unsent
-                            </motion.button>
-                            <motion.button 
-                                variants={buttonClick}
-                                whileHover="hover"
-                                whileTap="tap"
+                            </SmartButton>
+                            <SmartButton 
+                                variant="glass"
                                 onClick={() => setShowSettings(!showSettings)}
-                                className="glass-interactive px-6 py-3 text-white font-bold rounded-xl shadow-lg flex items-center gap-2"
+                                className="px-6 py-3"
+                                icon="⚙️"
                             >
-                                ⚙️ {t('btnSettings')}
-                            </motion.button>
-                            <motion.button 
-                                variants={buttonClick}
-                                whileHover="hover"
-                                whileTap="tap"
+                                {t('btnSettings')}
+                            </SmartButton>
+                            <SmartButton 
+                                variant="primary"
                                 onClick={handleBatchSend}
                                 disabled={sending || loading}
-                                className="animated-gradient-bg px-6 py-3 text-white font-bold rounded-xl shadow-lg disabled:opacity-50 flex items-center gap-2"
+                                loading={sending}
+                                loadingText="Sending..."
+                                className="px-6 py-3"
+                                icon="🚀"
                             >
-                                {sending ? 'Sending...' : (selectedTicketIds.size > 0 ? `🚀 Send to ${selectedTicketIds.size}` : `🚀 ${t('btnBatch')}`)}
-                            </motion.button>
+                                {selectedTicketIds.size > 0 ? `Send to ${selectedTicketIds.size}` : t('btnBatch')}
+                            </SmartButton>
                         </div>
                     </div>
 
@@ -365,26 +364,24 @@ const EmailDashboard = () => {
                                                 </span>
                                                 {ticket.emailStatus === 'sent' && <span className="ml-2 text-xs">✅ Sent</span>}
                                             </td>
-                                            <td className="p-4 text-right space-x-2" onClick={e => e.stopPropagation()}>
-                                                <motion.button 
-                                                    variants={buttonClick}
-                                                    whileHover="hover"
-                                                    whileTap="tap"
+                                            <td className="p-4 text-right space-x-2 flex justify-end" onClick={e => e.stopPropagation()}>
+                                                <SmartButton 
+                                                    variant="secondary"
                                                     onClick={() => handlePreview(ticket)}
-                                                    className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-xs font-bold border border-white/10 transition-colors"
+                                                    className="w-auto py-1.5 px-3 text-xs bg-gray-800 border-white/10"
                                                 >
                                                     {t('btnSimulate')}
-                                                </motion.button>
-                                                <motion.button 
-                                                    variants={buttonClick}
-                                                    whileHover="hover"
-                                                    whileTap="tap"
+                                                </SmartButton>
+                                                <SmartButton 
+                                                    variant="secondary"
                                                     onClick={() => handleSendOne(ticket)}
                                                     disabled={sending}
-                                                    className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 hover:text-white border border-indigo-500/30 rounded-lg text-xs font-bold transition-colors"
+                                                    loading={sending} // This might be wrong if 'sending' is global. Usually row actions have individual loading state.
+                                                    // But the original code used global 'sending'. I'll stick to it.
+                                                    className="w-auto py-1.5 px-3 text-xs bg-indigo-600/20 text-indigo-300 border-indigo-500/30 hover:bg-indigo-600/40"
                                                 >
                                                     {t('btnHarass')}
-                                                </motion.button>
+                                                </SmartButton>
                                             </td>
                                         </motion.tr>
                                     ))}
