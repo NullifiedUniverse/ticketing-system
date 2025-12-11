@@ -83,6 +83,24 @@ export const cardHover = {
     }
 };
 
+// Bento Card Bounce (Tactile)
+export const bentoBounce = {
+    hidden: { opacity: 0, scale: 0.9, y: 10 },
+    visible: { 
+        opacity: 1, 
+        scale: 1, 
+        y: 0,
+        transition: { type: "spring", stiffness: 260, damping: 20 } 
+    },
+    hover: { 
+        scale: 1.02,
+        y: -2,
+        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+        transition: { type: "spring", stiffness: 400, damping: 10 }
+    },
+    tap: { scale: 0.98 }
+};
+
 // Sidebar Drawer (Smooth)
 export const sidebarDrawer = {
     closed: { x: "-100%", opacity: 0 },

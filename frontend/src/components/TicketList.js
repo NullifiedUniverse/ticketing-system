@@ -22,7 +22,7 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
         variants={itemVariants} 
         initial="hidden"
         animate="visible"
-        className="glass-panel p-6 rounded-2xl"
+        className="glass-panel p-6 rounded-3xl border border-white/5 bg-slate-900/40 backdrop-blur-xl"
     >
         {/* Search Bar */}
         <div className="relative mb-6 flex flex-wrap gap-4">
