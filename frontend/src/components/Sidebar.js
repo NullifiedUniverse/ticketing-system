@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEvent } from '../context/EventContext';
 import { useLanguage } from '../context/LanguageContext';
-import { buttonClick, containerStagger, fadeInUp } from '../utils/animations';
+import { containerStagger, fadeInUp } from '../utils/animations';
+import SmartButton from './SmartButton';
 
 const Sidebar = ({ onNewEvent, onDeleteEvent, onRaffle }) => {
     const { events, loading, eventId: currentEventId, selectEvent } = useEvent();
@@ -54,16 +55,14 @@ const Sidebar = ({ onNewEvent, onDeleteEvent, onRaffle }) => {
                     </motion.div>
                     
                     {/* Language Toggle */}
-                    <motion.button 
-                        variants={buttonClick}
-                        whileHover="hover"
-                        whileTap="tap"
+                    <SmartButton 
+                        variant="glass"
                         onClick={cycleLanguage}
-                        className="mb-6 w-full py-2 px-3 glass-interactive rounded-lg text-xs font-bold text-slate-400 uppercase tracking-wider flex justify-between items-center group"
+                        className="mb-6 w-full py-2 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider justify-between group"
                     >
                         <span>Language</span>
                         <span className="text-white group-hover:text-violet-300 transition-colors">{language === 'en' ? '🇺🇸 EN' : '🇹🇼 TW'}</span>
-                    </motion.button>
+                    </SmartButton>
 
                     <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
                         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4 px-2">
@@ -151,42 +150,35 @@ const Sidebar = ({ onNewEvent, onDeleteEvent, onRaffle }) => {
                                     {t('quickTools')}
                                 </h3>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <motion.button 
-                                        variants={buttonClick}
-                                        whileHover="hover"
-                                        whileTap="tap"
+                                    <SmartButton 
+                                        variant="glass"
                                         onClick={onRaffle}
-                                        className="p-3 glass-interactive rounded-xl text-center group flex flex-col items-center justify-center gap-2"
+                                        className="p-3 h-20 flex-col gap-2"
                                     >
                                         <div className="text-xl group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">🎲</div>
                                         <div className="text-[10px] text-slate-400 font-medium">{t('raffle')}</div>
-                                    </motion.button>
-                                    <motion.button 
-                                        variants={buttonClick}
-                                        whileHover="hover"
-                                        whileTap="tap"
+                                    </SmartButton>
+                                    <SmartButton 
+                                        variant="glass"
                                         onClick={() => window.location.hash = '#email'}
-                                        className="p-3 glass-interactive rounded-xl text-center group flex flex-col items-center justify-center gap-2"
+                                        className="p-3 h-20 flex-col gap-2"
                                     >
                                         <div className="text-xl group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">✉️</div>
                                         <div className="text-[10px] text-slate-400 font-medium">{t('email')}</div>
-                                    </motion.button>
+                                    </SmartButton>
                                 </div>
                             </motion.div>
                         )}
                     </div>
 
                     <div className="mt-auto pt-6 border-t border-white/5">
-                        <motion.button
-                            variants={buttonClick}
-                            whileHover="hover"
-                            whileTap="tap"
+                        <SmartButton
                             onClick={onNewEvent}
-                            className="w-full group relative flex items-center justify-center gap-2 animated-gradient-bg text-white py-3.5 px-4 rounded-xl transition-all border border-white/10 shadow-lg"
+                            className="w-full py-3.5 px-4 shadow-lg"
                         >
                             <span className="text-xl font-light relative z-10 leading-none pb-1">+</span>
                             <span className="font-medium relative z-10">{t('createEvent')}</span>
-                        </motion.button>
+                        </SmartButton>
                     </div>
 
                     {/* Watermark */}

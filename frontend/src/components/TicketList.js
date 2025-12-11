@@ -20,9 +20,29 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
     const visibleTickets = filteredTickets.slice(0, displayLimit);
     const hasMore = displayLimit < filteredTickets.length;
 
-    const handleLoadMore = () => {
-        setDisplayLimit(prev => prev + 50);
-    };
+    const observerTarget = React.useRef(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            entries => {
+                if (entries[0].isIntersecting && hasMore) {
+                    setDisplayLimit(prev => prev + 50);
+                }
+            },
+            { threshold: 1.0 }
+        );
+
+        const currentTarget = observerTarget.current;
+        if (currentTarget) {
+            observer.observe(currentTarget);
+        }
+
+        return () => {
+            if (currentTarget) {
+                observer.unobserve(currentTarget);
+            }
+        };
+    }, [hasMore]);
 
     const handleExport = () => {
         const formattedData = formatTicketsForCSV(filteredTickets);
@@ -120,16 +140,7 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                     </AnimatePresence>
                 </div>
 
-                {hasMore && (
-                    <div className="flex justify-center pt-6 pb-2">
-                        <button 
-                            onClick={handleLoadMore}
-                            className="glass-interactive px-6 py-2 text-sm font-bold text-slate-300 hover:text-white rounded-xl shadow-lg transition-all"
-                        >
-                            Load More ({filteredTickets.length - displayLimit} remaining)
-                        </button>
-                    </div>
-                )}
+                <div ref={observerTarget} className="h-4 w-full" />
 
                 {!isLoading && filteredTickets.length === 0 && (
                     <div className="text-center py-12">

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useLanguage } from '../context/LanguageContext';
 import { EASING } from '../utils/animations';
+import SmartButton from './SmartButton';
 
 const Modal = ({ isOpen, onClose, content }) => {
     const { t } = useLanguage();
@@ -48,34 +49,29 @@ const Modal = ({ isOpen, onClose, content }) => {
                             )}
                             {content.type === 'alert' && (
                                 <div className="flex justify-center gap-4 mt-4">
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
+                                    <SmartButton
                                         onClick={onClose}
-                                        className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
+                                        className="w-auto px-6 py-2"
                                     >
                                         {t('btnOk')}
-                                    </motion.button>
+                                    </SmartButton>
                                 </div>
                             )}
                             {content.type === 'confirm' && (
                                 <div className="flex justify-center gap-4 mt-4">
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
+                                    <SmartButton
+                                        variant="secondary"
                                         onClick={onClose}
-                                        className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg"
+                                        className="w-auto px-6 py-2 bg-gray-700 hover:bg-gray-600 border-none"
                                     >
                                         {t('btnCancel')}
-                                    </motion.button>
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
+                                    </SmartButton>
+                                    <SmartButton
                                         onClick={() => { content.onConfirm(); onClose(); }}
-                                        className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
+                                        className="w-auto px-6 py-2"
                                     >
                                         {t('btnConfirm')}
-                                    </motion.button>
+                                    </SmartButton>
                                 </div>
                             )}
                             {content.type === 'prompt' && (
@@ -86,26 +82,23 @@ const Modal = ({ isOpen, onClose, content }) => {
                                         className="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
                                     />
                                     <div className="flex justify-center gap-4 mt-4">
-                                        <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
+                                        <SmartButton
+                                            variant="secondary"
                                             onClick={onClose}
-                                            className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg"
+                                            className="w-auto px-6 py-2 bg-gray-700 hover:bg-gray-600 border-none"
                                         >
                                             {t('btnCancel')}
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
+                                        </SmartButton>
+                                        <SmartButton
                                             onClick={() => {
                                                 const input = document.getElementById('prompt-input');
                                                 content.onConfirm(input.value);
                                                 onClose();
                                             }}
-                                            className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
+                                            className="w-auto px-6 py-2"
                                         >
                                             {t('btnConfirm')}
-                                        </motion.button>
+                                        </SmartButton>
                                     </div>
                                 </div>
                             )}
@@ -124,17 +117,14 @@ const Modal = ({ isOpen, onClose, content }) => {
                                         className="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500 focus:outline-none transition-all"
                                     />
                                     <div className="flex justify-center gap-4 mt-4">
-                                        <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
+                                        <SmartButton
+                                            variant="secondary"
                                             onClick={onClose}
-                                            className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg"
+                                            className="w-auto px-6 py-2 bg-gray-700 hover:bg-gray-600 border-none"
                                         >
                                             {t('btnCancel')}
-                                        </motion.button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
+                                        </SmartButton>
+                                        <SmartButton
                                             onClick={() => {
                                                 const nameInput = document.getElementById('edit-name-input');
                                                 const emailInput = document.getElementById('edit-email-input');
@@ -145,10 +135,10 @@ const Modal = ({ isOpen, onClose, content }) => {
                                                 });
                                                 onClose();
                                             }}
-                                            className="animated-gradient-bg text-white font-bold py-2 px-4 rounded-lg"
+                                            className="w-auto px-6 py-2"
                                         >
                                             {t('btnSave')}
-                                        </motion.button>
+                                        </SmartButton>
                                     </div>
                                 </div>
                             )}
