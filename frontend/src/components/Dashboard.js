@@ -197,7 +197,7 @@ const Dashboard = () => {
     return (
         <Layout>
             {/* Header with Frosted Blur and Sticky */}
-            <header className="sticky top-0 z-30 border-b border-white/5 bg-slate-900/50 backdrop-blur-xl px-6 py-4 flex justify-between items-center shadow-md">
+            <header className="sticky top-4 z-30 mx-4 sm:mx-6 rounded-3xl border border-white/10 bg-slate-900/60 backdrop-blur-3xl px-6 py-4 flex justify-between items-center shadow-2xl mb-4">
                 <div className="w-8 xl:hidden"></div> {/* Spacer */}
 
                 <div className="flex items-center gap-4 overflow-hidden">

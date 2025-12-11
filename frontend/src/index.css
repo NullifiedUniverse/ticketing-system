@@ -47,7 +47,7 @@ input, textarea, .selectable {
 @layer components {
     /* Premium Glass Material - High Contrast & Depth */
     .glass-panel {
-        @apply bg-gradient-to-br from-slate-900/90 to-slate-950/90 backdrop-blur-2xl border border-white/10 shadow-2xl rounded-3xl;
+        @apply bg-gradient-to-br from-slate-900/60 to-slate-950/60 backdrop-blur-3xl border border-white/10 shadow-2xl rounded-3xl;
         box-shadow: 
             0 8px 32px rgba(0, 0, 0, 0.4),
             inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
@@ -91,7 +91,7 @@ input, textarea, .selectable {
 
     /* Typography & Accents */
     .rainbow-text {
-        @apply bg-clip-text text-transparent bg-gradient-to-r from-red-400 via-yellow-400 to-blue-400 font-extrabold tracking-tight;
+        @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-orange-400 font-extrabold tracking-tight filter drop-shadow-sm;
     }
     
     .status-dot {
