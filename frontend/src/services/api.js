@@ -129,6 +129,11 @@ export const updateTicketStatus = async (eventId, ticketId, action) => {
     return result;
 };
 
+export const getAlerts = async (eventId, since = 0) => {
+    const result = await callApi(`/api/admin/alerts/${eventId}?since=${since}`, { headers: getAuthHeaders() });
+    return result.alerts;
+};
+
 export const drawRaffleWinner = async (eventId) => {
     const result = await callApi(`/api/admin/raffle/draw/${eventId}`, { headers: getAuthHeaders() });
     return result;
@@ -184,13 +189,13 @@ export const sendTicketEmail = async (eventId, ticketId, bgFilename, config, mes
     return result;
 };
 
-export const sendBatchEmails = async (eventId, bgFilename, config, messageBefore, messageAfter, emailSubject, senderName) => {
+export const sendBatchEmails = async (eventId, bgFilename, config, messageBefore, messageAfter, emailSubject, senderName, ticketIds = null) => {
     // messageBefore/After might be inside config if called from UI state directly, 
     // but we support explicit passing too.
     const result = await callApi('/api/admin/email/send-batch', {
         method: 'POST',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ eventId, bgFilename, config, messageBefore, messageAfter, emailSubject, senderName }),
+        body: JSON.stringify({ eventId, bgFilename, config, messageBefore, messageAfter, emailSubject, senderName, ticketIds }),
     });
     return result;
 };

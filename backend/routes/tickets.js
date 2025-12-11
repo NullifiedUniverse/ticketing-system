@@ -3,6 +3,7 @@ const adminRouter = express.Router();
 const scannerRouter = express.Router();
 const ticketController = require('../controllers/ticketController');
 const raffleController = require('../controllers/raffleController');
+const scannerController = require('../controllers/scannerController');
 const { controller: emailController, uploadMiddleware } = require('../controllers/emailController');
 
 // --- ADMIN ROUTES ---
@@ -30,9 +31,14 @@ adminRouter.post('/email/send-one', emailController.sendSingle.bind(emailControl
 adminRouter.post('/email/send-batch', emailController.sendBatch.bind(emailController));
 
 
-// --- SCANNER ROUTES ---
+// Scanner API (requires scannerAuthMiddleware)
 scannerRouter.post('/update-ticket-status/:eventId/:ticketId', ticketController.updateTicketStatus.bind(ticketController));
 scannerRouter.get('/warmup/:eventId', ticketController.warmupCache.bind(ticketController));
-scannerRouter.get('/data/:eventId', ticketController.getMinimalTicketData.bind(ticketController));
+scannerRouter.get('/get-minimal-ticket-data/:eventId', ticketController.getMinimalTicketData.bind(ticketController));
+scannerRouter.post('/log-perf', scannerController.logPerformance.bind(scannerController));
+scannerRouter.post('/report-issue/:eventId', ticketController.reportIssue.bind(ticketController));
+
+// Admin Alerts
+adminRouter.get('/alerts/:eventId', ticketController.getAlerts.bind(ticketController));
 
 module.exports = { adminRouter, scannerRouter };

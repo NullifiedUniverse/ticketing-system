@@ -9,21 +9,21 @@ const TicketCard = ({ ticket, onCheckIn, onShowQR, onEdit, onDelete }) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="glass-panel p-5 mb-4 relative overflow-hidden border-l-0"
+            className="glass-panel p-5 mb-6 relative overflow-hidden border-l-0 rounded-3xl"
         >
             {/* Status Stripe with Glow */}
             <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${ticket.status === 'checked-in' ? 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.6)]' : 'bg-violet-500 shadow-[0_0_15px_rgba(139,92,246,0.6)]'}`}></div>
 
             <div className="flex justify-between items-start mb-3 pl-3">
                 <div>
-                    <h3 className="font-bold text-white text-lg tracking-tight">{ticket.attendeeName}</h3>
-                    <p className="text-slate-400 text-sm">{ticket.attendeeEmail}</p>
+                    <h3 className="font-bold text-white text-lg tracking-tight selectable">{ticket.attendeeName}</h3>
+                    <p className="text-slate-400 text-sm selectable">{ticket.attendeeEmail}</p>
                 </div>
                 <StatusBadge status={ticket.status} />
             </div>
 
             <div className="pl-3 mb-5">
-                 <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest">ID: {ticket.id}</p>
+                 <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest selectable">ID: {ticket.id}</p>
             </div>
 
             <div className="flex gap-3 pl-3 pb-1">

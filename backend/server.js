@@ -31,10 +31,17 @@ const PORT = process.env.PORT || 3001;
 // Concise Logging: Method URL Status Time
 app.use(morgan(':method :url :status :response-time ms', { 
     stream: { write: message => logger.http(message.trim()) },
-    skip: (req, res) => req.url === '/api/ping' // Skip ping noise
+    skip: (req, res) => req.url === '/api/ping' || req.url === '/api/scanner/log-perf' // Skip ping & perf noise
 }));
 
-app.use(compression()); // Compress all responses
+// Optimize Compression: Skip for scanner API (small payloads, latency critical)
+app.use(compression({
+    filter: (req, res) => {
+        if (req.url.startsWith('/api/scanner')) return false;
+        return compression.filter(req, res);
+    }
+}));
+
 app.use(cors({
     origin: '*' // Allow all origins (for now, to support local & ngrok)
 }));

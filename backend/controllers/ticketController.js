@@ -158,6 +158,23 @@ class TicketController {
         
         res.status(201).json({ status: 'success', message: `Successfully imported ${result.count} tickets.` });
     });
+
+    // --- ALERTS ---
+    reportIssue = catchAsync(async (req, res, next) => {
+        const { eventId } = req.params;
+        const { deviceId } = req.body;
+        
+        await ticketService.reportIssue(eventId, deviceId);
+        res.json({ status: 'success', message: 'Issue reported' });
+    });
+
+    getAlerts = catchAsync(async (req, res, next) => {
+        const { eventId } = req.params;
+        const since = parseInt(req.query.since) || 0;
+        
+        const alerts = await ticketService.getAlerts(eventId, since);
+        res.json({ status: 'success', alerts });
+    });
 }
 
 module.exports = new TicketController();

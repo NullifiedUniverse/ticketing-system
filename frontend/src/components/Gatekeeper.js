@@ -70,8 +70,8 @@ const Gatekeeper = ({ children }) => {
                             className="glass-panel w-full max-w-md p-8 relative overflow-hidden z-10"
                         >
                             {/* Decorative Elements */}
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500" />
-                            <div className="absolute -top-20 -right-20 w-40 h-40 bg-violet-500/20 rounded-full blur-3xl pointer-events-none" />
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-orange-400" />
+                            <div className="absolute -top-20 -right-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
                             
                             <div className="text-center mb-8">
                                 <motion.div 
@@ -82,7 +82,7 @@ const Gatekeeper = ({ children }) => {
                                 >
                                     <span className="text-3xl">🔒</span>
                                 </motion.div>
-                                <h2 className="text-2xl font-bold text-white tracking-tight">System Access</h2>
+                                <h2 className="text-2xl font-bold rainbow-text tracking-tight">System Access</h2>
                                 <p className="text-slate-400 text-sm mt-1">Restricted Area. Identify yourself.</p>
                             </div>
 

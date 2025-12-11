@@ -61,6 +61,7 @@ const start = async () => {
         console.log(`
 ----------------------------------------------------------------`);
         console.log(`SUCCESS: Ngrok tunnel opened!`);
+        console.log(`Region:  ${region.toUpperCase()}`);
         console.log(`Scanner Link: ${url}/scanner`);
         console.log(`(Must use HTTPS for camera access on Android)`);
         console.log(`----------------------------------------------------------------
