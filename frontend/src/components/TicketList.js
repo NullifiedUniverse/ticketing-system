@@ -8,7 +8,7 @@ import { exportToCSV, formatTicketsForCSV } from '../utils/exportUtils';
 
 const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } };
 
-const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onCheckIn, onShowQR, onEdit, onDelete }) => {
+const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onCheckIn, onShowQR, onEdit, onDelete, onImport }) => {
     const { t } = useLanguage();
     const [displayLimit, setDisplayLimit] = useState(50);
 
@@ -84,13 +84,20 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                 )}
             </div>
             
-            <button 
-                onClick={handleExport}
-                className="glass-interactive px-4 py-3 text-white rounded-xl font-bold flex items-center gap-2 whitespace-nowrap"
-            >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                {t('btnExportCsv')}
-            </button>
+            <div className="flex gap-2">
+                <label className="glass-interactive px-4 py-3 text-white rounded-xl font-bold flex items-center gap-2 whitespace-nowrap cursor-pointer">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+                    {t('qaImport')}
+                    <input type="file" accept=".csv" onChange={onImport} className="hidden" />
+                </label>
+                <button 
+                    onClick={handleExport}
+                    className="glass-interactive px-4 py-3 text-white rounded-xl font-bold flex items-center gap-2 whitespace-nowrap"
+                >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    {t('btnExportCsv')}
+                </button>
+            </div>
         </div>
 
         {isLoading ? (

@@ -7,6 +7,30 @@ export const useTickets = (eventId, handleApiError) => {
     const [isSyncing, setIsSyncing] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('disconnected');
     const [connectionError, setConnectionError] = useState(null);
+    const [pollingInterval, setPollingInterval] = useState(5000);
+
+    // Adaptive Polling Logic
+    useEffect(() => {
+        let idleTimer;
+        const setActive = () => {
+            setPollingInterval(5000);
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => setPollingInterval(30000), 60000); // Go idle after 60s
+        };
+
+        window.addEventListener('mousemove', setActive);
+        window.addEventListener('keydown', setActive);
+        window.addEventListener('click', setActive);
+        
+        setActive(); // Init
+
+        return () => {
+            window.removeEventListener('mousemove', setActive);
+            window.removeEventListener('keydown', setActive);
+            window.removeEventListener('click', setActive);
+            clearTimeout(idleTimer);
+        };
+    }, []);
 
     useEffect(() => {
         if (!eventId) {
@@ -48,10 +72,10 @@ export const useTickets = (eventId, handleApiError) => {
 
         const intervalId = setInterval(() => {
             fetchTickets(true);
-        }, 5000);
+        }, pollingInterval);
 
         return () => clearInterval(intervalId);
-    }, [eventId]);
+    }, [eventId, pollingInterval]);
 
     const handleTicketCreated = useCallback((result) => {
         setTickets(prevTickets => [...prevTickets, result.ticket]);

@@ -11,12 +11,19 @@ const SmartButton = ({
     loading = false, // External loading control
     icon,
     loadingText,
-    type = 'button'
+    type = 'button',
+    title
 }) => {
     const [internalStatus, setInternalStatus] = useState('idle'); // idle, loading, success, error
 
     // Determine effective status
     const status = loading ? 'loading' : internalStatus;
+
+    const handleTap = () => {
+        if (!disabled && status === 'idle' && navigator.vibrate) {
+            navigator.vibrate(15);
+        }
+    };
 
     const handleClick = async (e) => {
         if (status === 'loading' || disabled) return;
@@ -27,12 +34,14 @@ const SmartButton = ({
                 await onClick(e);
                 if (!loading) {
                     setInternalStatus('success');
+                    if (navigator.vibrate) navigator.vibrate([10, 30, 10]); // Success haptic
                     setTimeout(() => setInternalStatus('idle'), 2000);
                 }
             } catch (err) {
                 console.error("Button Action Failed:", err);
                 if (!loading) {
                     setInternalStatus('error');
+                    if (navigator.vibrate) navigator.vibrate(100); // Error haptic
                     setTimeout(() => setInternalStatus('idle'), 2000);
                 }
             }
@@ -57,6 +66,8 @@ const SmartButton = ({
             type={type}
             disabled={disabled || status === 'loading'}
             onClick={type === 'submit' ? undefined : handleClick}
+            onTapStart={handleTap}
+            title={title}
             variants={buttonClick}
             whileHover={status === 'idle' && !disabled ? "hover" : "rest"}
             whileTap={status === 'idle' && !disabled ? "tap" : "rest"}
