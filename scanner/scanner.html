@@ -455,17 +455,21 @@
                 };
 
                 // 4. Start
-                                                                                                await html5QrCode.start(
-                                                                                                    { facingMode: "environment" },
-                                                                                                    {
-                                                                                                        fps: 15, // Optimized
-                                                                                                        qrbox: getQrBoxSize,
-                                                                                                        disableFlip: false,
-                                                                                                        formatsToSupport: [ 0 ] // QR_CODE
-                                                                                                    },
-                                                                                                    onScan,
-                                                                                                    (err) => { /* Ignore frame errors */ }
-                                                                                                );                isCameraRunning = true;
+                                                                                                                await html5QrCode.start(
+                                                                                                                    {
+                                                                                                                        facingMode: "environment",
+                                                                                                                        width: { ideal: 1280 }, // Request 720p width for better detail
+                                                                                                                        height: { ideal: 720 }  // Request 720p height for better detail
+                                                                                                                    },
+                                                                                                                    {
+                                                                                                                        fps: 25, // Increased for smoother scanning and faster detection
+                                                                                                                        qrbox: getQrBoxSize,
+                                                                                                                        disableFlip: false,
+                                                                                                                        formatsToSupport: [ 0 ] // QR_CODE
+                                                                                                                    },
+                                                                                                                    onScan,
+                                                                                                                    (err) => { /* Ignore frame errors */ }
+                                                                                                                );                isCameraRunning = true;
                 btn.classList.add('hidden'); // Hide button
                 document.getElementById('scan-box').style.opacity = "1"; 
                 
