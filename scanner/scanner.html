@@ -63,12 +63,13 @@
             border: none !important;
         }
         
-        /* Force Video to Cover Screen */
+        /* Force Video to Cover Screen & Boost Contrast for Outdoor Visibility */
         #reader video { 
             width: 100% !important; 
             height: 100% !important; 
             object-fit: cover !important; 
             border-radius: 0 !important;
+            filter: contrast(1.25) brightness(1.1) saturate(1.1) !important; /* Outdoor Optimization */
         }
 
         /* Hide Library's Default Overlays/Canvas */
@@ -76,8 +77,7 @@
             display: none !important; 
         }
 
-        /* 
-           Custom Overlay - Centered & Responsive
+        /* Custom Overlay - Centered & Responsive
         */
         .scanner-overlay {
             position: absolute; 
@@ -295,7 +295,7 @@
         class SoundManager {
             constructor() {
                 this.sounds = {
-                    success: new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd"), // Placeholder Short Beep
+                    success: new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd"), // Placeholder Short Beep
                     error: new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd"), // Placeholder Buzz
                     warning: new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd") // Placeholder Double
                 };
@@ -442,7 +442,7 @@
                 
                 // 2. Init Lib (Reuse if exists)
                 if (!html5QrCode) {
-                    html5QrCode = new Html5QrCode("reader");
+                    html5QrCode = new Html5QrCode("reader", false);
                 }
                 
                 // 3. Calculate optimal box size
@@ -454,28 +454,21 @@
                     };
                 };
 
-                // 4. Start
-                                                                                                                                await html5QrCode.start(
-                                                                                                                                    { facingMode: "environment" },
-                                                                                                                                    {
-                                                                                                                                        fps: 15, // Optimized
-                                                                                                                                        qrbox: getQrBoxSize,
-                                                                                                                                        disableFlip: false,
-                                                                                                                                        formatsToSupport: [ 0 ] // QR_CODE
-                                                                                                                                    },
-                                                                                                                                    onScan,
-                                                                                                                                    (err) => { /* Ignore frame errors */ }
-                                                                                                                                );                isCameraRunning = true;
+                // 4. Start with OPTIMIZED settings for outdoors & speed
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    {
+                        fps: 25, // Boosted from 15 to 25 for smoother tracking
+                        qrbox: getQrBoxSize,
+                        disableFlip: false
+                    },
+                    onScan,
+                    (err) => { /* Ignore frame errors */ }
+                );
+                
+                isCameraRunning = true;
                 btn.classList.add('hidden'); // Hide button
                 document.getElementById('scan-box').style.opacity = "1"; 
-                
-                // Tap to Scan Next (Speed Mode)
-                // Remove existing listener to avoid duplicates? 
-                // document.body.removeEventListener... (Need named function for that)
-                // Ideally we add this once in init, but we need isProcessing check.
-                // Let's define the handler outside or check if added.
-                // For simplicity in this script block, we can leave it or optimize.
-                // Better: Define handler once.
                 
             } catch (err) {
                 console.error(err);
@@ -611,7 +604,7 @@
                     config: {
                         apiBaseUrl: scannerConfig.apiBaseUrl,
                         mode: mode,
-                        fps: 15 // Assuming this is static
+                        fps: 25 // Updated static fps
                     }
                 }),
                 keepalive: true // Send even if page is closing
@@ -645,6 +638,9 @@
                 return await fetch(url, options);
             } catch (err) {
                 if (retries > 0) {
+                    // Update UI to show retry
+                    showResult('loading', 'Weak Signal', `Retrying... (${retries})`);
+                    
                     await new Promise(r => setTimeout(r, backoff));
                     return fetchWithRetry(url, options, retries - 1, backoff * 2);
                 }
@@ -652,16 +648,40 @@
             }
         }
 
-        async function handleTicket(id) {
+        async function handleTicket(rawId) {
             // Note: 'loading' state is already set in onScan for immediate feedback.
+
+            // 1. Check if this is actually a Setup QR (Config Update)
+            // This is CRITICAL if the user needs to re-link after a token expires.
+            try {
+                const potentialConfig = JSON.parse(rawId);
+                if (potentialConfig.eventId && potentialConfig.apiBaseUrl) {
+                    // It's a setup QR!
+                    await handleSetup(rawId);
+                    return; // Stop ticket processing
+                }
+            } catch(e) {
+                // Not JSON, continue as ticket
+            }
+
+            // 2. Sanitize ID: If QR is a full URL, take the last part
+            let id = rawId;
+            try {
+                if (id.includes('http') || id.includes('/')) {
+                     // e.g. https://site.com/t/12345 -> 12345
+                     // e.g. /t/12345 -> 12345
+                     const parts = id.split('/');
+                     id = parts[parts.length - 1];
+                }
+            } catch(e) {}
 
             try {
                 const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 15000); // 15s Timeout for stability (increased for retry)
+                const timeout = setTimeout(() => controller.abort(), 15000); // 15s Timeout
 
                 markStart('API Network Request');
                 
-                // Use Retry Logic for Robustness
+                // Use Retry Logic
                 const res = await fetchWithRetry(`${config.apiBaseUrl}/api/scanner/update-ticket-status/${config.eventId}/${id}`, {
                     method: 'POST',
                     headers: { 
@@ -676,6 +696,11 @@
                 clearTimeout(timeout);
                 const duration = markEnd('API Network Request');
                 
+                // Handle Auth Errors Explicitly
+                if (res.status === 401 || res.status === 403) {
+                     throw new Error("Invalid Token"); 
+                }
+
                 markStart('Response Parse');
                 const data = await res.json();
                 markEnd('Response Parse');
@@ -688,7 +713,10 @@
                 // Sound Effect
                 soundManager.play('success');
                 
-                showResult('success', data.data?.attendeeName || "Valid Ticket", data.message);
+                let subMsg = data.message;
+                if (duration > 1500) subMsg += " (Slow Network)";
+
+                showResult('success', data.data?.attendeeName || "Valid Ticket", subMsg);
 
                 // Auto-dismiss with delay (1.5s) for better UX
                 resetState(1500);
@@ -698,10 +726,14 @@
                 if(navigator.vibrate) navigator.vibrate(300);
                 
                 const errorMsg = e.message ? e.message.toLowerCase() : "unknown error";
-                const isCheckedIn = errorMsg.includes('already checked');
-                const isLeave = errorMsg.includes('on leave');
                 
-                if (isCheckedIn) {
+                if (errorMsg.includes('session') || errorMsg.includes('token') || errorMsg.includes('forbidden') || errorMsg.includes('unauthorized')) {
+                     // Auth Error
+                     showResult('error', 'Link Expired', 'Please Re-scan Dashboard QR');
+                     soundManager.play('error');
+                     // We don't auto-clear config here to prevent annoying resets on temporary glitches,
+                     // but the message is clear.
+                } else if (errorMsg.includes('already checked')) {
                     showResult('warning', 'Already In', 'Ticket Used');
                     soundManager.play('warning');
                 } else if (errorMsg.includes('fetch') || errorMsg.includes('network')) {

@@ -235,7 +235,7 @@ const Dashboard = () => {
     // --- RENDER ---
     return (
         <Layout>
-            <header className="sticky top-4 z-30 mx-4 sm:mx-6 rounded-3xl border border-white/10 bg-slate-900/60 backdrop-blur-3xl px-6 py-4 flex justify-between items-center shadow-2xl mb-4">
+            <header className="sticky top-4 z-30 mx-2 sm:mx-6 rounded-3xl border border-white/10 bg-slate-900/60 backdrop-blur-3xl px-4 py-3 md:px-6 md:py-4 flex justify-between items-center shadow-2xl mb-4">
                 <div className="w-8 xl:hidden"></div>
 
                 <div className="flex items-center gap-4 overflow-hidden">
@@ -339,7 +339,7 @@ const Dashboard = () => {
                 )}
             </header>
 
-            <main className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar relative">
+            <main className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar relative">
                 <div className="fixed inset-0 pointer-events-none ambient-glow -z-10"></div>
 
                 <AnimatePresence mode="wait">
