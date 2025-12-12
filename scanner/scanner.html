@@ -266,7 +266,7 @@
             </div>
 
             <!-- Initialization Button -->
-            <button id="start-btn" onclick="startScanner()" class="w-full bg-white hover:bg-gray-100 active:bg-gray-200 text-black font-black text-lg py-4 rounded-2xl shadow-xl active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 mb-3">
+            <button id="start-btn" onclick="startScanner()" class="w-full bg-white hover:bg-gray-100 active:bg-gray-200 text-black font-black text-lg py-4 rounded-2xl shadow-xl active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 mb-3" disabled>
                 Initialize Camera
             </button>
             
@@ -346,6 +346,7 @@
             // 3. Final Init
             if (typeof Html5QrCode !== 'undefined') {
                 document.getElementById('start-btn').innerText = "Tap to Start";
+                document.getElementById('start-btn').disabled = false; // Enable button
                 loadConfig();
             } else {
                 showErrorButton();
@@ -454,17 +455,21 @@
                 };
 
                 // 4. Start
-                                                                await html5QrCode.start(
-                                                                    { facingMode: "environment" },
-                                                                    {
-                                                                        fps: 15, // Optimized
-                                                                        qrbox: getQrBoxSize,
-                                                                        disableFlip: false,
-                                                                        formatsToSupport: [ 0 ] // QR_CODE
-                                                                    },
-                                                                    onScan,
-                                                                    (err) => { /* Ignore frame errors */ }
-                                                                );                isCameraRunning = true;
+                                                                                await html5QrCode.start(
+                                                                                    {
+                                                                                        facingMode: "environment",
+                                                                                        width: { ideal: 1280 }, // Request 720p width
+                                                                                        height: { ideal: 720 }  // Request 720p height
+                                                                                    },
+                                                                                    {
+                                                                                        fps: 20, // Increased for faster scanning
+                                                                                        qrbox: getQrBoxSize,
+                                                                                        disableFlip: false,
+                                                                                        formatsToSupport: [ 0 ] // QR_CODE
+                                                                                    },
+                                                                                    onScan,
+                                                                                    (err) => { /* Ignore frame errors */ }
+                                                                                );                isCameraRunning = true;
                 btn.classList.add('hidden'); // Hide button
                 document.getElementById('scan-box').style.opacity = "1"; 
                 
