@@ -5,21 +5,21 @@
 :root {
     color-scheme: dark;
 
-    /* --- Design Tokens --- */
+    /* --- Pure Black & Grey Tokens --- */
     
     /* Backgrounds */
-    --bg-app: #020617; /* Slate 950 - Super Dark */
-    --bg-panel: rgba(15, 23, 42, 0.6); /* Slate 900 / 60% */
-    --bg-panel-hover: rgba(30, 41, 59, 0.7); /* Slate 800 / 70% */
+    --bg-app: #000000; /* Pure Black */
+    --bg-panel: #0a0a0a; /* Almost Black */
+    --bg-panel-hover: #171717; /* Very Dark Grey */
     
     /* Text */
-    --text-primary: #f8fafc; /* Slate 50 */
-    --text-secondary: #94a3b8; /* Slate 400 */
-    --text-muted: #64748b; /* Slate 500 */
+    --text-primary: #ededed; /* Near White */
+    --text-secondary: #a3a3a3; /* Neutral 400 */
+    --text-muted: #525252; /* Neutral 600 */
 
     /* Borders */
-    --border-subtle: rgba(255, 255, 255, 0.08);
-    --border-highlight: rgba(255, 255, 255, 0.15);
+    --border-subtle: #262626; /* Neutral 800 */
+    --border-highlight: #404040; /* Neutral 700 */
 
     /* Radii */
     --radius-panel: 1.5rem; /* rounded-3xl */
@@ -28,84 +28,115 @@
 
 body {
     background-color: var(--bg-app);
-    /* Subtle Rainbow Glow - Restored but refined */
-    background-image: 
-        radial-gradient(circle at 15% 50%, rgba(76, 29, 149, 0.08), transparent 25%),
-        radial-gradient(circle at 85% 30%, rgba(124, 58, 237, 0.08), transparent 25%),
-        radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.08), transparent 40%);
     color: var(--text-primary);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
 }
 
-/* Custom Scrollbar - Standard */
+/* Animated Radial Rainbow Glow Background */
+body::before {
+    content: "";
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 150vw;
+    height: 150vw;
+    background: radial-gradient(circle, 
+        rgba(255, 0, 0, 0.03) 0%, 
+        rgba(255, 154, 0, 0.03) 10%, 
+        rgba(208, 222, 33, 0.03) 20%, 
+        rgba(79, 220, 74, 0.03) 30%, 
+        rgba(63, 218, 216, 0.03) 40%, 
+        rgba(47, 201, 226, 0.03) 50%, 
+        rgba(28, 127, 238, 0.03) 60%, 
+        rgba(95, 21, 242, 0.03) 70%, 
+        rgba(186, 12, 248, 0.03) 80%, 
+        rgba(251, 7, 217, 0.03) 90%, 
+        transparent 100%
+    );
+    z-index: -1;
+    pointer-events: none;
+    animation: rotate-glow 60s linear infinite;
+    opacity: 0.8;
+}
+
+@keyframes rotate-glow {
+    0% { transform: translate(-50%, -50%) rotate(0deg); }
+    100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Custom Scrollbar - Grey */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: transparent;
+    background: #000;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: #333;
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: #555;
 }
 
 @layer components {
-    /* Floating Bento Box - Strong Shadow & Depth */
+    /* Pure Black/Grey Bento Box */
     .glass-panel, .card-panel {
-        background-color: var(--bg-panel);
+        background-color: rgba(10, 10, 10, 0.6); /* Translucent Black */
         border: 1px solid var(--border-subtle);
         border-radius: var(--radius-panel);
-        /* Strong Drop Shadow for Floating Effect */
+        /* Strong Drop Shadow */
         box-shadow: 
-            0 20px 40px -8px rgba(0, 0, 0, 0.5), /* Deep Shadow */
-            0 0 0 1px var(--border-subtle); /* Border Glow */
-        backdrop-filter: blur(24px); /* Progressive Blur Feel */
+            0 25px 50px -12px rgba(0, 0, 0, 1), /* Deep Black Shadow */
+            0 0 0 1px var(--border-subtle); 
+        backdrop-filter: blur(24px);
         -webkit-backdrop-filter: blur(24px);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s;
     }
     
     .glass-panel:hover {
+        border-color: var(--border-highlight);
         box-shadow: 
-            0 25px 50px -12px rgba(0, 0, 0, 0.6),
+            0 35px 60px -15px rgba(0, 0, 0, 1),
             0 0 0 1px var(--border-highlight);
-        transform: translateY(-2px); /* Slight Lift */
+        transform: translateY(-2px);
     }
     
-    /* Interactive Elements */
+    /* Interactive Elements (Grey) */
     .glass-interactive, .btn-interactive {
-        @apply relative bg-white/5 hover:bg-white/10 active:bg-white/5 border border-white/5 hover:border-white/20 transition-all duration-200 rounded-xl cursor-pointer backdrop-blur-md;
+        @apply relative bg-neutral-900 hover:bg-neutral-800 active:bg-neutral-900 border border-neutral-800 hover:border-neutral-700 transition-all duration-200 rounded-xl cursor-pointer;
     }
 
-    /* Standard Inputs */
+    /* Standard Inputs (Grey) */
     .glass-input, .input-standard {
-        @apply bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all outline-none backdrop-blur-sm;
+        @apply bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white placeholder-neutral-600 focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all outline-none;
     }
 
-    /* Distinct Button Colors */
+    /* Distinct Button Colors (Slightly Muted for Black Theme) */
     .btn-primary {
-        @apply bg-blue-600 hover:bg-blue-500 text-white font-bold shadow-lg shadow-blue-500/20 transition-all duration-200 rounded-xl border border-blue-400/20;
+        @apply bg-white text-black hover:bg-neutral-200 font-bold shadow-lg shadow-white/10 transition-all duration-200 rounded-xl border border-transparent;
     }
     
     .btn-success {
-        @apply bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20 transition-all duration-200 rounded-xl border border-emerald-400/20;
+        @apply bg-emerald-900/50 hover:bg-emerald-900/80 text-emerald-400 font-bold shadow-none transition-all duration-200 rounded-xl border border-emerald-800;
     }
     
     .btn-danger {
-        @apply bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 font-bold shadow-none transition-all duration-200 rounded-xl border border-red-500/30;
+        @apply bg-red-900/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 font-bold shadow-none transition-all duration-200 rounded-xl border border-red-900/50;
     }
     
     .btn-neutral {
-        @apply bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium shadow-md transition-all duration-200 rounded-xl border border-slate-700;
+        @apply bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-medium shadow-none transition-all duration-200 rounded-xl border border-neutral-700;
     }
     
     /* Status Dots */
@@ -115,6 +146,6 @@ body {
     
     /* Utility */
     .rainbow-text {
-        @apply text-white font-bold; /* Kept simple for now as requested by 'consistent spacing' prompt, but user asked for 'subtle rainbow glow' in background, not text. */
+        @apply text-white font-bold; 
     }
 }

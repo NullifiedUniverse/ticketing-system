@@ -67,37 +67,49 @@ const AnalyticsChart = ({ tickets }) => {
             <h3 className="text-gray-400 text-sm font-bold uppercase tracking-widest mb-6 pl-2 border-l-4 border-purple-500">{t('chartTitle')}</h3>
             
             <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data}>
+                <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
                     <defs>
                         <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3}/>
-                            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#ffffff" stopOpacity={0.1}/>
+                            <stop offset="95%" stopColor="#ffffff" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="rainbowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#ff0000">
+                                <animate attributeName="stop-color" values="#ff0000;#ffff00;#00ff00;#00ffff;#0000ff;#ff00ff;#ff0000" dur="10s" repeatCount="indefinite" />
+                            </stop>
+                            <stop offset="50%" stopColor="#00ff00">
+                                <animate attributeName="stop-color" values="#00ff00;#00ffff;#0000ff;#ff00ff;#ff0000;#ffff00;#00ff00" dur="10s" repeatCount="indefinite" />
+                            </stop>
+                            <stop offset="100%" stopColor="#0000ff">
+                                <animate attributeName="stop-color" values="#0000ff;#ff00ff;#ff0000;#ffff00;#00ff00;#00ffff;#0000ff" dur="10s" repeatCount="indefinite" />
+                            </stop>
                         </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
                     <XAxis 
                         dataKey="time" 
-                        stroke="#6b7280" 
-                        tick={{fill: '#9ca3af', fontSize: 12}} 
+                        stroke="#525252" 
+                        tick={{fill: '#a3a3a3', fontSize: 11}} 
                         tickLine={false}
                         axisLine={false}
+                        dy={10}
                     />
                     <YAxis 
-                        stroke="#6b7280" 
-                        tick={{fill: '#9ca3af', fontSize: 12}} 
+                        stroke="#525252" 
+                        tick={{fill: '#a3a3a3', fontSize: 11}} 
                         tickLine={false}
                         axisLine={false}
                         allowDecimals={false}
                     />
                     <Tooltip 
-                        contentStyle={{ backgroundColor: '#111827', borderColor: '#374151', borderRadius: '12px', color: '#fff' }}
-                        itemStyle={{ color: '#a78bfa' }}
+                        contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#262626', borderRadius: '12px', color: '#fff' }}
+                        itemStyle={{ color: '#fff' }}
                         cursor={{ stroke: '#ffffff20', strokeWidth: 2 }}
                     />
                     <Area 
                         type="monotone" 
                         dataKey="count" 
-                        stroke="#8b5cf6" 
+                        stroke="url(#rainbowGradient)" 
                         strokeWidth={3}
                         fillOpacity={1} 
                         fill="url(#colorCount)" 
