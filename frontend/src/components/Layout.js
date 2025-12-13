@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Modal from './Modal';
 import PageTransition from './PageTransition';
@@ -11,6 +11,7 @@ const Layout = ({ children }) => {
     const { eventId, selectEvent, triggerRefresh, fetchEvents } = useEvent();
     const { modalContent, hideModal, showErrorModal, showPromptModal, showConfirmModal, showModal } = useModal();
     const { t } = useLanguage();
+    const [isCollapsed, setIsCollapsed] = useState(false);
     
     const handleNewEvent = () => {
         showPromptModal(t('modalPromptTitle'), 'Enter a unique ID for the new event (e.g., concert-2025).', async (newEventId) => {
@@ -78,9 +79,13 @@ const Layout = ({ children }) => {
                 onNewEvent={handleNewEvent} 
                 onDeleteEvent={handleDeleteEvent}
                 onRaffle={handleRaffle}
+                isCollapsed={isCollapsed}
+                toggleCollapse={() => setIsCollapsed(!isCollapsed)}
             />
 
-            <div className="flex-1 flex flex-col min-w-0 relative xl:ml-72 transition-all duration-300 h-full">
+            <div 
+                className={`flex-1 flex flex-col min-w-0 relative transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] h-full ${isCollapsed ? 'xl:ml-24' : 'xl:ml-80'}`}
+            >
                 <PageTransition>
                     {children}
                 </PageTransition>
