@@ -7,7 +7,7 @@ import { getTickets, sendTicketEmail, sendBatchEmails } from '../services/api';
 import { useModal } from '../hooks/useModal';
 import { useEvent } from '../context/EventContext';
 import { useLanguage } from '../context/LanguageContext';
-import { buttonClick, containerStagger, fadeInUp, EASING } from '../utils/animations';
+import { containerStagger, fadeInUp, EASING } from '../utils/animations';
 
 const EmailDashboard = () => {
     const { eventId } = useEvent();

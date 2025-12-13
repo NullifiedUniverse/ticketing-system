@@ -1,26 +1,39 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from './Layout';
-import DashboardStats from './DashboardStats';
-import AnalyticsChart from './AnalyticsChart';
 import CreateTicket from './CreateTicket';
 import TicketList from './TicketList';
 import LiveIndicator from './LiveIndicator';
 import Modal from './Modal';
 import BentoCard from './BentoCard';
+import Skeleton from './Skeleton';
 import { getScannerToken, getNgrokUrl, getAlerts } from '../services/api';
 import { useTickets } from '../hooks/useTickets';
 import { useModal } from '../hooks/useModal';
+import { useDashboardPreferences } from '../hooks/useDashboardPreferences';
 import { useEvent } from '../context/EventContext';
 import { useLanguage } from '../context/LanguageContext';
 import { parseCSV } from '../utils/csvParser';
 import { bentoBounce, buttonClick, containerStagger, fadeInUp } from '../utils/animations';
 
+const DashboardStats = lazy(() => import('./DashboardStats'));
+const AnalyticsChart = lazy(() => import('./AnalyticsChart'));
+
 const Dashboard = () => {
-    const { modalContent, showModal, hideModal, showErrorModal, showConfirmModal, showPromptModal, showQrCodeModal } = useModal();
+    const { modalContent, showModal, hideModal, showErrorModal, showConfirmModal, showQrCodeModal } = useModal();
     const { eventId } = useEvent(); 
     const { t } = useLanguage();
     
+    // Preferences Hook
+    const { 
+        layout, 
+        setLayout, 
+        searchHistory, 
+        addToSearchHistory, 
+        actionStats, 
+        trackAction 
+    } = useDashboardPreferences();
+
     // Alert Polling State
     const [lastAlertTime, setLastAlertTime] = useState(Date.now());
 
@@ -64,58 +77,27 @@ const Dashboard = () => {
         stats
     } = useTickets(eventId, showErrorModal);
     
-    // Search & History
+    // Search State
     const [searchTerm, setSearchTerm] = useState('');
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-    const [searchHistory, setSearchHistory] = useState(() => {
-        return JSON.parse(localStorage.getItem('searchHistory') || '[]');
-    });
     const [showSearchHistory, setShowSearchHistory] = useState(false);
-
-    // Layout Customization State
-    const [layout, setLayout] = useState(() => {
-        const saved = localStorage.getItem('dashboardLayout');
-        return saved ? JSON.parse(saved) : { stats: true, chart: true };
-    });
     const [isEditing, setIsEditing] = useState(false);
-
-    // Adaptive Actions State
-    const [actionStats, setActionStats] = useState(() => {
-        return JSON.parse(localStorage.getItem('actionStats') || '{}');
-    });
-
-    useEffect(() => {
-        localStorage.setItem('dashboardLayout', JSON.stringify(layout));
-    }, [layout]);
 
     // Debounce Search Term
     useEffect(() => {
         const handler = setTimeout(() => {
             setDebouncedSearchTerm(searchTerm);
             if (searchTerm.trim().length > 2) {
-                setSearchHistory(prev => {
-                    const newHistory = [searchTerm, ...prev.filter(s => s !== searchTerm)].slice(0, 5);
-                    localStorage.setItem('searchHistory', JSON.stringify(newHistory));
-                    return newHistory;
-                });
+                addToSearchHistory(searchTerm);
             }
-        }, 150); // 150ms delay for snappier feel
+        }, 150);
 
         return () => {
             clearTimeout(handler);
         };
-    }, [searchTerm]);
+    }, [searchTerm, addToSearchHistory]);
 
-    const trackAction = (actionName) => {
-        const newStats = { ...actionStats, [actionName]: (actionStats[actionName] || 0) + 1 };
-        setActionStats(newStats);
-        localStorage.setItem('actionStats', JSON.stringify(newStats));
-    };
-
-    const getTopAction = () => {
-        return Object.keys(actionStats).reduce((a, b) => actionStats[a] > actionStats[b] ? a : b, null);
-    };
-    const topAction = getTopAction();
+    // const topAction = getTopAction(); // Unused
 
     const handleTicketCreatedAndShowQR = (result) => {
         handleTicketCreated(result);
@@ -410,7 +392,9 @@ const Dashboard = () => {
                                         animate="visible" 
                                         exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
                                     >
-                                        <DashboardStats stats={stats} />
+                                        <Suspense fallback={<Skeleton height="120px" className="rounded-3xl" />}>
+                                            <DashboardStats stats={stats} />
+                                        </Suspense>
                                     </motion.section>
                                 )}
                             </AnimatePresence>
@@ -424,7 +408,9 @@ const Dashboard = () => {
                                         animate="visible" 
                                         exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
                                     >
-                                        <AnalyticsChart tickets={tickets} />
+                                        <Suspense fallback={<Skeleton height="300px" className="rounded-3xl" />}>
+                                            <AnalyticsChart tickets={tickets} />
+                                        </Suspense>
                                     </motion.section>
                                 )}
                             </AnimatePresence>
