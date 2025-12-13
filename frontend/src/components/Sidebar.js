@@ -34,34 +34,30 @@ const Sidebar = ({ onNewEvent, onDeleteEvent, onRaffle }) => {
                 </motion.button>
             </div>
 
-            {/* Sidebar Container - Desktop (Floating Dock) & Mobile (Drawer) */}
-            {/* We handle mobile visibility via CSS transform for performance, but can use motion for the internal list */}
+            {/* Sidebar Container - Desktop (Fixed) & Mobile (Drawer) */}
             <div 
-                className={`fixed z-50 w-72 bg-gradient-to-b from-slate-900/80 to-slate-950/80 backdrop-blur-2xl border border-white/10 shadow-2xl transform transition-all duration-300 ease-out xl:translate-x-0 xl:top-4 xl:left-4 xl:bottom-4 xl:rounded-[2.5rem] inset-y-0 left-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
+                className={`fixed z-50 w-72 bg-slate-900 border-r border-slate-800 shadow-xl transform transition-transform duration-300 ease-out inset-y-0 left-0 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full xl:translate-x-0'}`}
             >
                 <div className="p-6 flex flex-col h-full relative overflow-hidden">
-                    {/* Decorative Gradient Blob */}
-                    <div className="absolute top-0 left-0 w-full h-32 bg-violet-600/10 blur-3xl -z-10 pointer-events-none"></div>
-
                     <motion.div 
                         initial={{ opacity: 0, y: -10 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         className="mb-8 mt-2 flex justify-between items-center"
                     >
-                        <h1 className="text-2xl font-bold flex items-center gap-2 cursor-pointer" onClick={() => window.location.hash = ''}>
-                            <span className="w-8 h-8 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-pink-500 rounded-lg flex items-center justify-center text-lg shadow-lg shadow-violet-500/20">🎫</span>
-                            <span className="rainbow-text font-extrabold tracking-tight">{t('appTitle')}</span>
+                        <h1 className="text-xl font-bold flex items-center gap-3 cursor-pointer text-white" onClick={() => window.location.hash = ''}>
+                            <span className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-lg shadow-md text-white">🎫</span>
+                            <span className="tracking-tight">{t('appTitle')}</span>
                         </h1>
                     </motion.div>
                     
                     {/* Language Toggle */}
                     <SmartButton 
-                        variant="glass"
+                        variant="secondary"
                         onClick={cycleLanguage}
                         className="mb-6 w-full py-2 px-3 text-xs font-bold text-slate-400 uppercase tracking-wider justify-between group"
                     >
                         <span>Language</span>
-                        <span className="text-white group-hover:text-violet-300 transition-colors">{language === 'en' ? '🇺🇸 EN' : '🇹🇼 TW'}</span>
+                        <span className="text-white group-hover:text-blue-300 transition-colors">{language === 'en' ? '🇺🇸 EN' : '🇹🇼 TW'}</span>
                     </SmartButton>
 
                     <div className="flex-grow overflow-y-auto pr-2 custom-scrollbar">
@@ -98,18 +94,18 @@ const Sidebar = ({ onNewEvent, onDeleteEvent, onRaffle }) => {
                                             {isActive && (
                                                 <motion.div
                                                     layoutId="activeEventBackground"
-                                                    className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent border border-white/10 rounded-xl shadow-lg backdrop-blur-sm"
+                                                    className="absolute inset-0 bg-slate-800 border border-slate-700 rounded-lg shadow-sm"
                                                     initial={false}
-                                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                                    transition={{ duration: 0.2 }}
                                                 />
                                             )}
 
                                             {isActive && (
                                                 <motion.div 
                                                     layoutId="activeEventIndicator"
-                                                    className="absolute left-0 top-0 bottom-0 my-auto w-1 h-6 bg-gradient-to-b from-violet-500 via-fuchsia-500 to-pink-500 rounded-r-full shadow-[0_0_15px_rgba(168,85,247,0.6)]"
+                                                    className="absolute left-0 top-0 bottom-0 my-auto w-1 h-6 bg-blue-500 rounded-r-full"
                                                     initial={false}
-                                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                                    transition={{ duration: 0.2 }}
                                                 />
                                             )}
 
@@ -126,7 +122,7 @@ const Sidebar = ({ onNewEvent, onDeleteEvent, onRaffle }) => {
                                                 e.stopPropagation();
                                                 onDeleteEvent(event.id);
                                             }}
-                                            className="absolute right-2 z-20 p-2 text-slate-500 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-white/10 rounded-lg"
+                                            className="absolute right-2 z-20 p-2 text-slate-500 opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-slate-700 rounded-lg"
                                             title="Delete Event"
                                         >
                                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -151,19 +147,19 @@ const Sidebar = ({ onNewEvent, onDeleteEvent, onRaffle }) => {
                                 </h3>
                                 <div className="grid grid-cols-2 gap-2">
                                     <SmartButton 
-                                        variant="glass"
+                                        variant="secondary"
                                         onClick={onRaffle}
                                         className="p-3 h-20 flex-col gap-2"
                                     >
-                                        <div className="text-xl group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">🎲</div>
+                                        <div className="text-xl group-hover:scale-110 transition-transform duration-300">🎲</div>
                                         <div className="text-[10px] text-slate-400 font-medium">{t('raffle')}</div>
                                     </SmartButton>
                                     <SmartButton 
-                                        variant="glass"
+                                        variant="secondary"
                                         onClick={() => window.location.hash = '#email'}
                                         className="p-3 h-20 flex-col gap-2"
                                     >
-                                        <div className="text-xl group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]">✉️</div>
+                                        <div className="text-xl group-hover:scale-110 transition-transform duration-300">✉️</div>
                                         <div className="text-[10px] text-slate-400 font-medium">{t('email')}</div>
                                     </SmartButton>
                                 </div>
@@ -171,9 +167,10 @@ const Sidebar = ({ onNewEvent, onDeleteEvent, onRaffle }) => {
                         )}
                     </div>
 
-                    <div className="mt-auto pt-6 border-t border-white/5">
+                    <div className="mt-auto pt-6 border-t border-slate-800">
                         <SmartButton
                             onClick={onNewEvent}
+                            variant="primary"
                             className="w-full py-3.5 px-4 shadow-lg"
                         >
                             <span className="text-xl font-light relative z-10 leading-none pb-1">+</span>

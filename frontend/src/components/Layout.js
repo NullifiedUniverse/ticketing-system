@@ -78,10 +78,9 @@ const Layout = ({ children }) => {
                 onNewEvent={handleNewEvent} 
                 onDeleteEvent={handleDeleteEvent}
                 onRaffle={handleRaffle}
-                refreshTrigger={0} 
             />
 
-            <div className="flex-1 flex flex-col min-w-0 relative xl:ml-80 transition-all duration-300 h-full">
+            <div className="flex-1 flex flex-col min-w-0 relative xl:ml-72 transition-all duration-300 h-full">
                 <PageTransition>
                     {children}
                 </PageTransition>
