@@ -49,13 +49,13 @@ const SmartButton = ({
     };
 
     // Styles
-    const baseClasses = "w-full py-3.5 px-4 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 shadow-sm relative overflow-hidden focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:outline-none";
+    const baseClasses = "w-full py-3.5 px-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg relative overflow-hidden focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:outline-none";
     
     const variants = {
-        primary: "btn-primary focus:ring-blue-500",
-        glass: "btn-interactive text-slate-200 hover:text-white focus:ring-slate-500",
-        danger: "bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 focus:ring-red-500",
-        secondary: "bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 focus:ring-slate-500"
+        primary: "btn-primary",
+        glass: "glass-interactive text-slate-200 hover:text-white",
+        danger: "btn-danger",
+        secondary: "btn-neutral"
     };
 
     const activeClass = variants[variant] || variants.primary;

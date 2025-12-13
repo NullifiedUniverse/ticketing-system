@@ -216,11 +216,11 @@ const Dashboard = () => {
     // --- RENDER ---
     return (
         <Layout>
-            <header className="sticky top-4 z-30 mx-4 sm:mx-6 rounded-xl border border-slate-700 bg-slate-800/90 backdrop-blur-md px-6 py-4 flex justify-between items-center shadow-sm mb-6">
+            <header className="sticky top-6 z-30 mx-6 rounded-2xl glass-panel px-8 py-5 flex justify-between items-center mb-8">
                 <div className="w-8 xl:hidden"></div>
 
                 <div className="flex items-center gap-4 overflow-hidden">
-                        <h2 className="text-lg font-semibold text-white truncate flex items-center gap-2">
+                        <h2 className="text-xl font-bold text-white truncate flex items-center gap-3">
                         {eventId ? (
                             <>
                                 <span className="text-slate-400 text-xs hidden sm:inline uppercase tracking-widest font-bold">{t('headerEvent')}</span>
