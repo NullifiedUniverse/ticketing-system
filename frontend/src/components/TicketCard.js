@@ -25,14 +25,10 @@ const TicketCard = ({ ticket, index, onCheckIn, onShowQR, onEdit, onDelete }) =>
                 <StatusBadge status={ticket.status} />
             </div>
 
-            <div className="pl-3 mb-5">
-                 <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest selectable">ID: {ticket.id}</p>
-            </div>
-
-            <div className="flex gap-3 pl-3 pb-1">
+            <div className="flex gap-3 pl-3 pb-1 mt-4">
                 <button 
                     onClick={() => onShowQR(ticket.id, ticket.attendeeName)}
-                    className="flex-1 glass-interactive text-slate-300 hover:text-white text-sm font-semibold py-2.5 px-4 rounded-xl whitespace-nowrap"
+                    className="flex-1 btn-neutral py-2.5 px-4 text-sm whitespace-nowrap"
                     aria-label="View QR Code"
                 >
                     QR Code
@@ -41,7 +37,7 @@ const TicketCard = ({ ticket, index, onCheckIn, onShowQR, onEdit, onDelete }) =>
                 {ticket.status !== 'checked-in' && (
                     <button 
                         onClick={() => onCheckIn(ticket)}
-                        className="flex-1 animated-gradient-bg text-white text-sm font-bold py-2.5 px-4 rounded-xl whitespace-nowrap"
+                        className="flex-1 btn-success py-2.5 px-4 text-sm whitespace-nowrap"
                         aria-label="Check In"
                     >
                         Check In
@@ -51,7 +47,7 @@ const TicketCard = ({ ticket, index, onCheckIn, onShowQR, onEdit, onDelete }) =>
                 <div className="flex gap-2">
                     <button 
                         onClick={() => onEdit(ticket)}
-                        className="glass-interactive w-10 flex items-center justify-center rounded-xl text-sky-400 hover:text-sky-300"
+                        className="btn-neutral w-10 flex items-center justify-center text-sky-400 hover:text-sky-300"
                         aria-label="Edit Ticket"
                     >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
@@ -59,7 +55,7 @@ const TicketCard = ({ ticket, index, onCheckIn, onShowQR, onEdit, onDelete }) =>
                     
                     <button 
                         onClick={() => onDelete(ticket)}
-                        className="glass-interactive w-10 flex items-center justify-center rounded-xl text-rose-400 hover:text-rose-300"
+                        className="btn-neutral w-10 flex items-center justify-center text-rose-400 hover:text-rose-300"
                         aria-label="Delete Ticket"
                     >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>

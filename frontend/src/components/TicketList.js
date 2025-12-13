@@ -117,7 +117,6 @@ const TicketList = ({ filteredTickets, isLoading, searchTerm, setSearchTerm, onC
                                 <th className="p-4 font-semibold rounded-tl-lg w-16">#</th>
                                 <th className="p-4 font-semibold">{t('colStatus')}</th>
                                 <th className="p-4 font-semibold">{t('colAttendee')}</th>
-                                <th className="p-4 font-semibold">{t('colTicketId')}</th>
                                 <th className="p-4 text-right font-semibold rounded-tr-lg">{t('colActions')}</th>
                             </tr>
                         </thead>

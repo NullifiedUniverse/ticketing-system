@@ -23,7 +23,6 @@ const TicketRow = memo(({ ticket, index, onCheckIn, onShowQR, onEdit, onDelete }
             {ticket.attendeeName}<br />
             <span className="text-slate-500 text-sm selectable">{ticket.attendeeEmail}</span>
         </td>
-        <td className="p-4 text-slate-600 text-xs font-mono uppercase tracking-wider selectable">{ticket.id.substring(0, 8)}...</td>
         <td className="p-4 text-right">
             <div className="flex items-center justify-end gap-2">
                 <motion.button

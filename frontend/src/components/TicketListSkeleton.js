@@ -16,7 +16,6 @@ const TicketListSkeleton = () => {
                 <Skeleton height="16px" width="60px" />
                 <Skeleton height="16px" width="100px" />
                 <Skeleton height="16px" width="80px" />
-                <Skeleton height="16px" width="80px" />
             </div>
 
             {/* Rows */}
