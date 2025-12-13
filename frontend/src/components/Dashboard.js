@@ -30,7 +30,6 @@ const Dashboard = () => {
         setLayout, 
         searchHistory, 
         addToSearchHistory, 
-        actionStats, 
         trackAction 
     } = useDashboardPreferences();
 
@@ -217,15 +216,15 @@ const Dashboard = () => {
     // --- RENDER ---
     return (
         <Layout>
-            <header className="sticky top-4 z-30 mx-2 sm:mx-6 rounded-3xl border border-white/10 bg-slate-900/60 backdrop-blur-3xl px-4 py-3 md:px-6 md:py-4 flex justify-between items-center shadow-2xl mb-4">
+            <header className="sticky top-4 z-30 mx-4 sm:mx-6 rounded-xl border border-slate-700 bg-slate-800/90 backdrop-blur-md px-6 py-4 flex justify-between items-center shadow-sm mb-6">
                 <div className="w-8 xl:hidden"></div>
 
                 <div className="flex items-center gap-4 overflow-hidden">
-                        <h2 className="text-xl font-semibold text-white truncate flex items-center gap-2">
+                        <h2 className="text-lg font-semibold text-white truncate flex items-center gap-2">
                         {eventId ? (
                             <>
                                 <span className="text-slate-400 text-xs hidden sm:inline uppercase tracking-widest font-bold">{t('headerEvent')}</span>
-                                <span className="rainbow-text text-2xl">{eventId}</span>
+                                <span className="text-white text-xl">{eventId}</span>
                             </>
                         ) : (
                             <span className="text-slate-500 italic">{t('headerSelect')}</span>
@@ -248,7 +247,7 @@ const Dashboard = () => {
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     onFocus={() => setShowSearchHistory(true)}
                                     onBlur={() => setTimeout(() => setShowSearchHistory(false), 200)}
-                                    className="glass-input pl-9 pr-4 py-2 w-48 focus:w-64 transition-all text-sm rounded-xl"
+                                    className="glass-input pl-9 pr-4 py-2 w-48 focus:w-64 transition-all text-sm rounded-lg"
                                 />
                                 <AnimatePresence>
                                     {showSearchHistory && searchHistory.length > 0 && (
@@ -256,7 +255,7 @@ const Dashboard = () => {
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: 10 }}
-                                            className="absolute top-full left-0 right-0 mt-2 bg-slate-900 border border-white/10 rounded-xl shadow-xl overflow-hidden z-50"
+                                            className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden z-50"
                                         >
                                             <div className="p-2">
                                                 <div className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1 px-2">Recent</div>
@@ -264,7 +263,7 @@ const Dashboard = () => {
                                                     <button
                                                         key={i}
                                                         onClick={() => setSearchTerm(term)}
-                                                        className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2"
+                                                        className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 rounded transition-colors flex items-center gap-2"
                                                     >
                                                         <span className="text-slate-500">↺</span> {term}
                                                     </button>
@@ -280,7 +279,7 @@ const Dashboard = () => {
                                 whileHover="hover"
                                 whileTap="tap"
                                 onClick={() => setIsEditing(!isEditing)}
-                                className={`glass-interactive px-4 py-2 text-sm font-medium transition-colors rounded-xl flex items-center gap-2 ${isEditing ? 'bg-white/20 text-white' : 'text-slate-300 hover:text-white'}`}
+                                className={`glass-interactive px-4 py-2 text-sm font-medium transition-colors rounded-lg flex items-center gap-2 ${isEditing ? 'bg-slate-700 text-white' : 'text-slate-300 hover:text-white'}`}
                                 title="Customize Dashboard"
                             >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
@@ -301,7 +300,7 @@ const Dashboard = () => {
                                         }
                                     } catch(e) { console.error(e); }
                                 }}
-                                className="glass-interactive px-4 py-2 text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2 shadow-lg"
+                                className="glass-interactive px-4 py-2 text-sm font-medium text-slate-300 hover:text-white flex items-center gap-2 shadow-sm"
                                 title={t('copyScannerLink')}
                             >
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
@@ -312,7 +311,7 @@ const Dashboard = () => {
                                 whileHover="hover"
                                 whileTap="tap"
                                 onClick={generateSetupQR}
-                                className="animated-gradient-bg px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2"
+                                className="animated-gradient-bg px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
                             >
                                 <span className="text-lg">📱</span>
                                 <span className="hidden sm:inline">{t('qaScanner')}</span>
@@ -321,9 +320,7 @@ const Dashboard = () => {
                 )}
             </header>
 
-            <main className="flex-1 overflow-y-auto p-4 md:p-10 custom-scrollbar relative">
-                <div className="fixed inset-0 pointer-events-none ambient-glow -z-10"></div>
-
+            <main className="flex-1 overflow-y-auto p-6 md:p-10 custom-scrollbar relative">
                 <AnimatePresence mode="wait">
                     {!eventId ? (
                         <motion.div 

@@ -1,138 +1,99 @@
-// Standardized Animation Variants for Null's Board - Enhanced Physics
+// Standardized Professional Animations (Reduced Motion)
 
 export const EASING = {
-    gentle: [0.4, 0, 0.2, 1],
-    bouncy: [0.34, 1.56, 0.64, 1], 
-    spring: { type: "spring", stiffness: 400, damping: 25, mass: 1 }, // Snappier Spring
-    smooth: [0.25, 0.1, 0.25, 1.0] 
+    standard: [0.4, 0.0, 0.2, 1], // Standard Ease
+    smooth: [0.25, 0.1, 0.25, 1.0]
 };
 
-// Container Stagger (Optimized for lists)
+// Container Stagger
 export const containerStagger = {
     hidden: { opacity: 0 },
     visible: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.05,
-            delayChildren: 0.02,
-            ease: EASING.gentle
+            staggerChildren: 0.03,
+            delayChildren: 0.01,
+            ease: "easeOut"
         }
     },
     exit: { 
         opacity: 0, 
-        transition: { duration: 0.2 } 
+        transition: { duration: 0.15 } 
     }
 };
 
-// Page / Section Entry
+// Page Entry (Simple Fade)
 export const pageEntry = {
-    hidden: { opacity: 0, y: 20, scale: 0.98 },
+    hidden: { opacity: 0 },
     visible: { 
         opacity: 1, 
-        y: 0, 
-        scale: 1,
-        transition: { ...EASING.spring, delay: 0.1 }
+        transition: { duration: 0.3, ease: "easeOut" }
     },
     exit: { 
         opacity: 0, 
-        y: -20, 
-        scale: 0.98,
-        transition: { duration: 0.2 } 
+        transition: { duration: 0.15 } 
     }
 };
 
-// Item Entry (Fade Up)
+// Item Entry (Simple Fade Up)
 export const fadeInUp = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 10 },
     visible: { 
         opacity: 1, 
         y: 0,
-        transition: EASING.spring
+        transition: { duration: 0.25, ease: "easeOut" }
     },
     exit: { 
         opacity: 0, 
-        y: -10, 
-        scale: 0.95,
-        transition: { duration: 0.15 } 
+        transition: { duration: 0.1 } 
     }
 };
 
-// Table Row Entry (Optimized for performance)
-export const rowEntry = {
-    hidden: { opacity: 0, x: -15 },
-    visible: { 
-        opacity: 1, 
-        x: 0,
-        transition: { type: "spring", stiffness: 500, damping: 30 } 
-    },
-    exit: { 
-        opacity: 0, 
-        x: 15, 
-        transition: { duration: 0.15 } 
-    }
-};
+// Table Row Entry
+export const rowEntry = fadeInUp;
 
-// Button Micro-interactions (Subtle & Satisfying)
+// Button (Minimal feedback, rely on CSS)
 export const buttonClick = {
     rest: { scale: 1 },
-    hover: { 
-        scale: 1.05, 
-        filter: "brightness(1.1)",
-        transition: { ...EASING.spring, stiffness: 400, damping: 15 } 
-    },
-    tap: { 
-        scale: 0.95, 
-        filter: "brightness(0.9)",
-        transition: { duration: 0.05 } 
-    }
+    hover: { scale: 1 },
+    tap: { scale: 0.98, transition: { duration: 0.05 } }
 };
 
-// Interactive Card Hover (Lift & Glow)
+// Card Hover (Subtle border/bg change via CSS preferred, this is minimal)
 export const cardHover = {
-    rest: { y: 0, boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" },
+    rest: { y: 0 },
     hover: { 
-        y: -6, 
-        boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 0 15px rgba(59, 130, 246, 0.2)", // Rainbow Blue hint
-        transition: { duration: 0.3, ease: EASING.smooth }
+        y: -2, 
+        transition: { duration: 0.2, ease: "easeOut" }
     }
 };
 
-// Bento Card Bounce (Tactile Physics)
+// Standard Card Entry (Replaces BentoBounce)
 export const bentoBounce = {
-    hidden: { opacity: 0, scale: 0.9, y: 20 },
+    hidden: { opacity: 0, y: 10 },
     visible: { 
         opacity: 1, 
-        scale: 1, 
         y: 0,
-        transition: { ...EASING.spring, stiffness: 350, damping: 20 } 
+        transition: { duration: 0.3, ease: "easeOut" }
     },
-    hover: { 
-        scale: 1.03,
-        y: -4,
-        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
-        zIndex: 10,
-        transition: { type: "spring", stiffness: 400, damping: 15 }
-    },
-    tap: { scale: 0.97 },
-    exit: { opacity: 0, scale: 0.9, transition: { duration: 0.2 } }
+    exit: { opacity: 0, transition: { duration: 0.15 } }
 };
 
-// Sidebar Drawer (Smooth)
+// Sidebar Drawer
 export const sidebarDrawer = {
     closed: { x: "-100%", opacity: 0 },
     open: { 
         x: 0, 
         opacity: 1,
-        transition: { ...EASING.spring, damping: 25 }
+        transition: { duration: 0.3, ease: "easeOut" }
     },
     exit: { x: "-100%", opacity: 0, transition: { duration: 0.2 } }
 };
 
-// Pulse Effect (for loading/waiting)
+// Pulse (Subtle)
 export const pulseEffect = {
     animate: {
-        opacity: [0.6, 1, 0.6],
-        scale: [0.98, 1.02, 0.98],
+        opacity: [0.8, 1, 0.8],
         transition: { duration: 2, repeat: Infinity, ease: "easeInOut" }
     }
 };

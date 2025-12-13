@@ -63,16 +63,13 @@ const BentoCard = ({
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
                         className="flex-1 p-6 pt-2 z-10"
                     >
                         {children}
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* Decorative Background Glow (Optional, can be passed or built-in) */}
-            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-gradient-to-tr from-white/5 to-transparent rounded-full blur-3xl pointer-events-none -z-0"></div>
         </motion.div>
     );
 };
