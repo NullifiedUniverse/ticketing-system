@@ -5,25 +5,40 @@
 :root {
     color-scheme: dark;
 
-    /* --- Pure Black & Grey Tokens --- */
+    /* --- Theme: Pure Black & Deep Cosmos --- */
     
-    /* Backgrounds */
-    --bg-app: #000000; /* Pure Black */
-    --bg-panel: #0a0a0a; /* Almost Black */
-    --bg-panel-hover: #171717; /* Very Dark Grey */
-    
-    /* Text */
-    --text-primary: #ededed; /* Near White */
-    --text-secondary: #a3a3a3; /* Neutral 400 */
-    --text-muted: #525252; /* Neutral 600 */
+    /* Core Backgrounds */
+    --bg-app: #000000;
+    --bg-surface-1: #050505; /* Panel Base */
+    --bg-surface-2: #0a0a0a; /* Panel Hover / Input */
+    --bg-surface-3: #171717; /* Highlight */
+
+    /* Text Colors */
+    --text-primary: #ffffff;
+    --text-secondary: #a1a1aa; /* Neutral 400 */
+    --text-tertiary: #52525b; /* Neutral 600 */
 
     /* Borders */
-    --border-subtle: #262626; /* Neutral 800 */
-    --border-highlight: #404040; /* Neutral 700 */
+    --border-subtle: #18181b; /* Neutral 900 */
+    --border-medium: #27272a; /* Neutral 800 */
+    --border-bright: #3f3f46; /* Neutral 700 */
 
-    /* Radii */
-    --radius-panel: 1.5rem; /* rounded-3xl */
-    --radius-button: 0.75rem; /* rounded-xl */
+    /* Brand / Accent Colors */
+    --color-accent-blue: #3b82f6;
+    --color-accent-purple: #8b5cf6;
+    --color-accent-pink: #ec4899;
+    
+    /* Semantic Colors */
+    --color-success: #10b981;
+    --color-danger: #ef4444;
+    --color-warning: #f59e0b;
+
+    /* Dimensions */
+    --radius-panel: 1.5rem;
+    --radius-button: 0.75rem;
+    
+    /* Transitions */
+    --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 body {
@@ -37,115 +52,184 @@ body {
     min-height: 100vh;
 }
 
-/* Animated Radial Rainbow Glow Background */
+/* --- Animated Rainbow Glow Background --- */
 body::before {
+    content: "";
+    position: fixed;
+    inset: -50%; /* Extend well beyond viewport to cover rotation */
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+        from 0deg, 
+        rgba(255, 0, 0, 0.05), 
+        rgba(255, 165, 0, 0.05), 
+        rgba(255, 255, 0, 0.05), 
+        rgba(0, 128, 0, 0.05), 
+        rgba(0, 0, 255, 0.05), 
+        rgba(75, 0, 130, 0.05), 
+        rgba(238, 130, 238, 0.05), 
+        rgba(255, 0, 0, 0.05)
+    );
+    /* Radial mask to soften the edges and center the glow */
+    mask-image: radial-gradient(circle at center, black 0%, transparent 60%);
+    -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 60%);
+    
+    z-index: -1;
+    pointer-events: none;
+    animation: rotate-glow 40s linear infinite;
+    will-change: transform;
+    transform: translateZ(0); /* Hardware Acceleration */
+}
+
+/* Secondary static glow for depth */
+body::after {
     content: "";
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 150vw;
-    height: 150vw;
-    background: radial-gradient(circle, 
-        rgba(255, 0, 0, 0.03) 0%, 
-        rgba(255, 154, 0, 0.03) 10%, 
-        rgba(208, 222, 33, 0.03) 20%, 
-        rgba(79, 220, 74, 0.03) 30%, 
-        rgba(63, 218, 216, 0.03) 40%, 
-        rgba(47, 201, 226, 0.03) 50%, 
-        rgba(28, 127, 238, 0.03) 60%, 
-        rgba(95, 21, 242, 0.03) 70%, 
-        rgba(186, 12, 248, 0.03) 80%, 
-        rgba(251, 7, 217, 0.03) 90%, 
-        transparent 100%
-    );
+    width: 80vw;
+    height: 80vw;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.03), transparent 70%);
     z-index: -1;
     pointer-events: none;
-    animation: rotate-glow 60s linear infinite;
-    opacity: 0.8;
 }
 
 @keyframes rotate-glow {
-    0% { transform: translate(-50%, -50%) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) rotate(360deg); }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-/* Custom Scrollbar - Grey */
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
 }
-
 ::-webkit-scrollbar-track {
-    background: #000;
+    background: var(--bg-app);
 }
-
 ::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 4px;
+    background: var(--border-medium);
+    border-radius: 99px;
+    transition: background 0.2s;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: var(--border-bright);
 }
 
 @layer components {
-    /* Pure Black/Grey Bento Box */
+    /* --- Component Classes --- */
+
+    /* Panels (Bento) */
     .glass-panel, .card-panel {
-        background-color: rgba(10, 10, 10, 0.6); /* Translucent Black */
+        background-color: rgba(5, 5, 5, 0.7); /* Deep transparency */
         border: 1px solid var(--border-subtle);
         border-radius: var(--radius-panel);
-        /* Strong Drop Shadow */
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         box-shadow: 
-            0 25px 50px -12px rgba(0, 0, 0, 1), /* Deep Black Shadow */
-            0 0 0 1px var(--border-subtle); 
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
-        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s;
+            0 0 0 1px rgba(255, 255, 255, 0.03),
+            0 20px 40px -12px rgba(0, 0, 0, 1);
+        transition: border-color 0.3s var(--ease-smooth), transform 0.3s var(--ease-smooth), box-shadow 0.3s var(--ease-smooth);
     }
-    
+
     .glass-panel:hover {
-        border-color: var(--border-highlight);
+        border-color: var(--border-medium);
         box-shadow: 
-            0 35px 60px -15px rgba(0, 0, 0, 1),
-            0 0 0 1px var(--border-highlight);
+            0 0 0 1px rgba(255, 255, 255, 0.08),
+            0 30px 60px -12px rgba(0, 0, 0, 1);
         transform: translateY(-2px);
     }
-    
-    /* Interactive Elements (Grey) */
-    .glass-interactive, .btn-interactive {
-        @apply relative bg-neutral-900 hover:bg-neutral-800 active:bg-neutral-900 border border-neutral-800 hover:border-neutral-700 transition-all duration-200 rounded-xl cursor-pointer;
-    }
 
-    /* Standard Inputs (Grey) */
+    /* Inputs */
     .glass-input, .input-standard {
-        @apply bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white placeholder-neutral-600 focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600 transition-all outline-none;
+        @apply w-full px-4 py-3 rounded-xl transition-all duration-200 outline-none;
+        background-color: var(--bg-surface-2);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-primary);
+    }
+    .glass-input:focus {
+        border-color: var(--text-secondary);
+        background-color: var(--bg-surface-3);
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05);
+    }
+    .glass-input::placeholder {
+        color: var(--text-tertiary);
     }
 
-    /* Distinct Button Colors (Slightly Muted for Black Theme) */
+    /* Buttons */
+    .btn-base {
+        @apply flex items-center justify-center font-semibold tracking-wide transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+        border-radius: var(--radius-button);
+    }
+
+    .glass-interactive, .btn-interactive {
+        @apply btn-base px-4 py-2;
+        background-color: var(--bg-surface-2);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-secondary);
+    }
+    .glass-interactive:hover {
+        background-color: var(--bg-surface-3);
+        color: var(--text-primary);
+        border-color: var(--border-medium);
+    }
+
     .btn-primary {
-        @apply bg-white text-black hover:bg-neutral-200 font-bold shadow-lg shadow-white/10 transition-all duration-200 rounded-xl border border-transparent;
+        @apply btn-base px-6 py-3 shadow-lg shadow-blue-900/20;
+        background-color: var(--text-primary); /* White button in dark mode */
+        color: var(--bg-app);
+        border: 1px solid transparent;
     }
-    
+    .btn-primary:hover {
+        background-color: #e5e5e5;
+        transform: translateY(-1px);
+        shadow: 0 10px 20px -5px rgba(255, 255, 255, 0.15);
+    }
+
     .btn-success {
-        @apply bg-emerald-900/50 hover:bg-emerald-900/80 text-emerald-400 font-bold shadow-none transition-all duration-200 rounded-xl border border-emerald-800;
+        @apply btn-base px-4 py-2;
+        background-color: rgba(16, 185, 129, 0.1);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        color: #34d399;
     }
-    
+    .btn-success:hover {
+        background-color: rgba(16, 185, 129, 0.2);
+        border-color: rgba(16, 185, 129, 0.4);
+    }
+
     .btn-danger {
-        @apply bg-red-900/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 font-bold shadow-none transition-all duration-200 rounded-xl border border-red-900/50;
+        @apply btn-base px-4 py-2;
+        background-color: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        color: #f87171;
     }
-    
+    .btn-danger:hover {
+        background-color: rgba(239, 68, 68, 0.2);
+        border-color: rgba(239, 68, 68, 0.4);
+    }
+
     .btn-neutral {
-        @apply bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-medium shadow-none transition-all duration-200 rounded-xl border border-neutral-700;
+        @apply btn-base px-4 py-2;
+        background-color: transparent;
+        border: 1px solid var(--border-medium);
+        color: var(--text-secondary);
     }
-    
-    /* Status Dots */
-    .status-dot {
-        @apply w-2.5 h-2.5 rounded-full shadow-[0_0_10px_currentColor];
+    .btn-neutral:hover {
+        background-color: var(--bg-surface-2);
+        color: var(--text-primary);
+        border-color: var(--border-bright);
     }
-    
-    /* Utility */
+
+    /* Utilities */
     .rainbow-text {
-        @apply text-white font-bold; 
+        @apply text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 font-bold;
+        /* Restored minimal rainbow text for specific highlights if needed, subtle */
+        opacity: 0.9;
+    }
+    
+    .status-dot {
+        @apply w-2 h-2 rounded-full;
+        box-shadow: 0 0 12px currentColor;
     }
 }
