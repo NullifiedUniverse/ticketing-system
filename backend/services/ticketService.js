@@ -1,7 +1,12 @@
 const { db, admin } = require('../firebase');
 const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const logger = require('../utils/logger');
 const AppError = require('../utils/AppError');
+
+function generateShortId() {
+    return crypto.randomBytes(6).toString('hex');
+}
 
 /**
  * Service for managing tickets and events.
@@ -288,7 +293,7 @@ class TicketService {
         await this.ensureCache(eventId);
 
         const { attendeeName, attendeeEmail } = ticketData;
-        const ticketId = uuidv4();
+        const ticketId = generateShortId();
         const start = performance.now();
 
         const newTicket = {
@@ -337,7 +342,7 @@ class TicketService {
             chunk.forEach(attendee => {
                 if (!attendee.attendeeName) return; // Skip empty rows
                 
-                const ticketId = uuidv4();
+                const ticketId = generateShortId();
                 const newTicket = {
                     id: ticketId,
                     attendeeName: attendee.attendeeName,
