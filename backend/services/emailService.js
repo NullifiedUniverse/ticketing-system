@@ -83,7 +83,7 @@ class EmailService {
 
         // 2. QR Code
         const qrDataUrl = await QRCode.toDataURL(ticket.id, {
-            errorCorrectionLevel: 'H', margin: 0, width: qrSize,
+            errorCorrectionLevel: 'M', margin: 0, width: qrSize,
             color: { dark: '#000000', light: '#ffffff' }
         });
         const qrImg = await loadImage(qrDataUrl);

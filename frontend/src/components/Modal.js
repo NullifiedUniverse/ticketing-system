@@ -44,7 +44,7 @@ const Modal = ({ isOpen, onClose, content }) => {
                             )}
                             {(content.type === 'qr-code' || content.type === 'setup-qr') && (
                                 <div className="flex justify-center bg-white p-4 rounded-lg">
-                                    <QRCodeCanvas value={content.qrValue} size={256} level={"H"} />
+                                    <QRCodeCanvas value={content.qrValue} size={256} level={"M"} />
                                 </div>
                             )}
                             {content.type === 'alert' && (
