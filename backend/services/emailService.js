@@ -136,6 +136,17 @@ class EmailService {
         return canvas.toBuffer('image/jpeg', { quality: 0.8 });
     }
 
+    formatMessage(text) {
+        if (!text) return '';
+        return text
+            // Handle Newlines
+            .replace(/\n/g, '<br>')
+            // Color Shortcode: [color:#ff0000]text[/color] or [color=red]text[/color]
+            .replace(/\[color[:=]([^\]]+)\](.*?)\[\/color\]/gi, '<span style="color: $1">$2</span>')
+            // Bold Shortcode: [b]text[/b]
+            .replace(/\[b\](.*?)\[\/b\]/gi, '<strong>$1</strong>');
+    }
+
     async sendTicketEmail(ticket, eventId, bgPath, config = {}) {
         if (!this.transporter) await this.init();
         if (!this.transporter) throw new AppError("Email service not configured", 500);
@@ -164,8 +175,11 @@ class EmailService {
         const cid = `ticket-${ticket.id}@ticketsystem.local`;
 
         // Default messages (fallback if still empty)
-        const msgBefore = finalMsgBefore ? finalMsgBefore.replace(/\n/g, '<br>') : `Here is your ticket for <strong>${eventId}</strong>.`;
-        const msgAfter = finalMsgAfter ? finalMsgAfter.replace(/\n/g, '<br>') : "Please present this QR code at the entrance.";
+        const rawMsgBefore = finalMsgBefore || `Here is your ticket for <strong>${eventId}</strong>.`;
+        const rawMsgAfter = finalMsgAfter || "Please present this QR code at the entrance.";
+
+        const msgBefore = this.formatMessage(rawMsgBefore);
+        const msgAfter = this.formatMessage(rawMsgAfter);
         
         // Configurable Subject, Sender, and Colors
         const subject = config.emailSubject || `Your Ticket for ${eventId}`;
