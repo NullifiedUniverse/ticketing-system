@@ -167,9 +167,11 @@ class EmailService {
         const msgBefore = finalMsgBefore ? finalMsgBefore.replace(/\n/g, '<br>') : `Here is your ticket for <strong>${eventId}</strong>.`;
         const msgAfter = finalMsgAfter ? finalMsgAfter.replace(/\n/g, '<br>') : "Please present this QR code at the entrance.";
         
-        // Configurable Subject and Sender
+        // Configurable Subject, Sender, and Colors
         const subject = config.emailSubject || `Your Ticket for ${eventId}`;
         const senderName = config.senderName || "Ticket System";
+        const bodyTextColor = config.bodyTextColor || "#555555";
+        const footerTextColor = config.footerTextColor || "#aaaaaa";
 
         const mailOptions = {
             from: `"${senderName}" <${this.transporter.transporter.auth.user}>`,
@@ -180,7 +182,7 @@ class EmailService {
                 <div style="font-family: sans-serif; text-align: center; background: #f4f4f4; padding: 0; margin: 0;">
                     <div style="background: white; padding: 40px 20px; border-radius: 0; max-width: 800px; margin: auto; text-align: left;">
                         
-                        <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                        <p style="color: ${bodyTextColor}; font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
                             ${msgBefore}
                         </p>
 
@@ -188,11 +190,11 @@ class EmailService {
                             <img src="cid:${cid}" style="width: 100%; height: auto; display: block; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                         </div>
 
-                        <p style="color: #555; font-size: 16px; line-height: 1.5; margin-bottom: 30px;">
+                        <p style="color: ${bodyTextColor}; font-size: 16px; line-height: 1.5; margin-bottom: 30px;">
                             ${msgAfter}
                         </p>
                         
-                        <p style="color: #aaa; font-size: 12px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
+                        <p style="color: ${footerTextColor}; font-size: 12px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
                             Ticket ID: ${ticket.id}
                         </p>
                     </div>

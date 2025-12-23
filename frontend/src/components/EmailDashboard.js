@@ -25,7 +25,9 @@ const EmailDashboard = () => {
         messageBefore: '',
         messageAfter: '',
         emailSubject: '',
-        senderName: ''
+        senderName: '',
+        bodyTextColor: '#555555',
+        footerTextColor: '#aaaaaa'
     });
 
     const { modalContent, showModal, hideModal, showErrorModal, showConfirmModal } = useModal();
@@ -81,7 +83,7 @@ const EmailDashboard = () => {
         const { name, value } = e.target;
         setConfig(prev => ({
             ...prev, 
-            [name]: ['messageBefore', 'messageAfter', 'emailSubject', 'senderName'].includes(name) ? value : (parseInt(value) || 0)
+            [name]: ['messageBefore', 'messageAfter', 'emailSubject', 'senderName', 'bodyTextColor', 'footerTextColor'].includes(name) ? value : (parseInt(value) || 0)
         }));
     };
 
@@ -311,6 +313,47 @@ const EmailDashboard = () => {
                                             placeholder={t('emailFinePrintPlaceholder')}
                                             className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none h-24 text-sm resize-none"
                                         />
+                                    </div>
+
+                                    <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Body Color</label>
+                                            <div className="flex items-center gap-2">
+                                                <input 
+                                                    type="color" 
+                                                    name="bodyTextColor" 
+                                                    value={config.bodyTextColor || '#555555'} 
+                                                    onChange={handleConfigChange}
+                                                    className="w-10 h-10 rounded border border-gray-700 bg-transparent cursor-pointer"
+                                                />
+                                                <input 
+                                                    type="text" 
+                                                    name="bodyTextColor" 
+                                                    value={config.bodyTextColor || '#555555'} 
+                                                    onChange={handleConfigChange}
+                                                    className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Footer Color</label>
+                                            <div className="flex items-center gap-2">
+                                                <input 
+                                                    type="color" 
+                                                    name="footerTextColor" 
+                                                    value={config.footerTextColor || '#aaaaaa'} 
+                                                    onChange={handleConfigChange}
+                                                    className="w-10 h-10 rounded border border-gray-700 bg-transparent cursor-pointer"
+                                                />
+                                                <input 
+                                                    type="text" 
+                                                    name="footerTextColor" 
+                                                    value={config.footerTextColor || '#aaaaaa'} 
+                                                    onChange={handleConfigChange}
+                                                    className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none text-sm"
+                                                />
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {['qrSize', 'qrX', 'qrY', 'fontSize', 'nameX', 'nameY'].map(key => (
