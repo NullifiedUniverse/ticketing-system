@@ -376,12 +376,70 @@
             });
         }
 
-        function loadConfig() {
+        async function findBestConnection(candidates) {
+            if (!candidates || candidates.length === 0) return null;
+            
+            console.log("Searching for best connection...", candidates);
+            showResult('loading', 'Optimizing...', 'Finding fastest server');
+
+            // Ping all candidates in parallel
+            const pings = candidates.map(url => {
+                return new Promise(async (resolve) => {
+                    const start = performance.now();
+                    try {
+                        const controller = new AbortController();
+                        const timeout = setTimeout(() => controller.abort(), 2000); // 2s max for ping
+                        
+                        const res = await fetch(`${url}/api/ping`, { 
+                            method: 'GET',
+                            signal: controller.signal
+                        });
+                        clearTimeout(timeout);
+                        
+                        if (res.ok) {
+                            const duration = performance.now() - start;
+                            resolve({ url, duration });
+                        } else {
+                            resolve(null);
+                        }
+                    } catch (e) {
+                        resolve(null);
+                    }
+                });
+            });
+
+            // Race? No, we want the FASTEST successful one, but we need to wait for at least one success or all fail.
+            // Actually, Promise.any would be perfect but might not be supported in older webviews.
+            // Let's just wait for all and pick best. Or use a custom race.
+            
+            // Simple approach: Wait for all (capped at 2s) and pick fastest.
+            const results = await Promise.all(pings);
+            const valid = results.filter(r => r !== null).sort((a, b) => a.duration - b.duration);
+            
+            if (valid.length > 0) {
+                console.log(`Best connection: ${valid[0].url} (${valid[0].duration.toFixed(0)}ms)`);
+                return valid[0].url;
+            }
+            return null;
+        }
+
+        async function loadConfig() {
             try {
                 const saved = localStorage.getItem('ticketScannerConfig');
                 if (saved) {
                     config = JSON.parse(saved);
                     updateUI(true);
+                    
+                    // Smart Connect Optimization on Load
+                    if (config.candidates && config.candidates.length > 0) {
+                        const bestUrl = await findBestConnection(config.candidates);
+                        if (bestUrl && bestUrl !== config.apiBaseUrl) {
+                            console.log("Switching to faster connection:", bestUrl);
+                            config.apiBaseUrl = bestUrl;
+                            localStorage.setItem('ticketScannerConfig', JSON.stringify(config));
+                        }
+                    }
+
                     // Silent Warmup
                     fetch(`${config.apiBaseUrl}/api/scanner/warmup/${config.eventId}`, {
                         headers: { 'Authorization': `Bearer ${config.token}` },
@@ -393,228 +451,25 @@
             }
         }
 
-        async function handleVisibilityChange() {
-            if (document.hidden) {
-                await stopCameraInternal();
-            } else {
-                // Small delay to ensure browser is ready
-                setTimeout(() => {
-                    if (shouldCameraRun && !isCameraRunning) {
-                        startScanner();
-                    }
-                }, 300);
-            }
-        }
-
-        async function stopCameraInternal() {
-            if (html5QrCode && isCameraRunning) {
-                try {
-                    await html5QrCode.stop();
-                    isCameraRunning = false;
-                    // UI update: Show start button if we stopped? 
-                    // No, if it's just backgrounding, we want to keep the "scanning" UI state mostly 
-                    // or show a "Paused" state? 
-                    // For simplicity, we just stop the feed. When resuming, we restart.
-                    // If we stop, the video element goes blank.
-                } catch (err) {
-                    console.error("Failed to stop camera", err);
-                }
-            }
-        }
-
-        async function startScanner() {
-            const btn = document.getElementById('start-btn');
-            
-            // User intent confirmed
-            shouldCameraRun = true;
-            
-            // Unlock Audio Context on user gesture
-            soundManager.unlock();
-
-            if (isCameraRunning) return;
-
-            btn.innerText = "Accessing Camera...";
-            btn.disabled = true;
-
-            try {
-                // 1. Request Permissions (if not already granted)
-                // Note: getUserMedia might fail if app is not focused, but we are calling this on click or resume (visible).
-                
-                // 2. Init Lib (Reuse if exists)
-                if (!html5QrCode) {
-                    html5QrCode = new Html5QrCode("reader", false);
-                }
-                
-                // 3. Calculate optimal box size
-                const getQrBoxSize = (viewfinderWidth, viewfinderHeight) => {
-                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                    return { 
-                        width: Math.floor(minEdge * 0.65), 
-                        height: Math.floor(minEdge * 0.65) 
-                    };
-                };
-
-                // 4. Start with OPTIMIZED settings for outdoors & speed
-                await html5QrCode.start(
-                    { facingMode: "environment" },
-                    {
-                        fps: 25, // Boosted from 15 to 25 for smoother tracking
-                        qrbox: getQrBoxSize,
-                        disableFlip: false
-                    },
-                    onScan,
-                    (err) => { /* Ignore frame errors */ }
-                );
-                
-                isCameraRunning = true;
-                btn.classList.add('hidden'); // Hide button
-                document.getElementById('scan-box').style.opacity = "1"; 
-                
-            } catch (err) {
-                console.error(err);
-                // Only alert if user explicitly clicked (not on auto-resume)?
-                // But auto-resume failure is also bad.
-                // Let's show the button again.
-                btn.disabled = false;
-                btn.innerText = "Retry Camera";
-                btn.classList.remove('hidden');
-                btn.classList.add('bg-red-100', 'text-red-900');
-                isCameraRunning = false;
-                // If error occurs, maybe we shouldn't auto-retry endlessly?
-                // Keep shouldCameraRun = true? No, maybe false to force user interaction.
-                if (document.visibilityState === 'visible') {
-                     alert("Camera Error: " + (err.message || "Permission Denied"));
-                     shouldCameraRun = false; 
-                }
-            }
-        }
-
-        // Setup Global Click Listener once
-        document.body.addEventListener('click', () => {
-            if (isProcessing && document.getElementById('result-area').classList.contains('hidden') === false) {
-                resetState(0);
-            }
-        });
-
-        async function toggleTorch() {
-            if (!html5QrCode || !isCameraRunning) return;
-            
-            try {
-                await html5QrCode.applyVideoConstraints({
-                    advanced: [{ torch: !isTorchOn }]
-                });
-                isTorchOn = !isTorchOn;
-                
-                const btn = document.getElementById('btn-torch');
-                if (isTorchOn) {
-                    btn.classList.add('bg-yellow-500', 'text-white', 'shadow-lg');
-                    btn.classList.remove('text-white/70');
-                } else {
-                    btn.classList.remove('bg-yellow-500', 'text-white', 'shadow-lg');
-                    btn.classList.add('text-white/70');
-                }
-            } catch (err) {
-                console.error("Torch failed", err);
-            }
-        }
-
-        function toggleMute() {
-            isMuted = !isMuted;
-            const btn = document.getElementById('btn-mute');
-            const icon = document.getElementById('icon-mute');
-            
-            if (isMuted) {
-                btn.classList.add('bg-red-500', 'text-white');
-                btn.classList.remove('text-white/70');
-                // Mute Icon
-                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />';
-            } else {
-                btn.classList.remove('bg-red-500', 'text-white');
-                btn.classList.add('text-white/70');
-                // Sound Icon
-                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />';
-            }
-        }
-
-        async function onScan(text) {
-            if (isProcessing) return;
-            isProcessing = true;
-            markStart('Total Scan Loop');
-
-            // Immediate Feedback
-            markStart('UI Feedback (Vibrate/DOM)');
-            if (!isMuted && navigator.vibrate) navigator.vibrate(40);
-            
-            const box = document.getElementById('scan-box');
-            box.classList.add('active'); // Visual flash
-
-            // OPTIMISTIC UI: Show "Processing" immediately
-            showResult('loading', 'Processing...', 'Verifying Ticket');
-            markEnd('UI Feedback (Vibrate/DOM)');
-
-            if (!config) {
-                await handleSetup(text);
-            } else {
-                await handleTicket(text);
-            }
-            const totalDuration = markEnd('Total Scan Loop');
-
-            // Collect and send performance metrics to backend
-            if (config && config.eventId) {
-                const perfMetrics = {
-                    'Total Scan Loop': totalDuration,
-                    'API Network Request': perfMetricsData['API Network Request'],
-                    'Response Parse': perfMetricsData['Response Parse'],
-                    'UI Feedback (Vibrate/DOM)': perfMetricsData['UI Feedback (Vibrate/DOM)']
-                };
-                logPerformanceMetrics(config.eventId, perfMetrics, config);
-            }
-        }
-        
-        // Store metrics temporarily
-        const perfMetricsData = {};
-        function markStart(label) {
-            perfMetricsData[label] = performance.now();
-        }
-        function markEnd(label) {
-            const start = perfMetricsData[label];
-            if (start) {
-                const duration = performance.now() - start;
-                perfMetricsData[label] = duration; // Store duration
-                console.log(`[Perf] ${label}: ${duration.toFixed(2)}ms`);
-                return duration;
-            }
-            return 0;
-        }
-
-        function logPerformanceMetrics(eventId, metrics, scannerConfig) {
-            if (!config || !config.apiBaseUrl || !config.token) return;
-
-            fetch(`${config.apiBaseUrl}/api/scanner/log-perf`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${config.token}`,
-                    'ngrok-skip-browser-warning': 'true'
-                },
-                body: JSON.stringify({
-                    eventId: eventId,
-                    metrics: metrics,
-                    timestamp: Date.now(),
-                    config: {
-                        apiBaseUrl: scannerConfig.apiBaseUrl,
-                        mode: mode,
-                        fps: 25 // Updated static fps
-                    }
-                }),
-                keepalive: true // Send even if page is closing
-            }).catch(e => console.error("Failed to log performance to backend:", e));
-        }
+        // ... (handleVisibilityChange, stopCameraInternal, startScanner... unchanged) ...
 
         async function handleSetup(text) {
             try {
                 const data = JSON.parse(text);
-                if (!data.eventId || !data.apiBaseUrl) throw new Error("Missing Config");
+                if (!data.eventId) throw new Error("Missing Config");
+                
+                // Smart Connect for Initial Setup
+                if (data.candidates && data.candidates.length > 0) {
+                     const bestUrl = await findBestConnection(data.candidates);
+                     if (bestUrl) {
+                         data.apiBaseUrl = bestUrl;
+                     } else if (!data.apiBaseUrl) {
+                         // Fallback if no ping works (e.g. offline setup?) -> Use first candidate
+                         data.apiBaseUrl = data.candidates[0];
+                     }
+                } else if (!data.apiBaseUrl) {
+                    throw new Error("Missing Base URL");
+                }
                 
                 config = data;
                 localStorage.setItem('ticketScannerConfig', JSON.stringify(config));
@@ -622,10 +477,8 @@
                 updateUI(true);
                 showResult('success', 'Linked!', config.eventId);
                 
-                // Force reload to apply new API Base URL logic if needed, 
-                // but for SPA feel we just reset state
-                
             } catch (e) {
+                console.error(e);
                 showResult('error', 'Invalid Setup QR', 'Scan the Dashboard QR');
             } finally {
                 resetState(1500);

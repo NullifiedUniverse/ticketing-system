@@ -138,32 +138,27 @@ const Dashboard = () => {
         }
         try {
             const scannerToken = await getScannerToken();
-            const { url: publicUrl, localUrl } = await getNgrokUrl();
+            // Expect localUrls array from backend
+            const { url: publicUrl, localUrls } = await getNgrokUrl();
             
-            let selectedUrl = publicUrl;
-            let modeMessage = "";
-
-            if (localUrl && publicUrl && localUrl !== publicUrl) {
-                const useLocal = window.confirm(
-                    `🚀 ${t('scannerSpeedOpt')}\n\n${t('scannerLocalQ', localUrl)}\n\n✅ ${t('scannerLocalYes')}\n❌ ${t('scannerLocalNo')}`
-                );
-                if (useLocal) {
-                    selectedUrl = localUrl;
-                    modeMessage = ` [${t('scannerLocalMode')}]`;
-                } else {
-                    modeMessage = ` [${t('scannerPublicMode')}]`;
-                }
-            } else if (!publicUrl && localUrl) {
-                selectedUrl = localUrl;
-                modeMessage = ` [${t('scannerLocalOnly')}]`;
-            }
-
-            if (!selectedUrl) {
+            // Build Candidates List (Unique, Non-empty)
+            const candidates = [publicUrl, ...(localUrls || [])].filter((u, i, self) => u && self.indexOf(u) === i);
+            
+            if (candidates.length === 0) {
                  throw new Error(t('errorBackendURL'));
             }
 
-            const message = `${t('headerEvent')} ${eventId}${modeMessage}. ${t('scannerConfigPrompt')}`;
-            const config = { eventId, apiBaseUrl: selectedUrl, token: scannerToken };
+            // Primary is Public if available, else first Local
+            const primaryUrl = publicUrl || candidates[0];
+            const message = `${t('headerEvent')} ${eventId}. ${t('scannerConfigPrompt')}`;
+            
+            // Payload
+            const config = { 
+                eventId, 
+                apiBaseUrl: primaryUrl, // Backward compatibility
+                candidates: candidates, // Smart Connect list
+                token: scannerToken 
+            };
             
             showQrCodeModal(t('qaScanner'), message, JSON.stringify(config));
         } catch (error) {

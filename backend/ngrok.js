@@ -8,28 +8,84 @@ let listener = null;
 
 const getLocalIp = () => {
     const interfaces = os.networkInterfaces();
-    let bestCandidate = 'localhost';
+    const candidates = [];
 
-    // 1. Prioritize Wi-Fi / Wireless
     for (const name of Object.keys(interfaces)) {
         const lowerName = name.toLowerCase();
-        // Skip virtual adapters
-        if (lowerName.includes('vethernet') || lowerName.includes('virtual') || lowerName.includes('wsl') || lowerName.includes('docker') || lowerName.includes('pseudo')) {
+        
+        // Extended Filter for Virtual/VPN Adapters
+        if (
+            lowerName.includes('vethernet') || 
+            lowerName.includes('virtual') || 
+            lowerName.includes('wsl') || 
+            lowerName.includes('docker') || 
+            lowerName.includes('pseudo') ||
+            lowerName.includes('vmware') ||
+            lowerName.includes('vbox') ||
+            lowerName.includes('vpn') ||
+            lowerName.includes('tap') ||
+            lowerName.includes('tun')
+        ) {
             continue;
         }
         
         for (const iface of interfaces[name]) {
             if (iface.family === 'IPv4' && !iface.internal) {
-                // High priority
-                if (lowerName.includes('wi-fi') || lowerName.includes('wireless')) {
-                    return iface.address;
-                }
-                // Medium priority (Ethernet, etc.) - store for later if no Wi-Fi found
-                bestCandidate = iface.address;
+                // Score the interface
+                let score = 0;
+                if (lowerName.includes('wi-fi') || lowerName.includes('wireless')) score += 10;
+                if (lowerName.includes('eth')) score += 5;
+                if (iface.address.startsWith('192.168.')) score += 2;
+                if (iface.address.startsWith('10.')) score += 1;
+
+                candidates.push({ ip: iface.address, score, name });
             }
         }
     }
-    return bestCandidate;
+
+    // Sort by score descending
+    candidates.sort((a, b) => b.score - a.score);
+    
+    // Return primary candidate or localhost
+    return candidates.length > 0 ? candidates[0].ip : 'localhost';
+};
+
+const getLocalIps = () => {
+    const interfaces = os.networkInterfaces();
+    const candidates = [];
+
+    for (const name of Object.keys(interfaces)) {
+        const lowerName = name.toLowerCase();
+        
+        // Extended Filter
+        if (
+            lowerName.includes('vethernet') || 
+            lowerName.includes('virtual') || 
+            lowerName.includes('wsl') || 
+            lowerName.includes('docker') || 
+            lowerName.includes('pseudo') ||
+            lowerName.includes('vmware') ||
+            lowerName.includes('vbox') ||
+            lowerName.includes('vpn') ||
+            lowerName.includes('tap') ||
+            lowerName.includes('tun')
+        ) {
+            continue;
+        }
+        
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                let score = 0;
+                if (lowerName.includes('wi-fi') || lowerName.includes('wireless')) score += 10;
+                if (lowerName.includes('eth')) score += 5;
+                if (iface.address.startsWith('192.168.')) score += 2;
+
+                candidates.push({ ip: iface.address, score });
+            }
+        }
+    }
+
+    return candidates.sort((a, b) => b.score - a.score).map(c => c.ip);
 };
 
 const start = async () => {
@@ -103,4 +159,4 @@ const stop = async () => {
 const getUrl = () => url;
 const getUrlType = () => urlType;
 
-module.exports = { start, stop, getUrl, getUrlType, getLocalIp };
+module.exports = { start, stop, getUrl, getUrlType, getLocalIp, getLocalIps };

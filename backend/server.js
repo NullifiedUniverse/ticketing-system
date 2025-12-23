@@ -63,14 +63,17 @@ app.get('/api/ping', (req, res) => res.send('pong'));
 app.get('/api/ngrok-url', (req, res) => {
     const url = ngrok.getUrl();
     const type = ngrok.getUrlType();
-    const localIp = ngrok.getLocalIp();
-    const localUrl = `http://${localIp}:${config.port}`;
+    
+    // Improved Multi-IP Support
+    const localIps = ngrok.getLocalIps();
+    const localUrls = localIps.map(ip => `http://${ip}:${config.port}`);
+    const primaryLocalUrl = localUrls.length > 0 ? localUrls[0] : `http://localhost:${config.port}`;
     
     if (url) {
-        res.json({ status: 'success', url, type, localUrl });
+        res.json({ status: 'success', url, type, localUrl: primaryLocalUrl, localUrls });
     } else {
         // If ngrok failed or not running, return local at least
-        res.json({ status: 'success', url: localUrl, type: 'local', localUrl });
+        res.json({ status: 'success', url: primaryLocalUrl, type: 'local', localUrl: primaryLocalUrl, localUrls });
     }
 });
 
