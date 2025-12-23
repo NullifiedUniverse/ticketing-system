@@ -5,9 +5,9 @@ export const useDashboardPreferences = () => {
     const [layout, setLayout] = useState(() => {
         try {
             const saved = localStorage.getItem('dashboardLayout');
-            return saved ? JSON.parse(saved) : { stats: true, chart: true };
+            return saved ? JSON.parse(saved) : { stats: true, chart: true, scanners: true };
         } catch {
-            return { stats: true, chart: true };
+            return { stats: true, chart: true, scanners: true };
         }
     });
 

@@ -134,6 +134,11 @@ export const getAlerts = async (eventId, since = 0) => {
     return result.alerts;
 };
 
+export const getActiveScanners = async (eventId) => {
+    const result = await callApi(`/api/admin/scanners/${eventId}`, { headers: getAuthHeaders() });
+    return result.scanners;
+};
+
 export const drawRaffleWinner = async (eventId) => {
     const result = await callApi(`/api/admin/raffle/draw/${eventId}`, { headers: getAuthHeaders() });
     return result;

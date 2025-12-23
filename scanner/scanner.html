@@ -208,11 +208,18 @@
         <div class="flex justify-between items-start p-4 pointer-events-auto relative z-10">
             
             <!-- Status Badge -->
-            <div class="glass px-4 py-2.5 rounded-full flex items-center gap-3 shadow-lg transition-all" id="status-badge">
-                <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-gray-500 transition-colors duration-300"></div>
-                <div class="flex flex-col leading-none">
-                    <span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Event</span>
-                    <span id="event-name" class="text-xs font-bold text-white truncate max-w-[120px]">Not Linked</span>
+            <div class="flex flex-col gap-1.5 pointer-events-auto">
+                <div class="glass px-4 py-2.5 rounded-full flex items-center gap-3 shadow-lg transition-all border border-white/5" id="status-badge">
+                    <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-gray-500 transition-colors duration-300"></div>
+                    <div class="flex flex-col leading-none">
+                        <span class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Event</span>
+                        <span id="event-name" class="text-xs font-bold text-white truncate max-w-[120px]">Not Linked</span>
+                    </div>
+                </div>
+                <!-- Connection Type Badge -->
+                <div id="conn-badge" class="hidden glass px-3 py-1 rounded-full self-start border border-white/5 flex items-center gap-2">
+                    <div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                    <span id="conn-type" class="text-[8px] font-black uppercase tracking-widest text-blue-200">Checking...</span>
                 </div>
             </div>
 
@@ -290,6 +297,11 @@
         let shouldCameraRun = false; // Tracks user intent
         let isTorchOn = false;
         let isMuted = false;
+        let deviceId = localStorage.getItem('scannerDeviceId');
+        if (!deviceId) {
+            deviceId = crypto.randomUUID ? crypto.randomUUID() : `scanner-${Math.random().toString(36).substr(2, 9)}`;
+            localStorage.setItem('scannerDeviceId', deviceId);
+        }
 
         // --- Sound Manager (Low Latency) ---
         class SoundManager {
@@ -487,6 +499,10 @@
 
         // Network Retry Logic
         async function fetchWithRetry(url, options, retries = 3, backoff = 300) {
+            // Inject Device ID
+            if (!options.headers) options.headers = {};
+            options.headers['X-Device-Id'] = deviceId;
+
             try {
                 return await fetch(url, options);
             } catch (err) {
@@ -500,6 +516,14 @@
                 throw err;
             }
         }
+
+        // Heartbeat Loop (every 30s)
+        setInterval(() => {
+            if (config && config.eventId) {
+                // Send lightweight heartbeat
+                logPerformanceMetrics(config.eventId, { type: 'heartbeat' }, config);
+            }
+        }, 30000);
 
         async function handleTicket(rawId) {
             // Note: 'loading' state is already set in onScan for immediate feedback.
@@ -678,6 +702,8 @@
             const dot = document.getElementById('status-dot');
             const text = document.getElementById('event-name');
             const toggle = document.getElementById('mode-toggle');
+            const connBadge = document.getElementById('conn-badge');
+            const connType = document.getElementById('conn-type');
 
             if (isConfigured) {
                 text.innerText = config.eventId;
@@ -685,10 +711,18 @@
                 dot.classList.add('bg-green-400', 'animate-pulse');
                 toggle.classList.remove('hidden');
                 badge.classList.add('border-green-500/30');
+
+                // Update Connection Badge
+                connBadge.classList.remove('hidden');
+                const isNgrok = config.apiBaseUrl.includes('ngrok-free.app') || config.apiBaseUrl.includes('ngrok.io');
+                connType.innerText = isNgrok ? 'Cloud (NGROK)' : 'Local (LAN)';
+                connType.parentElement.classList.toggle('border-blue-500/30', !isNgrok);
+                connType.parentElement.classList.toggle('border-purple-500/30', isNgrok);
             } else {
                 text.innerText = "Not Linked";
                 dot.className = "w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse";
                 toggle.classList.add('hidden');
+                connBadge.classList.add('hidden');
             }
         }
 

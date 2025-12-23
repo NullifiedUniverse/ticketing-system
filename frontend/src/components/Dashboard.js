@@ -7,6 +7,7 @@ import LiveIndicator from './LiveIndicator';
 import Modal from './Modal';
 import BentoCard from './BentoCard';
 import Skeleton from './Skeleton';
+import ScannerMonitor from './ScannerMonitor';
 import { getScannerToken, getNgrokUrl, getAlerts } from '../services/api';
 import { useTickets } from '../hooks/useTickets';
 import { useModal } from '../hooks/useModal';
@@ -35,6 +36,7 @@ const Dashboard = () => {
 
     // Alert Polling State
     const [lastAlertTime, setLastAlertTime] = useState(Date.now());
+    const [connType, setConnType] = useState('Checking...');
 
     // Poll for Scanner Alerts
     useEffect(() => {
@@ -42,6 +44,13 @@ const Dashboard = () => {
 
         const pollAlerts = async () => {
             try {
+                // Determine Dashboard Conn Type (One-time or periodic)
+                if (connType === 'Checking...') {
+                    const info = await getNgrokUrl();
+                    const isNgrok = window.location.hostname.includes('ngrok') || (info.url && info.url.includes('ngrok'));
+                    setConnType(isNgrok ? 'CLOUD (NGROK)' : 'LOCAL (LAN)');
+                }
+
                 const alerts = await getAlerts(eventId, lastAlertTime);
                 if (alerts && alerts.length > 0) {
                     const latest = alerts[alerts.length - 1];
@@ -226,6 +235,12 @@ const Dashboard = () => {
                         )}
                     </h2>
                     <LiveIndicator status={connectionStatus} error={connectionError} isSyncing={isSyncing} />
+                    
+                    {/* Connection Type Indicator */}
+                    <div className={`hidden md:flex items-center gap-2 px-3 py-1 rounded-full border ${connType.includes('LAN') ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-purple-500/10 border-purple-500/20 text-purple-400'} text-[10px] font-black tracking-widest`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${connType.includes('LAN') ? 'bg-blue-400' : 'bg-purple-400'}`}></div>
+                        {connType}
+                    </div>
                 </div>
 
                 {eventId && (
@@ -354,8 +369,8 @@ const Dashboard = () => {
                                         className="overflow-hidden"
                                     >
                                         <BentoCard title="Customize Layout" icon="🎨" className="bg-slate-800/80">
-                                            <div className="flex gap-6 p-2">
-                                                {['stats', 'chart'].map(key => (
+                                            <div className="flex flex-wrap gap-6 p-2">
+                                                {['stats', 'chart', 'scanners'].map(key => (
                                                     <label key={key} className="flex items-center gap-3 cursor-pointer">
                                                         <div className="relative">
                                                             <input 
@@ -410,6 +425,18 @@ const Dashboard = () => {
                             <motion.div variants={fadeInUp} className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                                 
                                 <div className="xl:col-span-1 space-y-8">
+                                    <AnimatePresence>
+                                        {layout.scanners && (
+                                            <motion.div
+                                                key="scanner-monitor"
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.9 }}
+                                            >
+                                                <ScannerMonitor eventId={eventId} />
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                     <CreateTicket eventId={eventId} onTicketCreated={handleTicketCreatedAndShowQR} onApiError={showErrorModal} />
                                 </div>
 

@@ -24,6 +24,7 @@ class TicketService {
         this.loadingPromises = new Map(); // eventId -> Promise (resolves when initial sync done)
         this.cacheStatus = new Map(); // eventId -> 'init' | 'syncing' | 'ready' | 'error'
         this.alerts = new Map(); // eventId -> Array of Alert Objects
+        this.activeScanners = new Map(); // deviceId -> { id, lastSeen, type (LAN/NGROK), scans, eventId }
         
         // Internals for concurrency & cleanup
         this.initializing = new Set(); // Set<eventId> - locks for ensureCache
@@ -31,6 +32,9 @@ class TicketService {
 
         // Cleanup Interval (every hour)
         setInterval(() => this.cleanupIdleCaches(), 60 * 60 * 1000);
+        
+        // Scanner Heartbeat Cleanup (every 30s)
+        setInterval(() => this.cleanupInactiveScanners(), 30 * 1000);
 
         // Performance Metrics
         this.metrics = {
@@ -42,6 +46,15 @@ class TicketService {
     }
 
     // --- CLEANUP ---
+    cleanupInactiveScanners() {
+        const now = Date.now();
+        for (const [deviceId, scanner] of this.activeScanners.entries()) {
+            if (now - scanner.lastSeen > 60000) { // 1 minute timeout
+                this.activeScanners.delete(deviceId);
+            }
+        }
+    }
+
     cleanupIdleCaches() {
         const IDLE_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
         const now = Date.now();
@@ -111,6 +124,43 @@ class TicketService {
     async getAlerts(eventId, since = 0) {
         const eventAlerts = this.alerts.get(eventId) || [];
         return eventAlerts.filter(a => a.timestamp > since);
+    }
+
+    // --- SCANNER TRACKING ---
+    async registerScanner(deviceId, eventId, type) {
+        const now = Date.now();
+        if (!this.activeScanners.has(deviceId)) {
+            this.activeScanners.set(deviceId, {
+                id: deviceId,
+                eventId,
+                type, // 'local' or 'ngrok'
+                scans: 0,
+                lastSeen: now
+            });
+        } else {
+            const scanner = this.activeScanners.get(deviceId);
+            scanner.lastSeen = now;
+            scanner.eventId = eventId;
+            scanner.type = type; // Update type if changed
+        }
+    }
+
+    getScanners(eventId) {
+        const scanners = [];
+        for (const scanner of this.activeScanners.values()) {
+            if (scanner.eventId === eventId) {
+                scanners.push(scanner);
+            }
+        }
+        return scanners;
+    }
+
+    async recordScan(deviceId, eventId) {
+        if (this.activeScanners.has(deviceId)) {
+            const scanner = this.activeScanners.get(deviceId);
+            scanner.scans++;
+            scanner.lastSeen = Date.now();
+        }
     }
 
     // --- CACHE & REAL-TIME SYNC ---

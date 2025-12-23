@@ -80,6 +80,10 @@ class TicketController {
 
         const scannedBy = (req.user && req.user.scanner) ? 'qr-scanner' : 'admin';
 
+        if (req.deviceId && scannedBy === 'qr-scanner') {
+            await ticketService.recordScan(req.deviceId, eventId);
+        }
+
         const dbStart = performance.now();
         const result = await ticketService.updateTicketStatus(eventId, ticketId, action, scannedBy);
         const dbEnd = performance.now();
@@ -174,6 +178,12 @@ class TicketController {
         
         const alerts = await ticketService.getAlerts(eventId, since);
         res.json({ status: 'success', alerts });
+    });
+
+    getActiveScanners = catchAsync(async (req, res, next) => {
+        const { eventId } = req.params;
+        const scanners = ticketService.getScanners(eventId);
+        res.json({ status: 'success', scanners });
     });
 }
 

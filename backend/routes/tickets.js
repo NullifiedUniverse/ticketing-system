@@ -40,5 +40,6 @@ scannerRouter.post('/report-issue/:eventId', ticketController.reportIssue.bind(t
 
 // Admin Alerts
 adminRouter.get('/alerts/:eventId', ticketController.getAlerts.bind(ticketController));
+adminRouter.get('/scanners/:eventId', ticketController.getActiveScanners.bind(ticketController));
 
 module.exports = { adminRouter, scannerRouter };
