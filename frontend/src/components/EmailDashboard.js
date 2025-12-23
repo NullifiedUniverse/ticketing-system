@@ -165,6 +165,19 @@ const EmailDashboard = () => {
         );
     };    
 
+    const formatPreviewText = (text) => {
+        if (!text) return '';
+        let formatted = text
+            // Sanitize
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
+            // Newlines
+            .replace(/\n/g, '<br>')
+            // Shortcodes
+            .replace(/\[color[:=]([^\]]+)\](.*?)\[\/color\]/gi, '<span style="color: $1">$2</span>')
+            .replace(/\[b\](.*?)\[\/b\]/gi, '<strong>$1</strong>');
+        return formatted;
+    };
+
     const handlePreview = async (ticket) => {
         setLoading(true);
         try {
@@ -177,7 +190,7 @@ const EmailDashboard = () => {
                 <div className="p-0 bg-gray-50 text-gray-800 rounded-xl max-w-2xl mx-auto border shadow-lg max-h-[80vh] overflow-y-auto">
                     <div className="bg-white p-8 text-center">
                         <h2 className="text-xl font-bold mb-4 text-gray-900"></h2> 
-                        <p className="text-gray-600 mb-6 whitespace-pre-wrap">{msgBefore}</p>
+                        <p className="text-gray-600 mb-6" dangerouslySetInnerHTML={{ __html: formatPreviewText(msgBefore) }}></p>
                         <div className="mb-6">
                             <img 
                                 src={imageSrc} 
@@ -186,7 +199,7 @@ const EmailDashboard = () => {
                                 className="w-full h-auto rounded shadow-lg border" 
                             />
                         </div>
-                        <p className="text-gray-600 mb-6 whitespace-pre-wrap">{msgAfter}</p>
+                        <p className="text-gray-600 mb-6" dangerouslySetInnerHTML={{ __html: formatPreviewText(msgAfter) }}></p>
                         <p className="text-xs text-gray-400 mt-8 pt-4 border-t">Ticket ID: {ticket.id}</p>
                     </div>
                 </div>

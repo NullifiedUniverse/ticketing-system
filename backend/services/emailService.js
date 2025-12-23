@@ -139,11 +139,17 @@ class EmailService {
     formatMessage(text) {
         if (!text) return '';
         return text
-            // Handle Newlines
+            // 1. Sanitize HTML (Basic)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;")
+            // 2. Handle Newlines
             .replace(/\n/g, '<br>')
-            // Color Shortcode: [color:#ff0000]text[/color] or [color=red]text[/color]
+            // 3. Color Shortcode: [color:#ff0000]text[/color] or [color=red]text[/color]
             .replace(/\[color[:=]([^\]]+)\](.*?)\[\/color\]/gi, '<span style="color: $1">$2</span>')
-            // Bold Shortcode: [b]text[/b]
+            // 4. Bold Shortcode: [b]text[/b]
             .replace(/\[b\](.*?)\[\/b\]/gi, '<strong>$1</strong>');
     }
 
