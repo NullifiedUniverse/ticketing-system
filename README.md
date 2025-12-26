@@ -60,13 +60,13 @@ graph LR
     subgraph Venue ["📍 Venue Network (LAN)"]
         direction TB
         Server[Node.js Host]:::server
-        LocalScan[Scanner A (WiFi)]:::local
+        LocalScan["Scanner A (WiFi)"]:::local
     end
     
     subgraph Cloud ["☁️ The Internet"]
         direction TB
         Ngrok[Ngrok Tunnel]:::cloud
-        RemoteScan[Scanner B (4G/LTE)]:::remote
+        RemoteScan["Scanner B (4G/LTE)"]:::remote
     end
     
     %% Interactions
