@@ -362,16 +362,24 @@ const RaffleControl = () => {
                             </div>
                         </div>
 
-                        <div className="relative">
-                            <div className="absolute top-2 right-2 text-[10px] text-slate-500 font-mono bg-slate-900/80 px-2 py-1 rounded pointer-events-none">
-                                Bulk Editor
-                            </div>
-                            <textarea
-                                value={prizesInput}
-                                onChange={(e) => setPrizesInput(e.target.value)}
-                                className="w-full h-48 bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-300 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all resize-none"
-                                placeholder={`Enter prizes, one per line.\nFormats:\n- Prize Name\n- Prize Name | image.png\n- Prize Title | Prize Name | image.png`}
-                            />
+                        {/* Bulk Editor (Collapsible) */}
+                        <div className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+                            <details className="group">
+                                <summary className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-700/50 transition-colors select-none">
+                                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Advanced: Bulk Editor</span>
+                                    <div className="p-1 bg-slate-900 rounded text-slate-500 group-open:rotate-180 transition-transform">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                                    </div>
+                                </summary>
+                                <div className="p-4 pt-0 border-t border-slate-700/50">
+                                    <textarea
+                                        value={prizesInput}
+                                        onChange={(e) => setPrizesInput(e.target.value)}
+                                        className="w-full h-48 bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-300 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all resize-none mt-4"
+                                        placeholder={`Enter prizes, one per line.\nFormats:\n- Prize Name\n- Prize Name | image.png\n- Prize Title | Prize Name | image.png`}
+                                    />
+                                </div>
+                            </details>
                         </div>
                     </div>
 
