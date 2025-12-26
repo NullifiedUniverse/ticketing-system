@@ -10,32 +10,40 @@ A high-performance, full-stack event management suite featuring real-time synchr
 
 ```mermaid
 graph TD
-    subgraph Frontend ["✨ Reactive Frontend"]
-        A[Admin Dashboard]
-        C[QR Scanner PWA]
-        G[Celestial Raffle Display]
+    %% Node Definitions
+    subgraph Frontend ["✨ Reactive Frontend Layer"]
+        direction TB
+        A[Admin Dashboard]:::react
+        C[QR Scanner PWA]:::html
+        G[Celestial Raffle]:::canvas
     end
     
-    subgraph Backend ["⚙️ Core Backend"]
-        B[Node.js API]
-        E[Email Service]
-        F[Network Manager]
+    subgraph Backend ["⚙️ Core Backend Layer"]
+        direction TB
+        B[Node.js API]:::node
+        E[Email Service]:::service
+        F[Network Manager]:::service
     end
     
-    subgraph Data ["☁️ Persistence"]
-        D[(Firestore Database)]
+    subgraph Persistence ["☁️ Data Layer"]
+        D[(Firestore Database)]:::db
     end
 
-    A <--> B
-    C <--> B
-    G <--> B
-    B <--> D
-    B --> E
+    %% Connections
+    A <==>|REST/WS| B
+    C <==>|Sync| B
+    G <==>|State Poll| B
+    B <==>|Read/Write| D
+    B -.->|SMTP| E
     F -->|Tunneling| B
     
-    style Frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style Backend fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    style Data fill:#e0f2f1,stroke:#1b5e20,stroke-width:2px
+    %% Styles
+    classDef react fill:#e3f2fd,stroke:#0288d1,stroke-width:2px,color:#01579b
+    classDef html fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100
+    classDef canvas fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
+    classDef node fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef service fill:#fafafa,stroke:#757575,stroke-width:1px,stroke-dasharray: 5 5
+    classDef db fill:#eceff1,stroke:#455a64,stroke-width:3px,color:#263238
 ```
 
 ## 🧠 System Logic & Data Flow
@@ -92,28 +100,36 @@ stateDiagram-v2
 Automatic switching mechanism for uninterrupted operations.
 
 ```mermaid
-graph LR
-    subgraph Cloud ["🌍 Cloud Layer"]
-        Ngrok[Ngrok Tunnel]
-        Firebase[Firebase DB]
+graph TB
+    %% Nodes
+    subgraph Cloud ["🌍 Public Internet"]
+        Ngrok(Ngrok Tunnel):::cloud
+        Firebase[(Firebase Cloud)]:::cloud
     end
     
-    subgraph Venue ["🏢 Local Venue Layer"]
-        Server[Node.js Host]
-        Dash[Dashboard]
-        ScannerA[Scanner A (LAN)]
-        ScannerB[Scanner B (4G)]
+    subgraph Local ["🏢 Local Venue Network"]
+        Server[Node.js Host]:::server
+        Dash[Dashboard Monitor]:::client
+        ScannerA[Scanner A (Local WiFi)]:::device
+    end
+    
+    subgraph Remote ["📶 Remote / 4G"]
+        ScannerB[Scanner B (Cellular)]:::device
     end
 
-    Server <-->|.->| Ngrok
-    Server <--> Firebase
+    %% Links
+    Server <==>|Secure Tunnel| Ngrok
+    Server <==>|SDK| Firebase
     
-    ScannerA <-->|⚡ High Speed LAN| Server
-    ScannerB <-->|Backup WAN| Ngrok
-    Dash <--> Server
+    ScannerA <-->|LAN IP (Fast)| Server
+    ScannerB <-->|Public URL| Ngrok
+    Dash <-->|Localhost| Server
     
-    style Server fill:#f9f,stroke:#333,stroke-width:4px
-    style Ngrok fill:#ccf,stroke:#333
+    %% Styles
+    classDef cloud fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
+    classDef server fill:#37474f,stroke:#263238,stroke-width:4px,color:white
+    classDef client fill:#f5f5f5,stroke:#616161,stroke-width:2px
+    classDef device fill:#fff8e1,stroke:#ff8f00,stroke-width:2px
 ```
 
 ## 🚀 Core Modules
