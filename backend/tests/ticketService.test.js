@@ -72,6 +72,11 @@ describe('TicketService', () => {
         jest.clearAllMocks();
         ticketService.cache.clear();
         ticketService.listeners.clear();
+        ticketService.loadingPromises.clear();
+        ticketService.cacheStatus.clear();
+        ticketService.initializing.clear();
+        ticketService.activeScanners.clear();
+        ticketService.minimalCache.clear();
         ticketService.metrics = { hits: 0, misses: 0, writes: 0, latencies: [] };
     });
 
