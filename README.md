@@ -1,68 +1,108 @@
-# 🎫 TicketSystem - Enterprise Event Management
+# 🎫 TicketSystem - Enterprise Event Ecosystem
 
-**System by NullifiedGalaxy**
+**Engineered by Null**
 
-A high-performance, real-time ticket management and raffle system designed for modern events. Featuring a secure Node.js/Express backend with Firestore persistence, and a reactive React frontend with advanced visual effects.
+A high-performance, full-stack event management suite featuring real-time synchronization, high-fidelity visual effects, and robust security. This system was designed to handle everything from ticket issuance and validation to cinematic prize raffles.
 
-## 🚀 Key Features
+---
 
-### 🖥️ Dashboard (Command Center)
-*   **Real-Time Analytics:** Live check-in velocity, occupancy stats, and scanner heartbeat monitoring.
-*   **Ticket Management:** Issue, edit, and void tickets instantly. Support for batch CSV imports.
-*   **Email Integration:** Send branded QR codes directly to attendees with customizable HTML templates.
-*   **Security:** Role-based access control (mock) and persistent session handling.
+## 🏗️ System Architecture
 
-### 🎲 Celestial Raffle System
-*   **Visual Spectacle:** HTML5 Canvas-based "Starfield" animation engine.
-*   **Dramatic Reveals:** Multi-phase animation (Stars -> Constellation -> Meteor -> Reveal).
-*   **Fairness:** Random winner selection from the checked-in attendee pool.
-*   **Persistence:** State survives server restarts (Firestore-backed).
-*   **Queue Management:** Support for "Title | Name | Image" prize queuing.
+```mermaid
+graph TD
+    A[Admin Dashboard - React] <--> B[Backend API - Node.js]
+    C[QR Scanner - Mobile/Web] <--> B
+    B <--> D[(Firestore Database)]
+    B --> E[SMTP Server]
+    B --> F[Ngrok/LAN Tunnel]
+    G[Celestial Raffle - Canvas] <--> B
+```
 
-### 📱 Scanner App
-*   **Universal Compatibility:** Runs in any modern browser with camera access.
-*   **Offline-Capable:** Local caching for high-speed scanning even with flaky internet.
-*   **Visual Feedback:** Instant success/fail cues with haptic vibration support.
+## 🚀 Core Modules
 
-## 🛠️ Technology Stack
+### 1. Command Center (Dashboard)
+*   **Real-time Analytics:** Occupancy tracking and check-in velocity charts.
+*   **Active Monitoring:** Heartbeat tracking for all connected scanner devices.
+*   **Smart Networking:** Automatic detection and toggling between Local (LAN) and Cloud (Ngrok) tunnels.
 
-*   **Frontend:** React 18, Tailwind CSS, Framer Motion, HTML5 Canvas.
-*   **Backend:** Node.js, Express, Firebase Admin SDK (Firestore).
-*   **Security:** Helmet, Express Rate Limit, Input Sanitization.
-*   **DevOps:** Optimized build scripts, separation of concerns.
+### 2. Celestial Raffle System
+*   **Cinematic Experience:** A dedicated canvas-driven display with starfield physics and shockwave effects.
+*   **Dynamic Queuing:** Manage prizes with a "Title | Name | Image" syntax.
+*   **Responsive Layout:** Optimized for both 16:9 and ultra-wide (3120x1144) displays.
 
-## 📦 Installation & Setup
+### 3. Smart Scanner
+*   **Zero-Latency:** Local caching allows for rapid scanning even in high-density environments.
+*   **Universal:** Standalone HTML/JS app compatible with any modern mobile browser.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React 18, Tailwind CSS, Framer Motion, HTML5 Canvas, Recharts |
+| **Backend** | Node.js, Express, Firebase Admin SDK, Winston, Multer |
+| **Security** | Helmet, Express Rate Limit, Joi Validation, Session Auth |
+| **Networking** | Ngrok integration, dynamic IP discovery |
+
+---
+
+## 📦 Setup & Installation
+
+### Prerequisites
+*   Node.js (v16+)
+*   Firebase Project with Firestore enabled
+*   SMTP credentials (for email features)
+
+### Quick Start
 
 1.  **Clone the Repository**
     ```bash
-    git clone https://github.com/your-repo/TicketSystem.git
+    git clone https://github.com/Null/TicketSystem.git
     cd TicketSystem
     ```
 
-2.  **Backend Setup**
-    *   Navigate to `backend/`.
-    *   Install dependencies: `npm install`
-    *   Configure Firebase: Place your `serviceAccountKey.json` in `backend/` or configure env vars.
-    *   Start Server: `npm start` (Runs on Port 3001)
+2.  **Backend Configuration**
+    *   Place your `serviceAccountKey.json` in `/backend`.
+    *   Create `/backend/.env` with:
+        ```env
+        PORT=3001
+        NGROK_AUTHTOKEN=your_token
+        EMAIL_USER=your_email
+        EMAIL_PASS=your_app_password
+        ```
+    *   `cd backend && npm install && npm start`
 
-3.  **Frontend Setup**
-    *   Navigate to `frontend/`.
-    *   Install dependencies: `npm install`
-    *   Build for Production: `npm run build` (Artifacts are served by Backend)
-    *   *Dev Mode:* `npm start` (Runs on Port 3000)
-
-## 📖 API Documentation
-
-See `docs/API.md` for detailed endpoint references.
-
-### Raffle Control Syntax
-When adding prizes in the queue, use the following format:
-*   `Prize Name` (Simple)
-*   `Prize Name | image.png` (With uploaded image)
-*   `Prize Title | Prize Name | image.png` (Full format)
-
-## 🔒 Security Note
-This system implements standard security practices including HTTP headers (Helmet), Rate Limiting, and Input Validation. Ensure your Firebase rules are configured correctly in production.
+3.  **Frontend Configuration**
+    *   `cd frontend && npm install && npm run build`
+    *   The backend will automatically serve the production build on port 3001.
 
 ---
-*Built with ❤️ for seamless event experiences.*
+
+## 📖 Usage Guide
+
+### Raffle Control
+Use the **Raffle Control** link in the dashboard sidebar.
+*   **To add a prize with an image:**
+    1.  Upload image using the built-in uploader.
+    2.  Use syntax: `Grand Prize | iPhone 15 Pro | background-12345.png`
+*   **To start:** Click **START**. The display will animate for 8 seconds before allowing the **NEXT** draw.
+
+### Scanner Setup
+1.  Open the Dashboard and select an event.
+2.  Click **Scanner Setup** (📱) to generate a configuration QR.
+3.  Scan the QR with any phone to instantly link it to the system.
+
+---
+
+## 🤝 Contribution
+Contributions are welcome. Please ensure that:
+*   Components follow the "Bento Box" design language.
+*   Security headers and rate-limiting remain intact.
+*   New API endpoints are documented in `docs/API.md`.
+
+## 📜 License
+System developed by **Null**. All rights reserved. 
+
+---
+*Generated for peak performance and visual elegance.*
