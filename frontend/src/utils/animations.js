@@ -97,3 +97,13 @@ export const pulseEffect = {
         transition: { duration: 2, repeat: Infinity, ease: "easeInOut" }
     }
 };
+
+// Physics Spring for Layouts
+export const springTransition = {
+    type: "spring",
+    stiffness: 400,
+    damping: 30,
+    mass: 1
+};
+
+export const layoutTransition = springTransition;

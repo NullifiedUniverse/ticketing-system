@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { bentoBounce, buttonClick } from '../utils/animations';
 
-const BentoCard = ({ 
-    children, 
-    title, 
-    icon, 
-    colSpan = 1, 
-    className = "", 
+const BentoCard = ({
+    children,
+    title,
+    icon,
+    colSpan = 1,
+    className = "",
     isCollapsible = false,
     defaultCollapsed = false
 }) => {
@@ -24,15 +24,15 @@ const BentoCard = ({
         >
             {/* Header / Title Bar */}
             {(title || icon || isCollapsible) && (
-                <motion.div 
-                    layout="position" 
-                    className="flex items-center justify-between p-6 pb-2 z-20"
+                <motion.div
+                    layout="position"
+                    className="flex items-center justify-between p-4 pb-2 md:p-6 md:pb-2 z-20"
                 >
                     <div className="flex items-center gap-3">
                         {icon && <span className="text-xl">{icon}</span>}
                         {title && <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400">{title}</h3>}
                     </div>
-                    
+
                     {isCollapsible && (
                         <motion.button
                             variants={buttonClick}
@@ -41,11 +41,11 @@ const BentoCard = ({
                             onClick={() => setIsCollapsed(!isCollapsed)}
                             className="p-2 rounded-full hover:bg-white/5 text-slate-500 hover:text-white transition-colors"
                         >
-                            <motion.svg 
+                            <motion.svg
                                 animate={{ rotate: isCollapsed ? 180 : 0 }}
-                                className="w-5 h-5" 
-                                fill="none" 
-                                viewBox="0 0 24 24" 
+                                className="w-5 h-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
                                 stroke="currentColor"
                             >
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -64,7 +64,7 @@ const BentoCard = ({
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                         transition={{ duration: 0.2, ease: "easeInOut" }}
-                        className="flex-1 p-6 pt-2 z-10"
+                        className="flex-1 p-4 pt-2 md:p-6 md:pt-2 z-10"
                     >
                         {children}
                     </motion.div>

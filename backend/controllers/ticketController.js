@@ -135,16 +135,8 @@ class TicketController {
     getMinimalTicketData = catchAsync(async (req, res, next) => {
         const { eventId } = req.params;
         
-        // Ensure cache is hot
-        await ticketService.ensureCache(eventId); // Fixed method name from loadCacheForEvent
-        const tickets = await ticketService.getTickets(eventId);
-        
-        // Map to minimal array: [id, status, name]
-        const minimal = tickets.map(t => ({
-            id: t.id,
-            s: t.status === 'checked-in' ? 1 : 0, // 1 = Checked In, 0 = Valid
-            n: t.attendeeName
-        }));
+        // Use optimized View Cache from Service
+        const minimal = await ticketService.getMinimalTickets(eventId);
         
         res.json({ status: 'success', data: minimal });
     });
@@ -164,6 +156,17 @@ class TicketController {
     });
 
     // --- ALERTS ---
+    heartbeat = catchAsync(async (req, res, next) => {
+        const { eventId } = req.params;
+        const { deviceId, type, battery } = req.body;
+        
+        // Trust the scanner's reported type if provided, otherwise default to unknown
+        // This resolves the mismatch where scanner says LAN but dashboard says NGROK
+        await ticketService.registerScanner(deviceId, eventId, type || 'unknown');
+        
+        res.json({ status: 'success', message: 'Heartbeat received' });
+    });
+
     reportIssue = catchAsync(async (req, res, next) => {
         const { eventId } = req.params;
         const { deviceId } = req.body;

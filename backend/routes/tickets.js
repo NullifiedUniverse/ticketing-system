@@ -22,7 +22,16 @@ adminRouter.get('/tickets/:eventId', ticketController.getTickets.bind(ticketCont
 adminRouter.post('/update-ticket-status/:eventId/:ticketId', ticketController.updateTicketStatus.bind(ticketController));
 
 // Raffle
-adminRouter.get('/raffle/draw/:eventId', raffleController.drawWinner.bind(raffleController));
+adminRouter.get('/raffle/state/:eventId', raffleController.getState.bind(raffleController));
+adminRouter.post('/raffle/sync/:eventId', raffleController.syncAttendees.bind(raffleController));
+adminRouter.post('/raffle/prizes/:eventId', raffleController.updatePrizes.bind(raffleController));
+adminRouter.post('/raffle/upload-prize-image', 
+    (req, res, next) => { console.log('DEBUG: Upload route hit'); next(); },
+    uploadMiddleware, 
+    raffleController.uploadPrizeImage.bind(raffleController)
+);
+adminRouter.post('/raffle/draw/:eventId', raffleController.drawWinner.bind(raffleController));
+adminRouter.post('/raffle/reset/:eventId', raffleController.reset.bind(raffleController));
 
 // Email
 adminRouter.post('/email/upload-bg', uploadMiddleware, emailController.uploadBackground.bind(emailController));
@@ -36,6 +45,7 @@ scannerRouter.post('/update-ticket-status/:eventId/:ticketId', ticketController.
 scannerRouter.get('/warmup/:eventId', ticketController.warmupCache.bind(ticketController));
 scannerRouter.get('/get-minimal-ticket-data/:eventId', ticketController.getMinimalTicketData.bind(ticketController));
 scannerRouter.post('/log-perf', scannerController.logPerformance.bind(scannerController));
+scannerRouter.post('/heartbeat/:eventId', ticketController.heartbeat.bind(ticketController));
 scannerRouter.post('/report-issue/:eventId', ticketController.reportIssue.bind(ticketController));
 
 // Admin Alerts

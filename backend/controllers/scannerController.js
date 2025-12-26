@@ -1,10 +1,24 @@
 const catchAsync = require('../utils/catchAsync');
 const logger = require('../utils/logger');
 const ticketService = require('../services/ticketService');
+const Joi = require('joi');
+const AppError = require('../utils/AppError');
+
+const logPerfSchema = Joi.object({
+    eventId: Joi.string().required(),
+    metrics: Joi.object().required(),
+    timestamp: Joi.number().required(),
+    config: Joi.object().optional()
+});
 
 class ScannerController {
     logPerformance = catchAsync(async (req, res, next) => {
-        const { eventId, metrics, timestamp, config: scannerConfig } = req.body;
+        const { error, value } = logPerfSchema.validate(req.body);
+        if (error) {
+            return next(new AppError(error.details[0].message, 400));
+        }
+
+        const { eventId, metrics, config: scannerConfig } = value;
         const deviceId = req.deviceId || 'unknown';
         
         // Detect Type

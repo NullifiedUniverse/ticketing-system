@@ -6,6 +6,8 @@ import Gatekeeper from './components/Gatekeeper';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const EmailDashboard = lazy(() => import('./components/EmailDashboard'));
+const RaffleDisplay = lazy(() => import('./components/CelestialRaffle/RaffleDisplay'));
+const RaffleControl = lazy(() => import('./components/CelestialRaffle/RaffleControl'));
 
 const App = () => {
     const [route, setRoute] = useState(window.location.hash || '#dashboard');
@@ -21,7 +23,11 @@ const App = () => {
             <EventProvider>
                 <Gatekeeper>
                     <Suspense fallback={<PageSkeleton />}>
-                        {route === '#email' ? <EmailDashboard /> : <Dashboard />}
+                        {route === '#email' ? <EmailDashboard /> :
+                            route === '#raffle-control' ? <RaffleControl /> :
+                            route === '#raffle-display' ? <RaffleDisplay /> :
+                            route === '#raffle' ? <RaffleDisplay /> :
+                                <Dashboard />}
                     </Suspense>
                 </Gatekeeper>
             </EventProvider>

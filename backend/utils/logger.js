@@ -28,13 +28,26 @@ const colors = {
 
 winston.addColors(colors);
 
-// Concise format: [HH:mm:ss] [LEVEL]: Message
+// Custom Format
+const customFormat = winston.format.printf(({ level, message, timestamp, ...metadata }) => {
+  let icon = 'ℹ️';
+  if (level.includes('error')) icon = '🛑';
+  else if (level.includes('warn')) icon = '⚠️';
+  else if (level.includes('debug')) icon = '🐛';
+  else if (level.includes('http')) icon = '🌐';
+  
+  let msg = `${timestamp} ${icon} [${level}]: ${message}`;
+  
+  if (Object.keys(metadata).length > 0) {
+    msg += `\n${JSON.stringify(metadata, null, 2)}`;
+  }
+  return msg;
+});
+
 const format = winston.format.combine(
   winston.format.timestamp({ format: 'HH:mm:ss' }),
   winston.format.colorize({ all: true }),
-  winston.format.printf(
-    (info) => `[${info.timestamp}] [${info.level}]: ${info.message}`,
-  ),
+  customFormat
 );
 
 const transports = [

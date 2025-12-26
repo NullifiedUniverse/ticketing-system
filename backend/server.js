@@ -4,6 +4,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const compression = require('compression');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const morgan = require('morgan');
 const config = require('./config');
@@ -15,7 +17,7 @@ const AppError = require('./utils/AppError');
 const scannerTokenRoutes = require('./routes/scannerToken');
 const { adminRouter, scannerRouter } = require('./routes/tickets');
 const scannerAuthMiddleware = require('./middleware/scannerAuthMiddleware');
-const ngrok = require('./ngrok'); // Import entire ngrok module
+const networkService = require('./services/networkService'); // Centralized Network Service
 
 // Handle Uncaught Exceptions
 process.on('uncaughtException', err => {
@@ -28,6 +30,29 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // --- MIDDLEWARE ---
+// Security Headers
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Needed for React & Scanner
+            imgSrc: ["'self'", "data:", "blob:"], // Needed for raffle images
+            connectSrc: ["'self'", "*"], // Allow API calls
+        },
+    },
+}));
+
+// Rate Limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 500, // Limit each IP to 500 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: 'Too many requests from this IP, please try again after 15 minutes',
+    skip: (req) => req.url.startsWith('/api/scanner') // Skip limit for high-frequency scanner ops
+});
+app.use('/api', limiter);
+
 // Concise Logging: Method URL Status Time
 app.use(morgan(':method :url :status :response-time ms', { 
     stream: { write: message => logger.http(message.trim()) },
@@ -60,21 +85,24 @@ app.use('/auth', scannerTokenRoutes);
 
 app.get('/api/ping', (req, res) => res.send('pong'));
 
+// Standardized Network Config Endpoint
+app.get('/api/system/network-config', (req, res) => {
+    const config = networkService.getNetworkConfig();
+    res.json({ status: 'success', data: config });
+});
+
+// Backward Compatibility Endpoint
 app.get('/api/ngrok-url', (req, res) => {
-    const url = ngrok.getUrl();
-    const type = ngrok.getUrlType();
+    const netConfig = networkService.getNetworkConfig();
     
-    // Improved Multi-IP Support
-    const localIps = ngrok.getLocalIps();
-    const localUrls = localIps.map(ip => `http://${ip}:${config.port}`);
-    const primaryLocalUrl = localUrls.length > 0 ? localUrls[0] : `http://localhost:${config.port}`;
-    
-    if (url) {
-        res.json({ status: 'success', url, type, localUrl: primaryLocalUrl, localUrls });
-    } else {
-        // If ngrok failed or not running, return local at least
-        res.json({ status: 'success', url: primaryLocalUrl, type: 'local', localUrl: primaryLocalUrl, localUrls });
-    }
+    // Map to legacy format
+    res.json({ 
+        status: 'success', 
+        url: netConfig.publicUrl || netConfig.preferredLocalUrl, 
+        type: netConfig.type, 
+        localUrl: netConfig.preferredLocalUrl, 
+        localUrls: netConfig.localUrls 
+    });
 });
 
 // --- SERVE SCANNER (Standalone) ---
@@ -91,6 +119,9 @@ app.get('/html5-qrcode.min.js', (req, res) => {
 // --- SERVE STATIC FRONTEND (Production) ---
 // Serve static files from the React app build directory
 app.use(express.static(path.join(__dirname, '../frontend/build')));
+
+// Serve Uploads (e.g. background images, raffle prizes)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Handle API 404s explicitly BEFORE the React catch-all
 // This prevents API errors from returning the HTML index page
@@ -109,15 +140,16 @@ app.use(globalErrorHandler);
 
 // --- START SERVER ---
 const server = app.listen(PORT, '0.0.0.0', async () => { // Listen on all network interfaces
+  console.log('\n✅ SERVER STARTED');
+  console.log(`📡 Local:   http://localhost:${PORT}`);
   logger.info(`Server is running on http://0.0.0.0:${PORT}`);
   logger.info('System initialized by NullifiedGalaxy');
   if (process.env.NODE_ENV !== 'production') {
-    // Start Ngrok/Local tunnel
+    // Start Ngrok/Local tunnel via Service
     try {
-        await ngrok.start();
-        logger.info('Ngrok/Tunnel started successfully');
+        await networkService.startTunnel();
     } catch (err) {
-        logger.error('Failed to start Ngrok/Tunnel', err);
+        logger.error('Failed to start Network Service', err);
     }
   }
 });
@@ -126,7 +158,7 @@ const server = app.listen(PORT, '0.0.0.0', async () => { // Listen on all networ
 process.on('SIGINT', async () => {
     logger.info('SIGINT signal received: closing HTTP server');
     if (process.env.NODE_ENV !== 'production') {
-        await ngrok.stop();
+        await networkService.stopTunnel();
     }
     server.close(() => {
         logger.info('HTTP server closed');

@@ -6,39 +6,74 @@
     color-scheme: dark;
 
     /* --- Theme: Pure Black & Deep Cosmos --- */
-    
+
     /* Core Backgrounds */
     --bg-app: #000000;
-    --bg-surface-1: #050505; /* Panel Base */
-    --bg-surface-2: #0a0a0a; /* Panel Hover / Input */
-    --bg-surface-3: #171717; /* Highlight */
+    --bg-surface-1: #050505;
+    /* Panel Base */
+    --bg-surface-2: #0a0a0a;
+    /* Panel Hover / Input */
+    --bg-surface-3: #171717;
+    /* Highlight */
 
     /* Text Colors */
     --text-primary: #ffffff;
-    --text-secondary: #a1a1aa; /* Neutral 400 */
-    --text-tertiary: #52525b; /* Neutral 600 */
+    --text-secondary: #a1a1aa;
+    /* Neutral 400 */
+    --text-tertiary: #52525b;
+    /* Neutral 600 */
 
     /* Borders */
-    --border-subtle: #18181b; /* Neutral 900 */
-    --border-medium: #27272a; /* Neutral 800 */
-    --border-bright: #3f3f46; /* Neutral 700 */
+    --border-subtle: #18181b;
+    /* Neutral 900 */
+    --border-medium: #27272a;
+    /* Neutral 800 */
+    --border-bright: #3f3f46;
+    /* Neutral 700 */
 
     /* Brand / Accent Colors */
     --color-accent-blue: #3b82f6;
     --color-accent-purple: #8b5cf6;
     --color-accent-pink: #ec4899;
-    
+
     /* Semantic Colors */
     --color-success: #10b981;
     --color-danger: #ef4444;
     --color-warning: #f59e0b;
 
+    /* Brand / Config Aliases (Matching tailwind.config.js) */
+    --color-brand-red: #ef4444;
+    --color-brand-orange: #f97316;
+    --color-brand-yellow: #eab308;
+    --color-brand-green: #22c55e;
+    --color-brand-blue: #3b82f6;
+    --color-brand-indigo: #6366f1;
+    --color-brand-violet: #8b5cf6;
+    --color-brand-purple: #a855f7;
+    --color-brand-pink: #ec4899;
+
+    /* Glass Surface Aliases */
+    --surface-glass-heavy: rgba(5, 5, 5, 0.8);
+    --surface-glass-medium: rgba(5, 5, 5, 0.5);
+    --surface-glass-light: rgba(255, 255, 255, 0.05);
+
+    --border-glass-subtle: rgba(255, 255, 255, 0.05);
+    --border-glass-highlight: rgba(255, 255, 255, 0.1);
+
+    --radius-bento: 1.5rem;
+
     /* Dimensions */
-    --radius-panel: 1.5rem;
+    --radius-panel: 1rem;
     --radius-button: 0.75rem;
-    
+
     /* Transitions */
     --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (min-width: 768px) {
+    :root {
+        --radius-panel: 1.5rem;
+    }
 }
 
 body {
@@ -56,29 +91,29 @@ body {
 body::before {
     content: "";
     position: fixed;
-    inset: -50%; /* Extend well beyond viewport to cover rotation */
+    inset: -50%;
+    /* Extend well beyond viewport to cover rotation */
     width: 200%;
     height: 200%;
-    background: conic-gradient(
-        from 0deg, 
-        rgba(255, 0, 0, 0.05), 
-        rgba(255, 165, 0, 0.05), 
-        rgba(255, 255, 0, 0.05), 
-        rgba(0, 128, 0, 0.05), 
-        rgba(0, 0, 255, 0.05), 
-        rgba(75, 0, 130, 0.05), 
-        rgba(238, 130, 238, 0.05), 
-        rgba(255, 0, 0, 0.05)
-    );
+    background: conic-gradient(from 0deg,
+            rgba(255, 0, 0, 0.05),
+            rgba(255, 165, 0, 0.05),
+            rgba(255, 255, 0, 0.05),
+            rgba(0, 128, 0, 0.05),
+            rgba(0, 0, 255, 0.05),
+            rgba(75, 0, 130, 0.05),
+            rgba(238, 130, 238, 0.05),
+            rgba(255, 0, 0, 0.05));
     /* Radial mask to soften the edges and center the glow */
     mask-image: radial-gradient(circle at center, black 0%, transparent 60%);
     -webkit-mask-image: radial-gradient(circle at center, black 0%, transparent 60%);
-    
+
     z-index: -1;
     pointer-events: none;
     animation: rotate-glow 40s linear infinite;
     will-change: transform;
-    transform: translateZ(0); /* Hardware Acceleration */
+    transform: translateZ(0);
+    /* Hardware Acceleration */
 }
 
 /* Secondary static glow for depth */
@@ -96,8 +131,13 @@ body::after {
 }
 
 @keyframes rotate-glow {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 /* Custom Scrollbar */
@@ -105,14 +145,17 @@ body::after {
     width: 6px;
     height: 6px;
 }
+
 ::-webkit-scrollbar-track {
     background: var(--bg-app);
 }
+
 ::-webkit-scrollbar-thumb {
     background: var(--border-medium);
     border-radius: 99px;
     transition: background 0.2s;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: var(--border-bright);
 }
@@ -121,13 +164,15 @@ body::after {
     /* --- Component Classes --- */
 
     /* Panels (Bento) */
-    .glass-panel, .card-panel {
-        background-color: rgba(5, 5, 5, 0.7); /* Deep transparency */
+    .glass-panel,
+    .card-panel {
+        background-color: rgba(5, 5, 5, 0.7);
+        /* Deep transparency */
         border: 1px solid var(--border-subtle);
         border-radius: var(--radius-panel);
         backdrop-filter: blur(20px);
         -webkit-backdrop-filter: blur(20px);
-        box-shadow: 
+        box-shadow:
             0 0 0 1px rgba(255, 255, 255, 0.03),
             0 20px 40px -12px rgba(0, 0, 0, 1);
         transition: border-color 0.3s var(--ease-smooth), transform 0.3s var(--ease-smooth), box-shadow 0.3s var(--ease-smooth);
@@ -135,24 +180,27 @@ body::after {
 
     .glass-panel:hover {
         border-color: var(--border-medium);
-        box-shadow: 
+        box-shadow:
             0 0 0 1px rgba(255, 255, 255, 0.08),
             0 30px 60px -12px rgba(0, 0, 0, 1);
         transform: translateY(-2px);
     }
 
     /* Inputs */
-    .glass-input, .input-standard {
+    .glass-input,
+    .input-standard {
         @apply w-full px-4 py-3 rounded-xl transition-all duration-200 outline-none;
         background-color: var(--bg-surface-2);
         border: 1px solid var(--border-subtle);
         color: var(--text-primary);
     }
+
     .glass-input:focus {
         border-color: var(--text-secondary);
         background-color: var(--bg-surface-3);
         box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05);
     }
+
     .glass-input::placeholder {
         color: var(--text-tertiary);
     }
@@ -163,12 +211,14 @@ body::after {
         border-radius: var(--radius-button);
     }
 
-    .glass-interactive, .btn-interactive {
+    .glass-interactive,
+    .btn-interactive {
         @apply btn-base px-4 py-2;
         background-color: var(--bg-surface-2);
         border: 1px solid var(--border-subtle);
         color: var(--text-secondary);
     }
+
     .glass-interactive:hover {
         background-color: var(--bg-surface-3);
         color: var(--text-primary);
@@ -177,10 +227,12 @@ body::after {
 
     .btn-primary {
         @apply btn-base px-6 py-3 shadow-lg shadow-blue-900/20;
-        background-color: var(--text-primary); /* White button in dark mode */
+        background-color: var(--text-primary);
+        /* White button in dark mode */
         color: var(--bg-app);
         border: 1px solid transparent;
     }
+
     .btn-primary:hover {
         background-color: #e5e5e5;
         transform: translateY(-1px);
@@ -193,6 +245,7 @@ body::after {
         border: 1px solid rgba(16, 185, 129, 0.2);
         color: #34d399;
     }
+
     .btn-success:hover {
         background-color: rgba(16, 185, 129, 0.2);
         border-color: rgba(16, 185, 129, 0.4);
@@ -204,6 +257,7 @@ body::after {
         border: 1px solid rgba(239, 68, 68, 0.2);
         color: #f87171;
     }
+
     .btn-danger:hover {
         background-color: rgba(239, 68, 68, 0.2);
         border-color: rgba(239, 68, 68, 0.4);
@@ -215,6 +269,7 @@ body::after {
         border: 1px solid var(--border-medium);
         color: var(--text-secondary);
     }
+
     .btn-neutral:hover {
         background-color: var(--bg-surface-2);
         color: var(--text-primary);
@@ -227,7 +282,7 @@ body::after {
         /* Restored minimal rainbow text for specific highlights if needed, subtle */
         opacity: 0.9;
     }
-    
+
     .status-dot {
         @apply w-2 h-2 rounded-full;
         box-shadow: 0 0 12px currentColor;

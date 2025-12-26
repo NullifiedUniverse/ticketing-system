@@ -54,9 +54,12 @@ export const EventProvider = ({ children }) => {
 
     const triggerRefresh = () => setRefreshTrigger(prev => prev + 1);
 
+    const selectedEvent = events.find(e => e.id === eventId) || null;
+
     const value = {
         eventId,
         selectEvent,
+        selectedEvent,
         events,
         loading,
         triggerRefresh,

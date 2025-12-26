@@ -26,20 +26,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
-        /* Optimized Dark Theme - Deep Cosmos Match */
+        /* Optimized Dark Theme - Deep Cosmos Match (Synced with Dashboard) */
         :root {
-            --color-primary: #6366f1; /* Indigo 500 */
-            --color-success: #22c55e; /* Green 500 */
-            --color-error: #ef4444; /* Red 500 */
-            --color-warning: #eab308; /* Yellow 500 */
-            --glass-bg: rgba(20, 20, 20, 0.6);
-            --glass-border: rgba(255,255,255,0.1);
+            /* Core Backgrounds */
+            --bg-app: #000000;
+            --bg-surface-1: #050505;
+            
+            /* Brand Colors */
+            --color-primary: #6366f1; /* Indigo */
+            --color-success: #22c55e; /* Green */
+            --color-error: #ef4444; /* Red */
+            --color-warning: #eab308; /* Yellow */
+            
+            /* Glass System */
+            --glass-bg: rgba(5, 5, 5, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
         html, body {
             margin: 0; padding: 0; width: 100%; height: 100%;
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: #020617; /* Slate 950 */
+            background-color: var(--bg-app);
             background-image: 
                 radial-gradient(at 0% 0%, rgba(239, 68, 68, 0.15) 0px, transparent 50%),      /* Red */
                 radial-gradient(at 50% 0%, rgba(234, 179, 8, 0.15) 0px, transparent 50%),     /* Yellow */
@@ -77,28 +85,21 @@
             display: none !important; 
         }
 
-        /* Custom Overlay - Centered & Responsive
-        */
+        /* Custom Overlay - Centered & Responsive */
         .scanner-overlay {
             position: absolute; 
             top: 50%; 
             left: 50%; 
             transform: translate(-50%, -50%);
-            
-            /* Responsive Size: 65% of the smaller dimension */
             width: 65vmin; 
             height: 65vmin;
-            
-            /* Limits */
             max-width: 500px; 
             max-height: 500px;
-            
             z-index: 10;
             pointer-events: none;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        /* Visual Feedback via Box Shadow Flash instead of Border */
         .scanner-overlay.active { 
             box-shadow: 0 0 0 0 rgba(0,0,0,0), 0 0 50px 20px rgba(34, 197, 94, 0.6) inset; 
             transform: translate(-50%, -50%) scale(1.05); 
@@ -108,7 +109,7 @@
             box-shadow: 0 0 0 0 rgba(0,0,0,0), 0 0 50px 20px rgba(239, 68, 68, 0.6) inset; 
         }
 
-        /* Laser Animation - Smoother */
+        /* Laser Animation */
         .laser {
             position: absolute; 
             width: 100%; 
@@ -128,16 +129,18 @@
             100% { transform: translateY(35vmin) scaleX(0.9); opacity: 0; } 
         }
 
-        /* Modern Glass UI */
+        /* Modern Glass UI (Synced) */
         .glass {
-            background: rgba(2, 6, 23, 0.6); /* Slate 950 / 60% */
-            backdrop-filter: blur(32px);
-            -webkit-backdrop-filter: blur(32px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 
+                0 0 0 1px rgba(255, 255, 255, 0.03),
+                0 20px 40px -12px rgba(0, 0, 0, 1);
         }
 
-        /* Popups - Enhanced Pop Animation */
+        /* Popups */
         .popup-enter {
             animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
@@ -145,34 +148,12 @@
             0% { transform: translateY(-50px) scale(0.9); opacity: 0; filter: blur(10px); } 
             100% { transform: translateY(0) scale(1); opacity: 1; filter: blur(0px); } 
         }
-
-        /* Gradient Border Utility */
-        .gradient-border-mask {
-            position: relative;
-            background: rgba(20, 20, 20, 0.85);
-            background-clip: padding-box;
-            border: 2px solid transparent;
-            border-radius: 2rem;
-        }
-        .gradient-border-mask::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            z-index: -1;
-            margin: -2px;
-            border-radius: inherit;
-            background: linear-gradient(to right, var(--color-primary), var(--color-success));
-        }
     </style>
 </head>
 <body>
     <!-- Security: Anti-Tamper -->
     <script>
-        // ... (unchanged)
-        // Disable Context Menu
         document.addEventListener('contextmenu', event => event.preventDefault());
-
-        // Disable DevTools Shortcuts
         document.addEventListener('keydown', event => {
             if (
                 event.key === 'F12' || 
@@ -183,31 +164,22 @@
                 return false;
             }
         });
-
-        // Clear Console
         console.clear();
     </script>
 
-    <!-- Camera Container -->
     <div id="reader"></div>
 
-    <!-- Visual Overlay -->
     <div class="scanner-overlay" id="scan-box">
         <div class="laser"></div>
-        <!-- Stylish Corners -->
         <div class="absolute top-0 left-0 w-10 h-10 border-t-[5px] border-l-[5px] border-white rounded-tl-2xl -mt-1 -ml-1"></div>
         <div class="absolute top-0 right-0 w-10 h-10 border-t-[5px] border-r-[5px] border-white rounded-tr-2xl -mt-1 -mr-1"></div>
         <div class="absolute bottom-0 left-0 w-10 h-10 border-b-[5px] border-l-[5px] border-white rounded-bl-2xl -mb-1 -ml-1"></div>
         <div class="absolute bottom-0 right-0 w-10 h-10 border-b-[5px] border-r-[5px] border-white rounded-br-2xl -mb-1 -mr-1"></div>
     </div>
 
-    <!-- UI Overlay Layer (Click-through except buttons) -->
     <div class="fixed inset-0 z-20 flex flex-col p-safe-area pointer-events-none">
         
-        <!-- Top Navigation Bar -->
         <div class="flex justify-between items-start p-4 pointer-events-auto relative z-10">
-            
-            <!-- Status Badge -->
             <div class="flex flex-col gap-1.5 pointer-events-auto">
                 <div class="glass px-4 py-2.5 rounded-full flex items-center gap-3 shadow-lg transition-all border border-white/5" id="status-badge">
                     <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-gray-500 transition-colors duration-300"></div>
@@ -216,40 +188,31 @@
                         <span id="event-name" class="text-xs font-bold text-white truncate max-w-[120px]">Not Linked</span>
                     </div>
                 </div>
-                <!-- Connection Type Badge -->
                 <div id="conn-badge" class="hidden glass px-3 py-1 rounded-full self-start border border-white/5 flex items-center gap-2">
                     <div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
                     <span id="conn-type" class="text-[8px] font-black uppercase tracking-widest text-blue-200">Checking...</span>
                 </div>
             </div>
 
-            <!-- Settings Controls -->
             <div class="flex gap-2">
-                <!-- ... buttons unchanged ... -->
-                <!-- Torch Toggle -->
                 <button onclick="toggleTorch()" id="btn-torch" class="glass w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition hidden">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                 </button>
 
-                <!-- Mute Toggle -->
                 <button onclick="toggleMute()" id="btn-mute" class="glass w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition">
                     <svg id="icon-mute" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /></svg>
                 </button>
 
-                <!-- Reset -->
                 <button onclick="resetApp()" class="glass w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 </button>
             </div>
         </div>
 
-        <!-- Result Card Area (Moved to TOP, Highest Z-Index) -->
         <div id="result-area" class="fixed top-24 left-0 right-0 px-6 hidden flex justify-center w-full z-[100] pointer-events-none">
             <div class="glass p-1 rounded-[2.5rem] shadow-2xl popup-enter pointer-events-auto" id="result-wrapper">
                 <div class="bg-gray-900/90 backdrop-blur-3xl rounded-[2.3rem] p-6 w-full max-w-sm text-center relative overflow-hidden border border-white/10" id="result-card">
-                    <!-- Dynamic Glow -->
                     <div id="result-glow" class="absolute inset-0 opacity-20 bg-gradient-to-tr from-green-500 to-emerald-500"></div>
-                    
                     <div class="relative z-10">
                         <div id="result-icon" class="text-6xl mb-2 filter drop-shadow-lg transform transition-transform hover:scale-110">✅</div>
                         <h1 id="result-name" class="text-3xl font-black text-white leading-tight mb-1 break-words tracking-tight drop-shadow-md">Attendee</h1>
@@ -259,11 +222,10 @@
             </div>
         </div>
 
-        <!-- Controls Area (Fixed Bottom) -->
         <div class="fixed bottom-0 left-0 right-0 z-40 p-4 pb-8 glass border-t border-white/10 rounded-t-[2rem] backdrop-blur-xl transition-transform duration-300 pointer-events-auto" id="controls-area">
             
-            <!-- Toggle Switch (Check-In / Check-Out) -->
-            <div id="mode-toggle" class="glass p-1.5 rounded-2xl flex hidden mb-3 bg-black/40">
+            <!-- Mode Toggle Tabs -->
+            <div id="mode-toggle" class="glass p-1.5 rounded-2xl flex mb-3 bg-black/40">
                 <button onclick="setMode('check-in')" id="btn-in" class="flex-1 py-3 rounded-xl text-sm font-extrabold shadow-lg transition-all relative overflow-hidden">
                     Check In
                 </button>
@@ -272,12 +234,10 @@
                 </button>
             </div>
 
-            <!-- Initialization Button -->
             <button id="start-btn" onclick="startScanner()" class="w-full bg-white hover:bg-gray-100 active:bg-gray-200 text-black font-black text-lg py-4 rounded-2xl shadow-xl active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 mb-3" disabled>
                 Initialize Camera
             </button>
             
-            <!-- Report Issue Button -->
             <button onclick="reportIssue()" class="w-full bg-red-500/20 hover:bg-red-500/30 text-red-400 font-bold py-3 rounded-xl border border-red-500/30 active:scale-95 transition-all text-sm flex items-center justify-center gap-2">
                 <span>⚠️ Report Issue to Dashboard</span>
             </button>
@@ -294,7 +254,7 @@
         let mode = 'check-in';
         let isProcessing = false;
         let isCameraRunning = false;
-        let shouldCameraRun = false; // Tracks user intent
+        let shouldCameraRun = false;
         let isTorchOn = false;
         let isMuted = false;
         let deviceId = localStorage.getItem('scannerDeviceId');
@@ -303,15 +263,13 @@
             localStorage.setItem('scannerDeviceId', deviceId);
         }
 
-        // --- Sound Manager (Low Latency) ---
         class SoundManager {
             constructor() {
                 this.sounds = {
-                    success: new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd"), // Placeholder Short Beep
-                    error: new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd"), // Placeholder Buzz
-                    warning: new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd") // Placeholder Double
+                    success: new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd"),
+                    error: new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd"),
+                    warning: new Audio("data:audio/mp3;base64,//uQRAAAAWMSLwUIYAAsYkXgoQwAEaYLWfkWgAI0wWs/ItAAAGDgYtAgAyN+QWaAAihwMWm4G8QQRDiMcCBcH3Cc+CDv/7cxxHNTuIHQTyOdnQRx+TAlLFKD4gPp4CompHDyg958lLv/7ceRB3d8dz/DgDAOIDqagaER8L4tuHgqsg8aCPvprmgAd")
                 };
-                // Preload
                 Object.values(this.sounds).forEach(s => s.load());
             }
 
@@ -319,12 +277,11 @@
                 if (isMuted) return;
                 const sound = this.sounds[type];
                 if (sound) {
-                    sound.currentTime = 0; // Reset to start for rapid fire
+                    sound.currentTime = 0;
                     sound.play().catch(e => console.warn("Audio play failed", e));
                 }
             }
             
-            // Unlock audio context on mobile
             unlock() {
                 const s = this.sounds.success;
                 s.play().then(() => {
@@ -337,34 +294,23 @@
         const soundManager = new SoundManager();
 
         window.onload = async () => {
-            // 1. Try Shim
             if (typeof Html5QrCode === 'undefined' && window.__Html5QrcodeLibrary__) {
                 window.Html5QrCode = window.__Html5QrcodeLibrary__.Html5Qrcode;
             }
-            
-            // 2. Check & Fallback
             if (typeof Html5QrCode === 'undefined') {
-                console.warn("Local library failed. Attempting CDN fallback...");
                 try {
                     await loadScript('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js');
-                    if (typeof Html5QrCode === 'undefined' && window.__Html5QrcodeLibrary__) {
-                        window.Html5QrCode = window.__Html5QrcodeLibrary__.Html5Qrcode;
-                    }
-                } catch (e) {
-                    console.error("CDN Fallback failed", e);
-                }
+                } catch (e) { console.error("CDN Fallback failed", e); }
             }
 
-            // 3. Final Init
             if (typeof Html5QrCode !== 'undefined') {
                 document.getElementById('start-btn').innerText = "Tap to Start";
-                document.getElementById('start-btn').disabled = false; // Enable button
+                document.getElementById('start-btn').disabled = false;
                 loadConfig();
             } else {
                 showErrorButton();
             }
 
-            // Lifecycle Listeners
             document.addEventListener("visibilitychange", handleVisibilityChange);
             window.addEventListener("pagehide", stopCameraInternal);
         };
@@ -388,52 +334,232 @@
             });
         }
 
+        async function startScanner() {
+            if (isCameraRunning) return;
+            
+            const btn = document.getElementById('start-btn');
+            btn.disabled = true;
+            btn.innerText = "Starting...";
+            
+            soundManager.unlock(); // Unlock audio context
+
+            try {
+                if (!html5QrCode) {
+                    html5QrCode = new Html5QrCode("reader");
+                }
+
+                const qrConfig = { 
+                    fps: 10, 
+                    qrbox: { width: 250, height: 250 },
+                    aspectRatio: window.innerHeight / window.innerWidth
+                };
+
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    qrConfig,
+                    onScanSuccess,
+                    onScanFailure
+                );
+
+                isCameraRunning = true;
+                shouldCameraRun = true;
+                
+                // Update UI
+                btn.classList.add('hidden');
+                document.getElementById('controls-area').classList.add('translate-y-full'); // Hide controls slightly or just use them as toggle
+                
+                // Show floating controls if needed? 
+                // Actually, let's keep the bottom bar but change button to "Stop"
+                btn.classList.remove('hidden');
+                btn.innerText = "Stop Camera";
+                btn.onclick = stopCameraInternal;
+                btn.classList.replace('bg-white', 'bg-red-500');
+                btn.classList.replace('text-black', 'text-white');
+                btn.disabled = false;
+
+                // Check Torch capability
+                try {
+                    const capabilities = html5QrCode.getRunningTrackCameraCapabilities();
+                    if (capabilities.torchFeature().isSupported()) {
+                        document.getElementById('btn-torch').classList.remove('hidden');
+                    }
+                } catch(e) {}
+
+            } catch (err) {
+                console.error(err);
+                btn.disabled = false;
+                btn.innerText = "Permission Denied / Error";
+                alert("Camera Error: " + err);
+            }
+        }
+
+        async function stopCameraInternal() {
+            if (!isCameraRunning || !html5QrCode) return;
+            
+            try {
+                await html5QrCode.stop();
+                isCameraRunning = false;
+                shouldCameraRun = false;
+                
+                const btn = document.getElementById('start-btn');
+                btn.innerText = "Resume Scanning";
+                btn.onclick = startScanner;
+                btn.classList.replace('bg-red-500', 'bg-white');
+                btn.classList.replace('text-white', 'text-black');
+                
+                document.getElementById('btn-torch').classList.add('hidden');
+                isTorchOn = false;
+            } catch (err) {
+                console.error("Failed to stop camera", err);
+            }
+        }
+
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                if (isCameraRunning) {
+                    // Just pause logic, usually we stop camera to save battery
+                    // But user might want it to stay? Better to stop.
+                    stopCameraInternal();
+                    shouldCameraRun = true; // Remember we wanted it running
+                }
+            } else {
+                // Don't auto-restart as it might annoy user, let them click resume
+                // Or if we want kiosk mode...
+                if (shouldCameraRun) {
+                    // startScanner(); // Uncomment for auto-resume
+                }
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            if (isProcessing) return;
+            isProcessing = true;
+            
+            // Immediate Feedback
+            if(navigator.vibrate) navigator.vibrate(20);
+            
+            handleTicket(decodedText);
+        }
+
+        function onScanFailure(error) {
+            // Ignore frame errors
+        }
+
+        async function toggleTorch() {
+            if (!html5QrCode || !isCameraRunning) return;
+            try {
+                await html5QrCode.applyVideoConstraints({
+                    advanced: [{ torch: !isTorchOn }]
+                });
+                isTorchOn = !isTorchOn;
+                document.getElementById('btn-torch').classList.toggle('bg-white', isTorchOn);
+                document.getElementById('btn-torch').classList.toggle('text-black', isTorchOn);
+            } catch (err) {
+                console.error("Torch error", err);
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            const icon = document.getElementById('icon-mute');
+            if (isMuted) {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />';
+                document.getElementById('btn-mute').classList.add('bg-red-500/20', 'text-red-400');
+            } else {
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />';
+                document.getElementById('btn-mute').classList.remove('bg-red-500/20', 'text-red-400');
+            }
+        }
+
+        // --- Network Optimization ---
         async function findBestConnection(candidates) {
             if (!candidates || candidates.length === 0) return null;
             
             console.log("Searching for best connection...", candidates);
             showResult('loading', 'Optimizing...', 'Finding fastest server');
 
-            // Ping all candidates in parallel
-            const pings = candidates.map(url => {
-                return new Promise(async (resolve) => {
+            // Wrap each candidate in a promise that rejects on timeout/fail
+            const checks = candidates.map(url => new Promise(async (resolve, reject) => {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout for Hotspots
+                try {
                     const start = performance.now();
-                    try {
-                        const controller = new AbortController();
-                        const timeout = setTimeout(() => controller.abort(), 2000); // 2s max for ping
-                        
-                        const res = await fetch(`${url}/api/ping`, { 
-                            method: 'GET',
-                            signal: controller.signal
-                        });
-                        clearTimeout(timeout);
-                        
-                        if (res.ok) {
-                            const duration = performance.now() - start;
-                            resolve({ url, duration });
-                        } else {
-                            resolve(null);
-                        }
-                    } catch (e) {
-                        resolve(null);
-                    }
-                });
-            });
+                    const res = await fetch(`${url}/api/ping`, { method: 'GET', signal: controller.signal });
+                    clearTimeout(timeout);
+                    if (res.ok) resolve(url);
+                    else reject();
+                } catch (e) { reject(); }
+            }));
 
-            // Race? No, we want the FASTEST successful one, but we need to wait for at least one success or all fail.
-            // Actually, Promise.any would be perfect but might not be supported in older webviews.
-            // Let's just wait for all and pick best. Or use a custom race.
-            
-            // Simple approach: Wait for all (capped at 2s) and pick fastest.
-            const results = await Promise.all(pings);
-            const valid = results.filter(r => r !== null).sort((a, b) => a.duration - b.duration);
-            
-            if (valid.length > 0) {
-                console.log(`Best connection: ${valid[0].url} (${valid[0].duration.toFixed(0)}ms)`);
-                return valid[0].url;
+            try {
+                // Custom Race-to-Success (Promise.any polyfill logic)
+                const winner = await new Promise((resolve, reject) => {
+                    let failures = 0;
+                    checks.forEach(p => {
+                        p.then(resolve).catch(() => {
+                            failures++;
+                            if (failures === checks.length) reject(new Error("All candidates failed"));
+                        });
+                    });
+                });
+                
+                console.log("Fastest connection found:", winner);
+                return winner;
+            } catch (e) {
+                console.warn("All connection candidates failed. Defaulting to primary.");
+                // Fallback to the first candidate if all pings fail (e.g. offline mode or strict firewall)
+                // This prevents the "First initialization is broken" issue.
+                return candidates[0];
             }
-            return null;
         }
+
+        class BackgroundNetworkOptimizer {
+            constructor() {
+                this.interval = null;
+                this.isOptimizing = false;
+            }
+
+            start() {
+                if (this.interval) clearInterval(this.interval);
+                this.interval = setInterval(() => this.check(), 60000); // Check every minute
+            }
+
+            async check() {
+                if (!config || !config.candidates || this.isOptimizing) return;
+                
+                // Only optimize if we are NOT on a local network (presumed slower)
+                const currentIsLocal = config.apiBaseUrl.includes('192.168.') || config.apiBaseUrl.includes('10.') || config.apiBaseUrl.includes('172.') || config.apiBaseUrl.includes('localhost');
+                if (currentIsLocal) return;
+
+                this.isOptimizing = true;
+                console.log("[NetOpt] Checking for faster local connection...");
+                
+                // We only want to switch if a LOCAL one works. Filter candidates for local IPs.
+                const localCandidates = config.candidates.filter(u => u.includes('192.168.') || u.includes('10.') || u.includes('172.') || u.includes('localhost'));
+                
+                if (localCandidates.length === 0) {
+                    this.isOptimizing = false;
+                    return;
+                }
+
+                // Check ONLY local candidates
+                const bestUrl = await findBestConnection(localCandidates);
+                
+                if (bestUrl && bestUrl !== config.apiBaseUrl) {
+                    console.log(`[NetOpt] Upgrading connection: ${config.apiBaseUrl} -> ${bestUrl}`);
+                    config.apiBaseUrl = bestUrl;
+                    localStorage.setItem('ticketScannerConfig', JSON.stringify(config));
+                    updateUI(true); // Update badge
+                    
+                    // Notify user unobtrusively
+                    if (navigator.vibrate) navigator.vibrate([50, 50]);
+                    showResult('success', 'Network Upgraded', 'Switched to Local LAN');
+                    setTimeout(() => resetState(0), 1500);
+                }
+                this.isOptimizing = false;
+            }
+        }
+        const networkOptimizer = new BackgroundNetworkOptimizer();
 
         async function loadConfig() {
             try {
@@ -442,53 +568,42 @@
                     config = JSON.parse(saved);
                     updateUI(true);
                     
-                    // Smart Connect Optimization on Load
+                    // Initial Optimization
                     if (config.candidates && config.candidates.length > 0) {
                         const bestUrl = await findBestConnection(config.candidates);
                         if (bestUrl && bestUrl !== config.apiBaseUrl) {
-                            console.log("Switching to faster connection:", bestUrl);
                             config.apiBaseUrl = bestUrl;
                             localStorage.setItem('ticketScannerConfig', JSON.stringify(config));
+                            updateUI(true);
                         }
                     }
+                    
+                    // Start Background Optimizer
+                    networkOptimizer.start();
 
-                    // Silent Warmup
                     fetch(`${config.apiBaseUrl}/api/scanner/warmup/${config.eventId}`, {
                         headers: { 'Authorization': `Bearer ${config.token}` },
                         keepalive: true
                     }).catch(console.warn);
                 }
-            } catch(e) { 
-                localStorage.removeItem('ticketScannerConfig'); 
-            }
+            } catch(e) { localStorage.removeItem('ticketScannerConfig'); }
         }
-
-        // ... (handleVisibilityChange, stopCameraInternal, startScanner... unchanged) ...
 
         async function handleSetup(text) {
             try {
                 const data = JSON.parse(text);
                 if (!data.eventId) throw new Error("Missing Config");
-                
-                // Smart Connect for Initial Setup
                 if (data.candidates && data.candidates.length > 0) {
                      const bestUrl = await findBestConnection(data.candidates);
-                     if (bestUrl) {
-                         data.apiBaseUrl = bestUrl;
-                     } else if (!data.apiBaseUrl) {
-                         // Fallback if no ping works (e.g. offline setup?) -> Use first candidate
-                         data.apiBaseUrl = data.candidates[0];
-                     }
-                } else if (!data.apiBaseUrl) {
-                    throw new Error("Missing Base URL");
-                }
+                     if (bestUrl) data.apiBaseUrl = bestUrl;
+                     else if (!data.apiBaseUrl) data.apiBaseUrl = data.candidates[0];
+                } else if (!data.apiBaseUrl) throw new Error("Missing Base URL");
                 
                 config = data;
                 localStorage.setItem('ticketScannerConfig', JSON.stringify(config));
-                
                 updateUI(true);
+                networkOptimizer.start();
                 showResult('success', 'Linked!', config.eventId);
-                
             } catch (e) {
                 console.error(e);
                 showResult('error', 'Invalid Setup QR', 'Scan the Dashboard QR');
@@ -497,19 +612,14 @@
             }
         }
 
-        // Network Retry Logic
         async function fetchWithRetry(url, options, retries = 3, backoff = 300) {
-            // Inject Device ID
             if (!options.headers) options.headers = {};
             options.headers['X-Device-Id'] = deviceId;
-
             try {
                 return await fetch(url, options);
             } catch (err) {
                 if (retries > 0) {
-                    // Update UI to show retry
                     showResult('loading', 'Weak Signal', `Retrying... (${retries})`);
-                    
                     await new Promise(r => setTimeout(r, backoff));
                     return fetchWithRetry(url, options, retries - 1, backoff * 2);
                 }
@@ -517,36 +627,32 @@
             }
         }
 
-        // Heartbeat Loop (every 30s)
         setInterval(() => {
             if (config && config.eventId) {
-                // Send lightweight heartbeat
-                logPerformanceMetrics(config.eventId, { type: 'heartbeat' }, config);
+                const connType = config.apiBaseUrl.includes('ngrok') ? 'NGROK' : 'LAN';
+                fetch(`${config.apiBaseUrl}/api/scanner/heartbeat/${config.eventId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.token}` },
+                    body: JSON.stringify({ deviceId: deviceId, type: connType, battery: 'unknown' })
+                }).catch(() => {});
             }
         }, 30000);
 
         async function handleTicket(rawId) {
-            // Note: 'loading' state is already set in onScan for immediate feedback.
+            // Immediate UI Update
+            showResult('loading', 'Processing...', 'Verifying Ticket');
 
-            // 1. Check if this is actually a Setup QR (Config Update)
-            // This is CRITICAL if the user needs to re-link after a token expires.
             try {
                 const potentialConfig = JSON.parse(rawId);
                 if (potentialConfig.eventId && potentialConfig.apiBaseUrl) {
-                    // It's a setup QR!
                     await handleSetup(rawId);
-                    return; // Stop ticket processing
+                    return;
                 }
-            } catch(e) {
-                // Not JSON, continue as ticket
-            }
+            } catch(e) {}
 
-            // 2. Sanitize ID: If QR is a full URL, take the last part
             let id = rawId;
             try {
                 if (id.includes('http') || id.includes('/')) {
-                     // e.g. https://site.com/t/12345 -> 12345
-                     // e.g. /t/12345 -> 12345
                      const parts = id.split('/');
                      id = parts[parts.length - 1];
                 }
@@ -554,11 +660,8 @@
 
             try {
                 const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 15000); // 15s Timeout
+                const timeout = setTimeout(() => controller.abort(), 15000);
 
-                markStart('API Network Request');
-                
-                // Use Retry Logic
                 const res = await fetchWithRetry(`${config.apiBaseUrl}/api/scanner/update-ticket-status/${config.eventId}/${id}`, {
                     method: 'POST',
                     headers: { 
@@ -571,45 +674,24 @@
                 });
                 
                 clearTimeout(timeout);
-                const duration = markEnd('API Network Request');
                 
-                // Handle Auth Errors Explicitly
-                if (res.status === 401 || res.status === 403) {
-                     throw new Error("Invalid Token"); 
-                }
+                if (res.status === 401 || res.status === 403) throw new Error("Invalid Token"); 
 
-                markStart('Response Parse');
                 const data = await res.json();
-                markEnd('Response Parse');
-                
                 if (!res.ok) throw new Error(data.message || "Scan Failed");
 
-                // Double-Vibrate for success
                 if(navigator.vibrate) navigator.vibrate([50, 50, 50]);
-                
-                // Sound Effect
                 soundManager.play('success');
-                
-                let subMsg = data.message;
-                if (duration > 1500) subMsg += " (Slow Network)";
-
-                showResult('success', data.data?.attendeeName || "Valid Ticket", subMsg);
-
-                // Auto-dismiss with delay (1.5s) for better UX
+                showResult('success', data.data?.attendeeName || "Valid Ticket", data.message);
                 resetState(1500);
 
             } catch (e) {
-                // Long vibrate for error
                 if(navigator.vibrate) navigator.vibrate(300);
-                
                 const errorMsg = e.message ? e.message.toLowerCase() : "unknown error";
                 
                 if (errorMsg.includes('session') || errorMsg.includes('token') || errorMsg.includes('forbidden') || errorMsg.includes('unauthorized')) {
-                     // Auth Error
                      showResult('error', 'Link Expired', 'Please Re-scan Dashboard QR');
                      soundManager.play('error');
-                     // We don't auto-clear config here to prevent annoying resets on temporary glitches,
-                     // but the message is clear.
                 } else if (errorMsg.includes('already checked')) {
                     showResult('warning', 'Already In', 'Ticket Used');
                     soundManager.play('warning');
@@ -620,7 +702,7 @@
                     showResult('error', 'Invalid', e.message || "Unknown Error");
                     soundManager.play('error');
                 }
-                resetState(2000); // Keep errors visible longer
+                resetState(2000);
             }
         }
 
@@ -635,52 +717,24 @@
             const box = document.getElementById('scan-box');
 
             area.classList.remove('hidden');
-            
-            // Reset Animation
             wrapper.classList.remove('popup-enter');
-            void wrapper.offsetWidth; // Trigger reflow
+            void wrapper.offsetWidth;
             wrapper.classList.add('popup-enter');
 
-            // Configs
             const styles = {
-                success: { 
-                    glow: 'from-green-500 to-emerald-500', 
-                    border: 'border-green-400/50', 
-                    icon: '✨',
-                    text: 'text-green-100'
-                },
-                error: { 
-                    glow: 'from-red-500 to-rose-500', 
-                    border: 'border-red-400/50', 
-                    icon: '🛑',
-                    text: 'text-red-100'
-                },
-                warning: { 
-                    glow: 'from-yellow-500 to-amber-500', 
-                    border: 'border-yellow-400/50', 
-                    icon: '⚠️',
-                    text: 'text-yellow-100'
-                },
-                loading: { 
-                    glow: 'from-blue-500 to-indigo-500', 
-                    border: 'border-blue-400/50', 
-                    icon: '⏳',
-                    text: 'text-blue-100'
-                }
+                success: { glow: 'from-green-500 to-emerald-500', border: 'border-green-400/50', icon: '✨', text: 'text-green-100' },
+                error: { glow: 'from-red-500 to-rose-500', border: 'border-red-400/50', icon: '🛑', text: 'text-red-100' },
+                warning: { glow: 'from-yellow-500 to-amber-500', border: 'border-yellow-400/50', icon: '⚠️', text: 'text-yellow-100' },
+                loading: { glow: 'from-blue-500 to-indigo-500', border: 'border-blue-400/50', icon: '⏳', text: 'text-blue-100' }
             };
-            
             const s = styles[type] || styles.loading;
-            
-            // Apply Styles
             glow.className = `absolute inset-0 opacity-20 bg-gradient-to-tr ${s.glow}`;
             card.className = `bg-gray-900/90 backdrop-blur-3xl rounded-[2.3rem] p-6 w-full max-w-sm text-center relative overflow-hidden border ${s.border}`;
-            
             icon.innerText = s.icon;
             name.innerText = title;
             msg.innerText = subtitle;
             msg.className = `text-xs font-bold uppercase tracking-[0.2em] bg-white/10 py-1 px-3 rounded-full inline-block backdrop-blur-md ${s.text}`;
 
-            // Update Overlay Box Color
             if (type === 'error') box.classList.add('error');
             if (type === 'success') box.classList.add('active');
         }
@@ -688,12 +742,10 @@
         let resetTimer = null;
         function resetState(delay) {
             if (resetTimer) clearTimeout(resetTimer);
-            
             resetTimer = setTimeout(() => {
                 isProcessing = false;
                 document.getElementById('result-area').classList.add('hidden');
-                const box = document.getElementById('scan-box');
-                box.classList.remove('active', 'error');
+                document.getElementById('scan-box').classList.remove('active', 'error');
             }, delay);
         }
 
@@ -711,8 +763,6 @@
                 dot.classList.add('bg-green-400', 'animate-pulse');
                 toggle.classList.remove('hidden');
                 badge.classList.add('border-green-500/30');
-
-                // Update Connection Badge
                 connBadge.classList.remove('hidden');
                 const isNgrok = config.apiBaseUrl.includes('ngrok-free.app') || config.apiBaseUrl.includes('ngrok.io');
                 connType.innerText = isNgrok ? 'Cloud (NGROK)' : 'Local (LAN)';
@@ -730,10 +780,8 @@
             mode = m;
             const btnIn = document.getElementById('btn-in');
             const btnOut = document.getElementById('btn-out');
-            
             const activeClass = "bg-indigo-600 text-white shadow-xl scale-105 z-10";
             const inactiveClass = "text-gray-400 hover:text-white hover:bg-white/5";
-            
             if (mode === 'check-in') {
                 btnIn.className = `flex-1 py-3 rounded-xl text-sm font-extrabold transition-all ${activeClass}`;
                 btnOut.className = `flex-1 py-3 rounded-xl text-sm font-extrabold transition-all ${inactiveClass}`;
@@ -752,37 +800,21 @@
 
         async function reportIssue() {
             if (!config || !config.eventId) return alert("Link to an event first!");
-            
-            // Visual feedback
             if (navigator.vibrate) navigator.vibrate(50);
-            
             try {
                 const res = await fetch(`${config.apiBaseUrl}/api/scanner/report-issue/${config.eventId}`, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'Authorization': `Bearer ${config.token}`,
-                        'ngrok-skip-browser-warning': 'true'
-                    },
-                    body: JSON.stringify({ deviceId: 'scanner-web-client' })
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${config.token}`, 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify({ deviceId: deviceId })
                 });
-                
-                const data = await res.json();
-
                 if (res.ok) {
                     showResult('warning', 'Reported', 'Issue notified to dashboard');
                     soundManager.play('warning');
                     setTimeout(() => resetState(0), 1500);
                 } else {
-                    console.error("Report Error:", data);
-                    alert("Failed to report: " + (data.message || "Unknown Server Error"));
-                    soundManager.play('error');
+                    alert("Failed to report.");
                 }
-            } catch (e) {
-                console.error(e);
-                alert("Network Error: " + e.message);
-                soundManager.play('error');
-            }
+            } catch (e) { alert("Network Error: " + e.message); }
         }
     </script>
 </body>

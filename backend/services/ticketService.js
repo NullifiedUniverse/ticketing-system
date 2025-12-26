@@ -25,10 +25,14 @@ class TicketService {
         this.cacheStatus = new Map(); // eventId -> 'init' | 'syncing' | 'ready' | 'error'
         this.alerts = new Map(); // eventId -> Array of Alert Objects
         this.activeScanners = new Map(); // deviceId -> { id, lastSeen, type (LAN/NGROK), scans, eventId }
+        this.minimalCache = new Map(); // eventId -> { data: [], timestamp: number }
         
         // Internals for concurrency & cleanup
-        this.initializing = new Set(); // Set<eventId> - locks for ensureCache
+        this.initializing = new Map(); // Map<eventId, Promise> - locks for ensureCache (value is the loading promise)
         this.lastAccessed = new Map(); // eventId -> timestamp
+
+        // Retry Queue for failed writes
+        this.failedWrites = []; 
 
         // Cleanup Interval (every hour)
         setInterval(() => this.cleanupIdleCaches(), 60 * 60 * 1000);
@@ -36,11 +40,15 @@ class TicketService {
         // Scanner Heartbeat Cleanup (every 30s)
         setInterval(() => this.cleanupInactiveScanners(), 30 * 1000);
 
+        // Retry Queue Processor (every 10s)
+        setInterval(() => this.processRetryQueue(), 10 * 1000);
+
         // Performance Metrics
         this.metrics = {
             hits: 0,
             misses: 0,
             writes: 0,
+            retries: 0,
             latencies: [] // Keep last 100 write latencies
         };
     }
@@ -71,10 +79,42 @@ class TicketService {
                 this.loadingPromises.delete(eventId);
                 this.cacheStatus.delete(eventId);
                 this.lastAccessed.delete(eventId);
+                this.initializing.delete(eventId);
                 cleaned++;
             }
         }
         if (cleaned > 0) logger.info(`[Cache] Cleaned ${cleaned} idle events.`);
+    }
+
+    // --- RETRY QUEUE PROCESSING ---
+    async processRetryQueue() {
+        if (this.failedWrites.length === 0) return;
+
+        const batchSize = 10;
+        const currentBatch = this.failedWrites.splice(0, batchSize);
+        logger.info(`[Retry] Processing ${currentBatch.length} failed writes...`);
+
+        for (const task of currentBatch) {
+            try {
+                if (task.type === 'update') {
+                    await db.collection('events').doc(task.eventId).collection('tickets').doc(task.ticketId).update(task.data);
+                } else if (task.type === 'set') {
+                    await db.collection('events').doc(task.eventId).collection('tickets').doc(task.ticketId).set(task.data);
+                } else if (task.type === 'delete') {
+                    await db.collection('events').doc(task.eventId).collection('tickets').doc(task.ticketId).delete();
+                }
+                this.metrics.retries++;
+                logger.info(`[Retry] Successfully recovered write for ${task.ticketId}`);
+            } catch (err) {
+                logger.error(`[Retry] Failed again for ${task.ticketId}: ${err.message}`);
+                task.attempts = (task.attempts || 0) + 1;
+                if (task.attempts < 5) {
+                    this.failedWrites.push(task); // Re-queue if attempts < 5
+                } else {
+                    logger.error(`[Retry] Dropping write for ${task.ticketId} after 5 attempts.`);
+                }
+            }
+        }
     }
 
     // --- METRICS ---
@@ -93,6 +133,8 @@ class TicketService {
             hitRatio: `${ratio}%`,
             totalOps: total,
             writes: this.metrics.writes,
+            retries: this.metrics.retries,
+            queueSize: this.failedWrites.length,
             avgWriteLatencyMs: avgLatency,
             activeEvents: this.cache.size
         };
@@ -167,46 +209,37 @@ class TicketService {
 
     /**
      * Ensures the cache is initialized and syncing.
-     * Thread-safe(ish): Uses a Set lock to prevent concurrent listener attachments.
+     * Implementing a robust "Double-Check Locking" pattern with Promises for deduplication.
      */
     async ensureCache(eventId) {
         this.lastAccessed.set(eventId, Date.now());
 
-        // 1. If already listening/ready, just return.
-        if (this.listeners.has(eventId) && this.cacheStatus.get(eventId) === 'ready') {
+        // 1. Fast Path: If fully ready, return immediately
+        if (this.cacheStatus.get(eventId) === 'ready') {
             return;
         }
 
-        // 2. If already initializing, wait for the existing promise
+        // 2. Race Condition Protection: If initializing, wait for the existing promise
         if (this.initializing.has(eventId)) {
-            if (this.loadingPromises.has(eventId)) {
-                await this.loadingPromises.get(eventId);
-            }
+            await this.initializing.get(eventId);
             return;
         }
 
-        // 3. Start Initialization
-        this.initializing.add(eventId);
+        // 3. Initialization Logic
         logger.info(`[Cache] Initializing Real-Time Sync for Event: ${eventId}`);
         this.cacheStatus.set(eventId, 'init');
         
-        // Initialize Storage if missing
         if (!this.cache.has(eventId)) {
             this.cache.set(eventId, new Map());
         }
 
-        // Create Resolution Promise
-        let resolveInitialLoad;
-        let rejectInitialLoad;
-        const initialLoadPromise = new Promise((resolve, reject) => {
-            resolveInitialLoad = resolve;
-            rejectInitialLoad = reject;
-        });
-        this.loadingPromises.set(eventId, initialLoadPromise);
-
-        try {
+        // Create the Promise that defines the "initializing" state
+        const loadPromise = new Promise((resolve, reject) => {
             const collectionRef = db.collection('events').doc(eventId).collection('tickets');
             
+            // We use a flag to resolve the promise only on the FIRST snapshot
+            let isInitialLoad = true;
+
             const unsubscribe = collectionRef.onSnapshot(snapshot => {
                 const eventCache = this.cache.get(eventId);
                 
@@ -228,30 +261,39 @@ class TicketService {
                 });
 
                 // Resolve promise on first callback (Initial State Synced)
-                if (resolveInitialLoad) {
+                if (isInitialLoad) {
                     logger.info(`[Cache] Hydration Complete. Total tickets: ${eventCache.size}`);
                     this.cacheStatus.set(eventId, 'ready');
-                    this.initializing.delete(eventId); // Unlock
-                    resolveInitialLoad();
-                    resolveInitialLoad = null; // Ensure it only fires once
+                    isInitialLoad = false;
+                    resolve();
                 }
             }, error => {
                 logger.error(`[Sync] Listener Error for ${eventId}: ${error.message}`);
                 this.cacheStatus.set(eventId, 'error');
-                this.initializing.delete(eventId);
-                if (rejectInitialLoad) rejectInitialLoad(error);
+                if (isInitialLoad) {
+                    isInitialLoad = false;
+                    reject(error);
+                }
             });
 
             this.listeners.set(eventId, unsubscribe);
-            
-            // Await the initial load so the caller knows it's ready
-            await initialLoadPromise;
+        });
 
+        // Store the promise in the lock map
+        this.initializing.set(eventId, loadPromise);
+        this.loadingPromises.set(eventId, loadPromise);
+
+        try {
+            await loadPromise;
         } catch (error) {
             logger.error(`[Cache] Setup failed for ${eventId}: ${error.message}`);
-            this.initializing.delete(eventId);
+            this.initializing.delete(eventId); // Clear lock
             this.cacheStatus.set(eventId, 'error');
             throw error;
+        } finally {
+            // Once resolved (success or fail), we can technically remove the "initializing" lock
+            // But 'loadingPromises' stays to valid success. 
+            this.initializing.delete(eventId);
         }
     }
 
@@ -281,8 +323,6 @@ class TicketService {
         } else {
             // Check if cache is actually ready. If ready, it's a 404.
             if (this.cacheStatus.get(eventId) === 'ready') {
-                // It's a "hit" on the cache (we know it's not there), but for metrics we might count as hit? 
-                // Or "valid miss"? Let's count as hit because we avoided DB.
                  this.metrics.hits++;
             } else {
                 this.metrics.misses++;
@@ -308,6 +348,7 @@ class TicketService {
         this.cache.delete(eventId);
         this.loadingPromises.delete(eventId);
         this.cacheStatus.delete(eventId);
+        this.initializing.delete(eventId);
 
         // DB Deletion
         await db.collection('events_meta').doc(eventId).delete();
@@ -358,17 +399,36 @@ class TicketService {
         // Write to DB (Listener will update Cache automatically)
         // But for Write-Through latency, we can also optimistically update cache
         this.cache.get(eventId).set(ticketId, newTicket);
-
-        try {
-            await db.collection('events').doc(eventId).collection('tickets').doc(ticketId).set(newTicket);
-            this.metrics.writes++;
-            this.recordLatency(performance.now() - start);
-            return newTicket;
-        } catch (error) {
-            // Revert cache on failure?
-            this.cache.get(eventId).delete(ticketId);
-            throw error;
+        
+        // Incremental Minimal Cache Update
+        if (this.minimalCache.has(eventId)) {
+            const cacheEntry = this.minimalCache.get(eventId);
+            cacheEntry.data.push({
+                id: ticketId,
+                s: 0, // valid
+                n: attendeeName
+            });
+            cacheEntry.timestamp = Date.now();
         }
+
+        // Fire & Forget with Reliability Queue
+        db.collection('events').doc(eventId).collection('tickets').doc(ticketId).set(newTicket)
+            .then(() => {
+                this.metrics.writes++;
+                this.recordLatency(performance.now() - start);
+            })
+            .catch(err => {
+                logger.error(`[Reliability] Initial write failed for ${ticketId}. Queuing...`);
+                this.failedWrites.push({
+                    type: 'set',
+                    eventId,
+                    ticketId,
+                    data: newTicket,
+                    attempts: 0
+                });
+            });
+
+        return newTicket;
     }
 
     async createBatch(eventId, attendees) {
@@ -414,24 +474,36 @@ class TicketService {
                 const eventCache = this.cache.get(eventId);
                 tempCacheUpdates.forEach(t => eventCache.set(t.id, t));
 
-                await batch.commit();
-                this.metrics.writes += tempCacheUpdates.length;
+                // Note: Batches are hard to queue individually if they fail. 
+                // We await them here as bulk imports are usually critical.
+                try {
+                    await batch.commit();
+                    this.metrics.writes += tempCacheUpdates.length;
+                } catch (err) {
+                    logger.error(`[Batch] Batch write failed!`);
+                    // In a real system, we might queue the whole batch buffer, 
+                    // but for now, we throw to alert the user.
+                    throw err; 
+                }
             }
         }
-
+        
+        this.minimalCache.delete(eventId); // Invalidate View Cache
         return { success: true, count: createdCount };
     }
 
+    /**
+     * Updates ticket status with an Optimistic "Fire-and-Forget" strategy.
+     * RELIABILITY UPGRADE: Now uses an in-memory retry queue for failures.
+     */
     async updateTicketStatus(eventId, ticketId, action, scannedBy) {
         // Ensure cache is initialized (non-blocking check if already warm)
         await this.ensureCache(eventId);
         
         // 1. FAST VALIDATION (In-Memory)
-        // On a single-instance server, RAM is the source of truth.
-        // We skip the DB Read step entirely.
         let ticketData = this.getCachedTicket(eventId, ticketId);
 
-        // Cold Cache Fallback: If not in RAM, fetch from DB
+        // Cold Cache Fallback
         if (!ticketData) {
             const doc = await db.collection('events').doc(eventId).collection('tickets').doc(ticketId).get();
             if (!doc.exists) throw new AppError("Ticket not found.", 404);
@@ -472,22 +544,37 @@ class TicketService {
         if (this.cache.has(eventId)) {
             this.cache.get(eventId).set(ticketId, updatedTicketData);
         }
-
-        // 4. PERSIST (1 RTT)
-        // We await this to ensure data safety, but we saved 50% latency by skipping the Transaction Read.
-        const ticketRef = db.collection('events').doc(eventId).collection('tickets').doc(ticketId);
-        try {
-            await ticketRef.update({
-                status: newStatus,
-                checkInHistory: admin.firestore.FieldValue.arrayUnion(historyEntry)
-            });
-        } catch (error) {
-            // Rollback on error
-            if (this.cache.has(eventId)) {
-                this.cache.get(eventId).set(ticketId, ticketData);
+        
+        // Incremental Minimal Cache Update
+        if (this.minimalCache.has(eventId)) {
+            const cacheEntry = this.minimalCache.get(eventId);
+            const minimalTicket = cacheEntry.data.find(t => t.id === ticketId);
+            if (minimalTicket) {
+                minimalTicket.s = newStatus === 'checked-in' ? 1 : 0;
+                cacheEntry.timestamp = Date.now();
+            } else {
+                this.minimalCache.delete(eventId);
             }
-            throw error;
         }
+
+        // 4. PERSIST (Reliable Fire-and-Forget)
+        const updatePayload = {
+            status: newStatus,
+            checkInHistory: admin.firestore.FieldValue.arrayUnion(historyEntry)
+        };
+
+        const ticketRef = db.collection('events').doc(eventId).collection('tickets').doc(ticketId);
+        
+        ticketRef.update(updatePayload).catch(err => {
+            logger.error(`[Reliability] Status update failed for ${ticketId}. Queuing...`);
+            this.failedWrites.push({
+                type: 'update',
+                eventId,
+                ticketId,
+                data: updatePayload,
+                attempts: 0
+            });
+        });
         
         return { ...updatedTicketData, message };
     }
@@ -501,11 +588,33 @@ class TicketService {
         const start = performance.now();
 
         this.cache.get(eventId).set(ticketId, updated);
-
-        await db.collection('events').doc(eventId).collection('tickets').doc(ticketId).update(updateData);
         
-        this.metrics.writes++;
-        this.recordLatency(performance.now() - start);
+        // Incremental Minimal Cache Update
+        if (this.minimalCache.has(eventId)) {
+            const cacheEntry = this.minimalCache.get(eventId);
+            const minimalTicket = cacheEntry.data.find(t => t.id === ticketId);
+            if (minimalTicket && updateData.attendeeName) {
+                minimalTicket.n = updateData.attendeeName;
+                cacheEntry.timestamp = Date.now();
+            }
+        }
+
+        // Reliable Update
+        db.collection('events').doc(eventId).collection('tickets').doc(ticketId).update(updateData)
+            .then(() => {
+                this.metrics.writes++;
+                this.recordLatency(performance.now() - start);
+            })
+            .catch(err => {
+                logger.error(`[Reliability] Update failed for ${ticketId}. Queuing...`);
+                this.failedWrites.push({
+                    type: 'update',
+                    eventId,
+                    ticketId,
+                    data: updateData,
+                    attempts: 0
+                });
+            });
 
         return { message: 'Ticket updated successfully.' };
     }
@@ -517,10 +626,28 @@ class TicketService {
         const start = performance.now();
         
         this.cache.get(eventId).delete(ticketId);
-        await db.collection('events').doc(eventId).collection('tickets').doc(ticketId).delete();
-
-        this.metrics.writes++;
-        this.recordLatency(performance.now() - start);
+        
+        // Incremental Minimal Cache Update
+        if (this.minimalCache.has(eventId)) {
+            const cacheEntry = this.minimalCache.get(eventId);
+            cacheEntry.data = cacheEntry.data.filter(t => t.id !== ticketId);
+            cacheEntry.timestamp = Date.now();
+        }
+        
+        db.collection('events').doc(eventId).collection('tickets').doc(ticketId).delete()
+            .then(() => {
+                this.metrics.writes++;
+                this.recordLatency(performance.now() - start);
+            })
+            .catch(err => {
+                logger.error(`[Reliability] Delete failed for ${ticketId}. Queuing...`);
+                this.failedWrites.push({
+                    type: 'delete',
+                    eventId,
+                    ticketId,
+                    attempts: 0
+                });
+            });
 
         return { message: 'Ticket deleted successfully.' };
     }
@@ -531,10 +658,27 @@ class TicketService {
         return Array.from(this.cache.get(eventId).values());
     }
 
+    async getMinimalTickets(eventId) {
+        await this.ensureCache(eventId);
+        
+        // Return cached view if available
+        if (this.minimalCache.has(eventId)) {
+            return this.minimalCache.get(eventId).data;
+        }
+
+        const tickets = Array.from(this.cache.get(eventId).values());
+        const minimal = tickets.map(t => ({
+            id: t.id,
+            s: t.status === 'checked-in' ? 1 : 0,
+            n: t.attendeeName
+        }));
+
+        this.minimalCache.set(eventId, { data: minimal, timestamp: Date.now() });
+        return minimal;
+    }
+
     // --- EMAIL CONFIG (Persistence) ---
     async updateEmailConfig(eventId, configData) {
-        // configData: { messageBefore, messageAfter, bgFilename, layoutConfig }
-        // We merge this into the existing events_meta doc
         const eventRef = db.collection('events_meta').doc(eventId);
         await eventRef.set({ emailConfig: configData }, { merge: true });
     }

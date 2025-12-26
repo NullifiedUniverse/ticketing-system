@@ -1,167 +1,68 @@
-# TicketSystem Documentation
+# 🎫 TicketSystem - Enterprise Event Management
 
-## Table of Contents
-1.  [Project Overview](#project-overview)
-2.  [Installation](#installation)
-3.  [Architecture](#architecture)
-4.  [Features](#features)
-5.  [Usage Guide](#usage-guide)
-6.  [Scanner Setup](#scanner-setup)
-7.  [Troubleshooting](#troubleshooting)
+**System by NullifiedGalaxy**
 
----
+A high-performance, real-time ticket management and raffle system designed for modern events. Featuring a secure Node.js/Express backend with Firestore persistence, and a reactive React frontend with advanced visual effects.
 
-## Project Overview
-TicketSystem is a real-time event management and ticketing solution. It consists of three main components:
-*   **Admin Dashboard:** A React-based web interface for managing events, tickets, and emails.
-*   **Backend API:** A Node.js/Express server that handles business logic, database (Firestore) synchronization, and email dispatch.
-*   **Mobile Scanner:** A standalone HTML5/JS web app for scanning QR codes at event gates.
+## 🚀 Key Features
 
-## Installation
+### 🖥️ Dashboard (Command Center)
+*   **Real-Time Analytics:** Live check-in velocity, occupancy stats, and scanner heartbeat monitoring.
+*   **Ticket Management:** Issue, edit, and void tickets instantly. Support for batch CSV imports.
+*   **Email Integration:** Send branded QR codes directly to attendees with customizable HTML templates.
+*   **Security:** Role-based access control (mock) and persistent session handling.
 
-### Prerequisites
-*   Node.js (v16+)
-*   npm
-*   A Firebase Project (with Firestore enabled)
-*   A Gmail account (for SMTP) or other SMTP credentials
-*   Ngrok Account (for public access)
+### 🎲 Celestial Raffle System
+*   **Visual Spectacle:** HTML5 Canvas-based "Starfield" animation engine.
+*   **Dramatic Reveals:** Multi-phase animation (Stars -> Constellation -> Meteor -> Reveal).
+*   **Fairness:** Random winner selection from the checked-in attendee pool.
+*   **Persistence:** State survives server restarts (Firestore-backed).
+*   **Queue Management:** Support for "Title | Name | Image" prize queuing.
 
-### Setup Steps
+### 📱 Scanner App
+*   **Universal Compatibility:** Runs in any modern browser with camera access.
+*   **Offline-Capable:** Local caching for high-speed scanning even with flaky internet.
+*   **Visual Feedback:** Instant success/fail cues with haptic vibration support.
 
-1.  **Clone the Repository:**
+## 🛠️ Technology Stack
+
+*   **Frontend:** React 18, Tailwind CSS, Framer Motion, HTML5 Canvas.
+*   **Backend:** Node.js, Express, Firebase Admin SDK (Firestore).
+*   **Security:** Helmet, Express Rate Limit, Input Sanitization.
+*   **DevOps:** Optimized build scripts, separation of concerns.
+
+## 📦 Installation & Setup
+
+1.  **Clone the Repository**
     ```bash
-    git clone <repository-url>
+    git clone https://github.com/your-repo/TicketSystem.git
     cd TicketSystem
     ```
 
-2.  **Backend Setup:**
-    *   Navigate to `backend/`:
-        ```bash
-        cd backend
-        npm install
-        ```
-    *   Create a `.env` file in `backend/` with the following:
-        ```env
-        PORT=3001
-        # Firebase Admin SDK Service Account (Path to JSON file)
-        GOOGLE_APPLICATION_CREDENTIALS=./serviceAccountKey.json 
-        
-        # Ngrok
-        NGROK_AUTHTOKEN=your_ngrok_token
-        NGROK_REGION=jp  # or 'us', 'eu', etc.
+2.  **Backend Setup**
+    *   Navigate to `backend/`.
+    *   Install dependencies: `npm install`
+    *   Configure Firebase: Place your `serviceAccountKey.json` in `backend/` or configure env vars.
+    *   Start Server: `npm start` (Runs on Port 3001)
 
-        # Email (Gmail App Password recommended)
-        SMTP_HOST=smtp.gmail.com
-        SMTP_PORT=465
-        SMTP_USER=your_email@gmail.com
-        SMTP_PASS=your_app_password
-        SMTP_SECURE=true
-        ```
-    *   Place your Firebase Service Account JSON file in the `backend/` folder.
+3.  **Frontend Setup**
+    *   Navigate to `frontend/`.
+    *   Install dependencies: `npm install`
+    *   Build for Production: `npm run build` (Artifacts are served by Backend)
+    *   *Dev Mode:* `npm start` (Runs on Port 3000)
 
-3.  **Frontend Setup:**
-    *   Navigate to `frontend/`:
-        ```bash
-        cd ../frontend
-        npm install
-        npm run build
-        ```
-    *   The backend is configured to serve the `frontend/build` folder automatically.
+## 📖 API Documentation
 
-4.  **Running the System:**
-    *   Start the backend (which serves everything):
-        ```bash
-        cd ../backend
-        npm start
-        ```
-    *   The server will start on port 3001 and attempt to open an Ngrok tunnel.
-    *   Check the console output for the **Public URL**.
+See `docs/API.md` for detailed endpoint references.
+
+### Raffle Control Syntax
+When adding prizes in the queue, use the following format:
+*   `Prize Name` (Simple)
+*   `Prize Name | image.png` (With uploaded image)
+*   `Prize Title | Prize Name | image.png` (Full format)
+
+## 🔒 Security Note
+This system implements standard security practices including HTTP headers (Helmet), Rate Limiting, and Input Validation. Ensure your Firebase rules are configured correctly in production.
 
 ---
-
-## Architecture
-
-### "Rainbow Bento" Design System
-The UI features a custom "Deep Cosmos" theme upgraded with a **Rainbow Bento** design language.
-*   **Visuals:** Full-spectrum rainbow gradients, `rounded-3xl` cards, and high-fidelity glassmorphism (`backdrop-blur-3xl`, `bg-slate-900/60`).
-*   **Layout:** A responsive "Bento Grid" with collapsible widgets (`Stats`, `Charts`, `Actions`) and a floating dock-style sidebar.
-*   **Animations:** Powered by Framer Motion with **physics-based spring transitions** (stiffness: 400, damping: 25) for a premium, tactile feel. Elements morph smoothly (`layout` prop) when the dashboard is customized.
-*   **Performance:** Extensive use of `will-change: transform` and `opacity` optimizations to ensure 60fps+ rendering even with complex blur effects.
-*   **Design Tokens:** CSS variables manage colors (`--color-brand-*`), spacing, and glass surfaces for strict consistency.
-
-### "Cache-First" Backend
-The `ticketService.js` implements a sophisticated caching strategy for speed:
-*   **Reads:** 0ms latency. Data is served directly from in-memory Maps.
-*   **Writes:** "Cache-Validated Atomic Updates". Validation checks memory (instant), then sends a single atomic update to Firestore.
-*   **Sync:** A real-time `onSnapshot` listener keeps the memory cache in sync with Firestore changes from other sources.
-
----
-
-## Features
-
-### 1. Event Management
-*   Create multiple events (e.g., "Concert 2025", "Meetup").
-*   Switch between events instantly without page reloads.
-*   Real-time stats (Checked In, On Leave, Remaining).
-
-### 2. Ticket Management
-*   **Create:** Issue tickets manually via the dashboard.
-*   **Import:** Bulk import attendees via CSV (Name, Email).
-*   **Search:** Instant client-side filtering.
-*   **Export:** Download current view as CSV.
-
-### 3. Email Studio
-*   **Batch Sending:** Send QR codes to all attendees or a **selected subset** (checkboxes).
-*   **Customization:** Upload a background image, set custom subject/sender, and add pre/post text.
-*   **Preview:** See exactly how the email will look before sending.
-*   **Reliability:** Uses chunking (5 concurrent emails) and exponential backoff for failures.
-
-### 4. Gatekeeper
-*   The admin dashboard is protected by a client-side "Gatekeeper".
-*   **Credentials:**
-    *   Username: `Null`
-    *   Password: `980122`
-
----
-
-## Scanner Setup
-
-The scanner is a web app designed for mobile phones.
-
-1.  **Open Dashboard:** Go to the Admin Dashboard.
-2.  **Click "Scanner Setup":** (Top Right or Quick Actions).
-3.  **Choose Mode:**
-    *   **Local Mode (Recommended):** If phone and PC are on the same Wi-Fi. Extremely fast (~5ms).
-    *   **Public Mode:** Uses Ngrok. Works over 4G/LTE. Slower (~200ms).
-4.  **Scan the QR:** Point your phone's camera at the setup QR code.
-5.  **Start Scanning:** The phone will configure itself and link to the selected event.
-
-**Scanner Features:**
-*   **Optimistic UI:** Beeps and shows "Processing" immediately upon scan.
-*   **Offline Resilience:** Auto-reconnects if the camera feed freezes.
-*   **Anti-Tamper:** Disables context menus and DevTools on the phone.
-
----
-
-## Troubleshooting
-
-### Camera freezes or stops working
-*   Refresh the page.
-*   Ensure you gave camera permissions.
-*   If on iOS, ensure you are using Safari (or a browser that supports WebRTC).
-*   Click "Retry Camera" if the button appears.
-
-### "Library Error" on Scanner
-*   The scanner attempts to load `html5-qrcode` from the local server.
-*   If that fails, it falls back to a CDN (`unpkg.com`).
-*   Ensure the backend server is running.
-
-### Email not sending
-*   Check `backend/logs/combined.log` or console output.
-*   Ensure `SMTP_PASS` is an **App Password**, not your regular Gmail password.
-*   Check if `NGROK_REGION` is set correctly if you are encountering geo-blocks.
-
-### Dashboard data looks stale
-*   The "Live" indicator in the header should be **Green** or **Pulsing Blue**.
-*   If Red, check your internet connection or server status.
-*   Refresh the page to force a full re-sync.
+*Built with ❤️ for seamless event experiences.*

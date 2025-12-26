@@ -17,18 +17,43 @@ const EmailDashboard = () => {
     const [sending, setSending] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
     const [selectedTicketIds, setSelectedTicketIds] = useState(new Set());
-    
-    const [bgFilename, setBgFilename] = useState(null);
-    const [config, setConfig] = useState({
-        qrSize: 1150, qrX: 220, qrY: 1110,
-        fontSize: 150, nameX: 400, nameY: 925,
-        messageBefore: '',
-        messageAfter: '',
-        emailSubject: '',
-        senderName: '',
-        bodyTextColor: '#555555',
-        footerTextColor: '#aaaaaa'
+
+    const [bgFilename, setBgFilename] = useState(() => localStorage.getItem('email_bgFilename') || null);
+    const [config, setConfig] = useState(() => {
+        try {
+            const saved = localStorage.getItem('email_config');
+            return saved ? JSON.parse(saved) : {
+                qrSize: 1150, qrX: 220, qrY: 1110,
+                fontSize: 150, nameX: 400, nameY: 925,
+                messageBefore: '',
+                messageAfter: '',
+                emailSubject: '',
+                senderName: '',
+                bodyTextColor: '#555555',
+                footerTextColor: '#aaaaaa'
+            };
+        } catch {
+            return {
+                qrSize: 1150, qrX: 220, qrY: 1110,
+                fontSize: 150, nameX: 400, nameY: 925,
+                messageBefore: '',
+                messageAfter: '',
+                emailSubject: '',
+                senderName: '',
+                bodyTextColor: '#555555',
+                footerTextColor: '#aaaaaa'
+            };
+        }
     });
+
+    // Persistence
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            localStorage.setItem('email_config', JSON.stringify(config));
+            if (bgFilename) localStorage.setItem('email_bgFilename', bgFilename);
+        }, 500); // Debounce 500ms
+        return () => clearTimeout(timer);
+    }, [config, bgFilename]);
 
     const { modalContent, showModal, hideModal, showErrorModal, showConfirmModal } = useModal();
 
@@ -82,7 +107,7 @@ const EmailDashboard = () => {
     const handleConfigChange = (e) => {
         const { name, value } = e.target;
         setConfig(prev => ({
-            ...prev, 
+            ...prev,
             [name]: ['messageBefore', 'messageAfter', 'emailSubject', 'senderName', 'bodyTextColor', 'footerTextColor'].includes(name) ? value : (parseInt(value) || 0)
         }));
     };
@@ -126,30 +151,30 @@ const EmailDashboard = () => {
     };
 
     const handleBatchSend = async () => {
-        const targetTickets = selectedTicketIds.size > 0 
-            ? tickets.filter(t => selectedTicketIds.has(t.id)) 
+        const targetTickets = selectedTicketIds.size > 0
+            ? tickets.filter(t => selectedTicketIds.has(t.id))
             : tickets;
 
         if (targetTickets.length === 0) return showErrorModal("No tickets available to send.");
 
         showConfirmModal(
-            t('modalSendBatchTitle'), 
+            t('modalSendBatchTitle'),
             t('modalSendBatchBody', targetTickets.length),
             async () => {
                 hideModal();
                 setSending(true);
                 try {
                     const res = await sendBatchEmails(
-                        eventId, 
-                        bgFilename, 
-                        config, 
-                        config.messageBefore, 
-                        config.messageAfter, 
-                        config.emailSubject, 
+                        eventId,
+                        bgFilename,
+                        config,
+                        config.messageBefore,
+                        config.messageAfter,
+                        config.emailSubject,
                         config.senderName,
                         selectedTicketIds.size > 0 ? Array.from(selectedTicketIds) : null // Pass IDs if selected
                     );
-                    
+
                     let msg = `Batch Complete!\nSuccess: ${res.result.success}\nFailed: ${res.result.failed}`;
                     if (res.result.errors && res.result.errors.length > 0) {
                         msg += `\n\nErrors:\n${res.result.errors.join('\n')}`;
@@ -163,7 +188,7 @@ const EmailDashboard = () => {
                 }
             }
         );
-    };    
+    };
 
     const formatPreviewText = (text) => {
         if (!text) return '';
@@ -182,21 +207,21 @@ const EmailDashboard = () => {
         setLoading(true);
         try {
             const imageSrc = await import('../services/api').then(m => m.getEmailPreview(eventId, ticket.id, bgFilename, config));
-            
+
             const msgBefore = config.messageBefore || t('emailDefaultMsgBefore', eventId);
             const msgAfter = config.messageAfter || t('emailDefaultMsgAfter');
 
             const content = (
                 <div className="p-0 bg-gray-50 text-gray-800 rounded-xl max-w-2xl mx-auto border shadow-lg max-h-[80vh] overflow-y-auto">
                     <div className="bg-white p-8 text-center">
-                        <h2 className="text-xl font-bold mb-4 text-gray-900"></h2> 
+                        <h2 className="text-xl font-bold mb-4 text-gray-900">Ticket Preview</h2>
                         <p className="text-gray-600 mb-6" dangerouslySetInnerHTML={{ __html: formatPreviewText(msgBefore) }}></p>
                         <div className="mb-6">
-                            <img 
-                                src={imageSrc} 
+                            <img
+                                src={imageSrc}
                                 alt={`Ticket Preview for ${ticket.attendeeName}`}
                                 loading="lazy"
-                                className="w-full h-auto rounded shadow-lg border" 
+                                className="w-full h-auto rounded shadow-lg border"
                             />
                         </div>
                         <p className="text-gray-600 mb-6" dangerouslySetInnerHTML={{ __html: formatPreviewText(msgAfter) }}></p>
@@ -204,7 +229,7 @@ const EmailDashboard = () => {
                     </div>
                 </div>
             );
-            
+
             showModal({ type: 'custom', title: t('btnSimulate'), body: content, contentComponent: () => content });
         } catch (err) {
             showErrorModal(`Preview failed: ${err.message}`);
@@ -228,26 +253,26 @@ const EmailDashboard = () => {
         <Layout>
             <div className="flex-1 flex flex-col h-full relative overflow-hidden">
                 <div className="fixed inset-0 pointer-events-none ambient-glow -z-10"></div>
-                
-                <div className="p-8 flex flex-col h-full max-w-7xl mx-auto w-full">
-                
+
+                <div className="p-4 pt-16 md:p-8 flex flex-col h-full max-w-7xl mx-auto w-full">
+
                     <div className="flex flex-col md:flex-row justify-between items-end mb-8 pb-4 border-b border-white/10 gap-4 shrink-0">
                         <div>
                             <h1 className="text-3xl font-bold text-white rainbow-text tracking-tight">{t('emailTitle')}</h1>
                             <p className="text-gray-400 mt-1 flex items-center gap-2">
-                                {t('emailManageCommunications')} 
+                                {t('emailManageCommunications')}
                                 <span className="glass-panel px-2 py-0.5 rounded text-purple-300 font-mono text-sm">{eventId}</span>
                             </p>
                         </div>
-                        <div className="flex gap-3">
-                            <SmartButton 
+                        <div className="flex gap-3 flex-wrap">
+                            <SmartButton
                                 variant="glass"
                                 onClick={selectUnsent}
                                 className="px-4 py-3 text-sm"
                             >
                                 Select Unsent
                             </SmartButton>
-                            <SmartButton 
+                            <SmartButton
                                 variant="glass"
                                 onClick={() => setShowSettings(!showSettings)}
                                 className="px-6 py-3"
@@ -255,7 +280,7 @@ const EmailDashboard = () => {
                             >
                                 {t('btnSettings')}
                             </SmartButton>
-                            <SmartButton 
+                            <SmartButton
                                 variant="primary"
                                 onClick={handleBatchSend}
                                 disabled={sending || loading}
@@ -271,78 +296,78 @@ const EmailDashboard = () => {
 
                     <AnimatePresence>
                         {showSettings && (
-                            <motion.div 
+                            <motion.div
                                 initial={{ height: 0, opacity: 0, marginBottom: 0 }}
                                 animate={{ height: 'auto', opacity: 1, marginBottom: 32, transition: { ease: EASING.gentle, duration: 0.4 } }}
                                 exit={{ height: 0, opacity: 0, marginBottom: 0, transition: { ease: EASING.gentle, duration: 0.3 } }}
                                 className="overflow-hidden relative z-50 shrink-0"
                             >
-                                <div className="glass-panel p-6 rounded-3xl border border-white/10 bg-white/5 grid grid-cols-1 md:grid-cols-2 lg:col-span-4 gap-6">
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-4">
+                                <div className="glass-panel p-6 rounded-3xl border border-white/10 bg-white/5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                                    <div className="col-span-1 md:col-span-2 xl:col-span-1">
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{t('labelBg')}</label>
-                                        <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"/>
-                                        {bgFilename && <p className="text-xs text-green-400 mt-1">Active: {bgFilename}</p>}
+                                        <input type="file" onChange={handleFileChange} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" />
+                                        {bgFilename && <p className="text-xs text-green-400 mt-1 truncate">Active: {bgFilename}</p>}
                                     </div>
-                                    
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-2">
+
+                                    <div className="col-span-1 md:col-span-1 xl:col-span-2">
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{t('labelSubject')}</label>
-                                        <input 
+                                        <input
                                             type="text"
-                                            name="emailSubject" 
-                                            value={config.emailSubject} 
+                                            name="emailSubject"
+                                            value={config.emailSubject}
                                             onChange={handleConfigChange}
                                             placeholder={t('emailSubjectPlaceholder')}
                                             className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none text-sm"
                                         />
                                     </div>
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-2">
+                                    <div className="col-span-1 md:col-span-1 xl:col-span-1">
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{t('labelSender')}</label>
-                                        <input 
+                                        <input
                                             type="text"
-                                            name="senderName" 
-                                            value={config.senderName} 
+                                            name="senderName"
+                                            value={config.senderName}
                                             onChange={handleConfigChange}
                                             placeholder={t('emailSenderPlaceholder')}
                                             className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none text-sm"
                                         />
                                     </div>
 
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-2">
+                                    <div className="col-span-1 md:col-span-2 xl:col-span-2">
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{t('labelPreamble')}</label>
-                                        <textarea 
-                                            name="messageBefore" 
-                                            value={config.messageBefore} 
+                                        <textarea
+                                            name="messageBefore"
+                                            value={config.messageBefore}
                                             onChange={handleConfigChange}
                                             placeholder={t('emailPreamblePlaceholder')}
                                             className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none h-24 text-sm resize-none"
                                         />
                                     </div>
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-2">
+                                    <div className="col-span-1 md:col-span-2 xl:col-span-2">
                                         <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{t('labelFinePrint')}</label>
-                                        <textarea 
-                                            name="messageAfter" 
-                                            value={config.messageAfter} 
+                                        <textarea
+                                            name="messageAfter"
+                                            value={config.messageAfter}
                                             onChange={handleConfigChange}
                                             placeholder={t('emailFinePrintPlaceholder')}
                                             className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none h-24 text-sm resize-none"
                                         />
                                     </div>
 
-                                    <div className="col-span-1 md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-4">
+                                    <div className="col-span-1 md:col-span-2 xl:col-span-2 grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Body Color</label>
                                             <div className="flex items-center gap-2">
-                                                <input 
-                                                    type="color" 
-                                                    name="bodyTextColor" 
-                                                    value={config.bodyTextColor || '#555555'} 
+                                                <input
+                                                    type="color"
+                                                    name="bodyTextColor"
+                                                    value={config.bodyTextColor || '#555555'}
                                                     onChange={handleConfigChange}
                                                     className="w-10 h-10 rounded border border-gray-700 bg-transparent cursor-pointer"
                                                 />
-                                                <input 
-                                                    type="text" 
-                                                    name="bodyTextColor" 
-                                                    value={config.bodyTextColor || '#555555'} 
+                                                <input
+                                                    type="text"
+                                                    name="bodyTextColor"
+                                                    value={config.bodyTextColor || '#555555'}
                                                     onChange={handleConfigChange}
                                                     className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none text-sm"
                                                 />
@@ -351,17 +376,17 @@ const EmailDashboard = () => {
                                         <div>
                                             <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Footer Color</label>
                                             <div className="flex items-center gap-2">
-                                                <input 
-                                                    type="color" 
-                                                    name="footerTextColor" 
-                                                    value={config.footerTextColor || '#aaaaaa'} 
+                                                <input
+                                                    type="color"
+                                                    name="footerTextColor"
+                                                    value={config.footerTextColor || '#aaaaaa'}
                                                     onChange={handleConfigChange}
                                                     className="w-10 h-10 rounded border border-gray-700 bg-transparent cursor-pointer"
                                                 />
-                                                <input 
-                                                    type="text" 
-                                                    name="footerTextColor" 
-                                                    value={config.footerTextColor || '#aaaaaa'} 
+                                                <input
+                                                    type="text"
+                                                    name="footerTextColor"
+                                                    value={config.footerTextColor || '#aaaaaa'}
                                                     onChange={handleConfigChange}
                                                     className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none text-sm"
                                                 />
@@ -369,28 +394,30 @@ const EmailDashboard = () => {
                                         </div>
                                     </div>
 
-                                    {['qrSize', 'qrX', 'qrY', 'fontSize', 'nameX', 'nameY'].map(key => (
-                                        <div key={key}>
-                                            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{key}</label>
-                                            <input 
-                                                type="number" name={key} value={config[key]} onChange={handleConfigChange}
-                                                className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none"
-                                            />
-                                        </div>
-                                    ))}
+                                    <div className="col-span-1 md:col-span-2 xl:col-span-2 grid grid-cols-3 gap-4">
+                                        {['qrSize', 'qrX', 'qrY', 'fontSize', 'nameX', 'nameY'].map(key => (
+                                            <div key={key}>
+                                                <label className="block text-xs font-bold text-gray-400 uppercase mb-2">{key}</label>
+                                                <input
+                                                    type="number" name={key} value={config[key]} onChange={handleConfigChange}
+                                                    className="w-full bg-black/50 border border-gray-700 rounded-lg px-3 py-2 text-white focus:border-blue-500 outline-none"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
 
                     <div className="glass-panel rounded-3xl overflow-hidden border border-white/5 flex-1 flex flex-col min-h-0">
-                        <div className="overflow-y-auto custom-scrollbar flex-1">
+                        <div className="overflow-y-auto overflow-x-auto custom-scrollbar flex-1">
                             <table className="w-full text-left border-collapse relative">
                                 <thead className="bg-gray-950/95 backdrop-blur text-gray-400 text-xs uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                                     <tr>
                                         <th className="p-4 w-10">
-                                            <input 
-                                                type="checkbox" 
+                                            <input
+                                                type="checkbox"
                                                 checked={tickets.length > 0 && selectedTicketIds.size === tickets.length}
                                                 onChange={toggleSelectAll}
                                                 className="rounded border-gray-600 bg-transparent focus:ring-indigo-500"
@@ -402,25 +429,25 @@ const EmailDashboard = () => {
                                         <th className="p-4 text-right">{t('colActions')}</th>
                                     </tr>
                                 </thead>
-                                <motion.tbody 
+                                <motion.tbody
                                     variants={containerStagger}
                                     initial="hidden"
                                     animate="visible"
                                     className="divide-y divide-white/5"
                                 >
                                     {sortedTickets.map(ticket => (
-                                        <motion.tr 
-                                            key={ticket.id} 
+                                        <motion.tr
+                                            key={ticket.id}
                                             variants={fadeInUp}
                                             layout
                                             className={`hover:bg-white/5 transition-colors ${selectedTicketIds.has(ticket.id) ? 'bg-indigo-500/10' : ''}`}
                                             onClick={() => toggleSelection(ticket.id)}
                                         >
                                             <td className="p-4">
-                                                <input 
-                                                    type="checkbox" 
+                                                <input
+                                                    type="checkbox"
                                                     checked={selectedTicketIds.has(ticket.id)}
-                                                    onChange={() => {}} // Handled by row click
+                                                    onChange={() => { }} // Handled by row click
                                                     className="rounded border-gray-600 bg-transparent focus:ring-indigo-500 pointer-events-none"
                                                 />
                                             </td>
@@ -433,14 +460,14 @@ const EmailDashboard = () => {
                                                 {ticket.emailStatus === 'sent' && <span className="ml-2 text-xs">✅ Sent</span>}
                                             </td>
                                             <td className="p-4 text-right space-x-2 flex justify-end" onClick={e => e.stopPropagation()}>
-                                                <SmartButton 
+                                                <SmartButton
                                                     variant="secondary"
                                                     onClick={() => handlePreview(ticket)}
                                                     className="w-auto py-1.5 px-3 text-xs bg-gray-800 border-white/10"
                                                 >
                                                     {t('btnSimulate')}
                                                 </SmartButton>
-                                                <SmartButton 
+                                                <SmartButton
                                                     variant="secondary"
                                                     onClick={() => handleSendOne(ticket)}
                                                     disabled={sending}
@@ -455,7 +482,7 @@ const EmailDashboard = () => {
                                     ))}
                                 </motion.tbody>
                             </table>
-                            
+
                             {tickets.length === 0 && !loading && (
                                 <div className="p-12 text-center text-gray-500">{t('emptyEmail')}</div>
                             )}

@@ -23,7 +23,7 @@ const Modal = ({ isOpen, onClose, content }) => {
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.95, opacity: 0, y: 20 }}
                         transition={EASING.spring}
-                        className="glass-panel w-full max-w-md border border-white/10"
+                        className="glass-panel w-full max-w-lg md:max-w-2xl border border-white/10 m-4 shadow-2xl"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="p-6 border-b border-purple-500/20 flex justify-between items-center">

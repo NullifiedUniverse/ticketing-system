@@ -88,17 +88,21 @@ export const useTickets = (eventId, handleApiError) => {
         setTickets(prevTickets => [...prevTickets, result.ticket]);
     }, []);
     
-    const handleManualCheckIn = useCallback(async (ticket) => {
+    const handleManualStatusChange = useCallback(async (ticket, action = 'check-in') => {
         if (!eventId) return;
         try {
-            await updateTicketStatus(eventId, ticket.id, 'check-in');
+            await updateTicketStatus(eventId, ticket.id, action);
+            
+            // Optimistic Update
+            const newStatus = action === 'check-in' ? 'checked-in' : 'on-leave';
+            
             setTickets((prevTickets) =>
                 prevTickets.map((t) =>
-                    t.id === ticket.id ? { ...t, status: 'checked-in' } : t
+                    t.id === ticket.id ? { ...t, status: newStatus } : t
                 )
             );
         } catch (err) {
-            handleApiError('Manual check-in failed.');
+            handleApiError(`Manual ${action} failed.`);
         }
     }, [eventId, handleApiError]);
 
@@ -139,7 +143,7 @@ export const useTickets = (eventId, handleApiError) => {
         connectionStatus,
         connectionError,
         handleTicketCreated,
-        handleManualCheckIn,
+        handleManualStatusChange,
         handleUpdateTicket,
         handleDeleteTicket,
         stats,

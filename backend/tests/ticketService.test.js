@@ -144,18 +144,19 @@ describe('TicketService', () => {
             // Let's just test that it tries to fetch from DB.
         });
         
-        it('should rollback cache on DB failure', async () => {
-            const mockTicket = { id: ticketId, status: 'valid', attendeeName: 'Rollback User', checkInHistory: [] };
+        it('should NOT rollback cache on DB failure (Optimistic Fire-and-Forget)', async () => {
+            const mockTicket = { id: ticketId, status: 'valid', attendeeName: 'Optimistic User', checkInHistory: [] };
             ticketService.cache.set(eventId, new Map([[ticketId, mockTicket]]));
             
             // Mock update to fail
             mocks.mockUpdate.mockRejectedValueOnce(new Error("DB Fail"));
             
-            await expect(ticketService.updateTicketStatus(eventId, ticketId, 'check-in', 'admin'))
-                .rejects.toThrow("DB Fail");
-                
-            // Should be valid again
-            expect(ticketService.cache.get(eventId).get(ticketId).status).toBe('valid');
+            // Should NOT throw
+            const result = await ticketService.updateTicketStatus(eventId, ticketId, 'check-in', 'admin');
+            
+            // Should be optimistically updated
+            expect(result.status).toBe('checked-in');
+            expect(ticketService.cache.get(eventId).get(ticketId).status).toBe('checked-in');
         });
     });
     

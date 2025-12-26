@@ -1,18 +1,30 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import Sidebar from './Sidebar';
 import Modal from './Modal';
 import PageTransition from './PageTransition';
 import { useEvent } from '../context/EventContext';
 import { useModal } from '../hooks/useModal';
-import { createEvent, deleteEvent, drawRaffleWinner } from '../services/api';
+import { createEvent, deleteEvent } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
+import { springTransition } from '../utils/animations';
 
 const Layout = ({ children }) => {
     const { eventId, selectEvent, triggerRefresh, fetchEvents } = useEvent();
-    const { modalContent, hideModal, showErrorModal, showPromptModal, showConfirmModal, showModal } = useModal();
+    const { modalContent, hideModal, showErrorModal, showPromptModal, showConfirmModal } = useModal();
     const { t } = useLanguage();
     const [isCollapsed, setIsCollapsed] = useState(false);
-    
+    const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1280);
+
+    // Responsive Check
+    React.useEffect(() => {
+        const handleResize = () => {
+            setIsDesktop(window.innerWidth >= 1280);
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const handleNewEvent = () => {
         showPromptModal(t('modalPromptTitle'), 'Enter a unique ID for the new event (e.g., concert-2025).', async (newEventId) => {
             if (newEventId) {
@@ -31,7 +43,7 @@ const Layout = ({ children }) => {
 
     const handleDeleteEvent = (targetEventId) => {
         showConfirmModal(
-            t('modalDeleteEventTitle'), 
+            t('modalDeleteEventTitle'),
             t('modalDeleteEventBody', targetEventId),
             async () => {
                 try {
@@ -48,49 +60,28 @@ const Layout = ({ children }) => {
         );
     };
 
-    const handleRaffle = async () => {
-        if (!eventId) return;
-        try {
-            const result = await drawRaffleWinner(eventId);
-            showModal({
-                type: 'alert',
-                title: t('raffleWinnerTitle'),
-                contentComponent: () => (
-                    <div className="text-center">
-                        <div className="text-6xl mb-4 animate-bounce">🏆</div>
-                        <h3 className="text-2xl font-bold text-white mb-2">{result.winner.name}</h3>
-                        <p className="text-gray-400">{result.winner.email}</p>
-                        <div className="mt-6 text-xs text-gray-600 uppercase tracking-widest">
-                            {t('poolSize')} {result.poolSize}
-                        </div>
-                    </div>
-                )
-            });
-        } catch (error) {
-            showErrorModal(error.message);
-        }
-    };
-
     return (
         <div className="flex h-screen bg-transparent text-slate-200 font-sans overflow-hidden">
-            <Sidebar 
-                currentEventId={eventId} 
-                onSelectEvent={selectEvent} 
-                onNewEvent={handleNewEvent} 
+            <Sidebar
+                currentEventId={eventId}
+                onSelectEvent={selectEvent}
+                onNewEvent={handleNewEvent}
                 onDeleteEvent={handleDeleteEvent}
-                onRaffle={handleRaffle}
                 isCollapsed={isCollapsed}
                 toggleCollapse={() => setIsCollapsed(!isCollapsed)}
             />
 
-            <div 
-                className={`flex-1 flex flex-col min-w-0 relative transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] h-full ${isCollapsed ? 'xl:ml-24' : 'xl:ml-80'}`}
+            <motion.div
+                initial={false}
+                animate={{ marginLeft: isDesktop ? (isCollapsed ? 96 : 320) : 0 }} // Responsive Margin
+                transition={springTransition}
+                className="flex-1 flex flex-col min-w-0 relative h-full will-change-transform"
             >
                 <PageTransition>
                     {children}
                 </PageTransition>
-            </div>
-            
+            </motion.div>
+
             <Modal isOpen={!!modalContent} onClose={hideModal} content={modalContent || {}} />
         </div>
     );

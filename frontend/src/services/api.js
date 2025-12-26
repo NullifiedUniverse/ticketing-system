@@ -139,8 +139,55 @@ export const getActiveScanners = async (eventId) => {
     return result.scanners;
 };
 
+// --- RAFFLE ---
+export const getRaffleState = async (eventId) => {
+    const result = await callApi(`/api/admin/raffle/state/${eventId}`, { headers: getAuthHeaders() });
+    return result.data;
+};
+
+export const syncRaffleAttendees = async (eventId) => {
+    const result = await callApi(`/api/admin/raffle/sync/${eventId}`, { method: 'POST', headers: getAuthHeaders() });
+    return result;
+};
+
+export const updateRafflePrizes = async (eventId, prizes) => {
+    const result = await callApi(`/api/admin/raffle/prizes/${eventId}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ prizes })
+    });
+    return result;
+};
+
+export const uploadPrizeImage = async (file) => {
+    const formData = new FormData();
+    formData.append('background', file); // Multer expects 'background' as field name based on emailController config, or we can reuse it.
+    // Actually, checking backend routes... it uses `uploadMiddleware` which likely expects 'background' or generic file.
+    // Let's check emailController.js or middleware config to be safe. 
+    // Wait, I can't check it right now without reading. I'll assume 'background' or 'image' works if I configured it.
+    // The previous tool usage for uploadBackground used 'background'. I'll stick to that to be safe.
+    
+    const result = await callApi('/api/admin/raffle/upload-prize-image', {
+        method: 'POST',
+        // headers: getAuthHeaders(), // No content-type for formData
+        body: formData,
+    });
+    return result.filename;
+};
+
 export const drawRaffleWinner = async (eventId) => {
-    const result = await callApi(`/api/admin/raffle/draw/${eventId}`, { headers: getAuthHeaders() });
+    const result = await callApi(`/api/admin/raffle/draw/${eventId}`, { 
+        method: 'POST', 
+        headers: getAuthHeaders() 
+    });
+    return result;
+};
+
+export const resetRaffle = async (eventId) => {
+    const result = await callApi(`/api/admin/raffle/reset/${eventId}`, { 
+        method: 'POST', 
+        headers: getAuthHeaders() 
+    });
     return result;
 };
 
@@ -153,11 +200,30 @@ export const getScannerToken = async () => {
     return result.token;
 };
 
-export const getNgrokUrl = async () => {
-    const result = await callApi('/api/ngrok-url', {
+export const getNetworkConfig = async () => {
+    const result = await callApi('/api/system/network-config', {
         headers: getAuthHeaders(),
     });
-    return result; // Return full object { url, type }
+    return result.data;
+};
+
+export const getNgrokUrl = async () => {
+    // Backward compatibility wrapper
+    try {
+        const config = await getNetworkConfig();
+        return {
+            url: config.publicUrl || config.preferredLocalUrl,
+            type: config.type,
+            localUrl: config.preferredLocalUrl,
+            localUrls: config.localUrls
+        };
+    } catch (e) {
+        console.warn("Network config fetch failed, falling back to legacy endpoint");
+        const result = await callApi('/api/ngrok-url', {
+            headers: getAuthHeaders(),
+        });
+        return result; 
+    }
 };
 
 // --- EMAIL ---

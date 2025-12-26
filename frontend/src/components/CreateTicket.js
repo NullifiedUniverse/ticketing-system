@@ -26,12 +26,12 @@ const CreateTicket = ({ eventId, onTicketCreated, onApiError }) => {
     };
 
     return (
-        <motion.div 
-            layout 
-            className="glass-panel p-6 relative overflow-hidden group"
+        <motion.div
+            layout
+            className="glass-panel p-4 md:p-6 relative overflow-hidden group"
         >
             {/* Decorative background glow */}
-            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-gradient-to-tr from-violet-500/20 via-pink-500/20 to-blue-500/20 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-500"></div>
+            <div className="absolute top-0 right-0 -mt-10 -mr-10 w-32 h-32 bg-gradient-to-tr from-violet-500/20 via-pink-500/20 to-blue-500/20 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-500 pointer-events-none"></div>
 
             <div className="relative z-10">
                 <div className="flex items-center gap-3 mb-6">
@@ -54,9 +54,9 @@ const CreateTicket = ({ eventId, onTicketCreated, onApiError }) => {
                             className="w-full bg-black/50 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:ring-2 focus:ring-pink-500 focus:border-transparent outline-none transition-all hover:border-gray-600"
                         />
                     </div>
-                    
+
                     <div className="space-y-2">
-                         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">{t('labelEmail')}</label>
+                        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider ml-1">{t('labelEmail')}</label>
                         <motion.input
                             whileFocus={{ scale: 1.01, borderColor: '#ec4899' }}
                             type="email"

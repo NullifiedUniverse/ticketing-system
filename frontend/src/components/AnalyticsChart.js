@@ -9,12 +9,12 @@ const AnalyticsChart = ({ tickets }) => {
     // 1. Process Data
     if (!tickets || !Array.isArray(tickets)) {
         return (
-             <div className="glass-panel h-64 flex items-center justify-center text-gray-500">
+            <div className="glass-panel h-64 flex items-center justify-center text-gray-500">
                 No data available
             </div>
         );
     }
-    
+
     // Get all check-in timestamps
     const checkIns = tickets.flatMap(t => {
         if (!t.checkInHistory || t.checkInHistory.length === 0) return [];
@@ -62,16 +62,16 @@ const AnalyticsChart = ({ tickets }) => {
     }));
 
     return (
-        <div className="glass-panel h-72 w-full p-6 relative overflow-hidden">
+        <div className="glass-panel h-72 w-full p-2 sm:p-6 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 opacity-20"></div>
             <h3 className="text-gray-400 text-sm font-bold uppercase tracking-widest mb-6 pl-2 border-l-4 border-purple-500">{t('chartTitle')}</h3>
-            
+
             <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
                     <defs>
                         <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#ffffff" stopOpacity={0.1}/>
-                            <stop offset="95%" stopColor="#ffffff" stopOpacity={0}/>
+                            <stop offset="5%" stopColor="#ffffff" stopOpacity={0.1} />
+                            <stop offset="95%" stopColor="#ffffff" stopOpacity={0} />
                         </linearGradient>
                         <linearGradient id="rainbowGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#ff0000">
@@ -86,33 +86,33 @@ const AnalyticsChart = ({ tickets }) => {
                         </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
-                    <XAxis 
-                        dataKey="time" 
-                        stroke="#525252" 
-                        tick={{fill: '#a3a3a3', fontSize: 11}} 
+                    <XAxis
+                        dataKey="time"
+                        stroke="#525252"
+                        tick={{ fill: '#a3a3a3', fontSize: 11 }}
                         tickLine={false}
                         axisLine={false}
                         dy={10}
                     />
-                    <YAxis 
-                        stroke="#525252" 
-                        tick={{fill: '#a3a3a3', fontSize: 11}} 
+                    <YAxis
+                        stroke="#525252"
+                        tick={{ fill: '#a3a3a3', fontSize: 11 }}
                         tickLine={false}
                         axisLine={false}
                         allowDecimals={false}
                     />
-                    <Tooltip 
+                    <Tooltip
                         contentStyle={{ backgroundColor: '#0a0a0a', borderColor: '#262626', borderRadius: '12px', color: '#fff' }}
                         itemStyle={{ color: '#fff' }}
                         cursor={{ stroke: '#ffffff20', strokeWidth: 2 }}
                     />
-                    <Area 
-                        type="monotone" 
-                        dataKey="count" 
-                        stroke="url(#rainbowGradient)" 
+                    <Area
+                        type="monotone"
+                        dataKey="count"
+                        stroke="url(#rainbowGradient)"
                         strokeWidth={3}
-                        fillOpacity={1} 
-                        fill="url(#colorCount)" 
+                        fillOpacity={1}
+                        fill="url(#colorCount)"
                     />
                 </AreaChart>
             </ResponsiveContainer>
