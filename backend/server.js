@@ -155,21 +155,36 @@ const server = app.listen(PORT, '0.0.0.0', async () => { // Listen on all networ
 });
 
 // --- GRACEFUL SHUTDOWN ---
-process.on('SIGINT', async () => {
-    logger.info('SIGINT signal received: closing HTTP server');
+const gracefulShutdown = async (signal) => {
+    logger.info(`${signal} signal received: closing HTTP server`);
     if (process.env.NODE_ENV !== 'production') {
-        await networkService.stopTunnel();
+        try {
+            await networkService.stopTunnel();
+        } catch (err) {
+            logger.error('Error stopping tunnel during shutdown:', err);
+        }
     }
     server.close(() => {
         logger.info('HTTP server closed');
         process.exit(0);
     });
-});
+    
+    // Force exit if server hasn't closed in 10s
+    setTimeout(() => {
+        logger.error('Could not close connections in time, forcefully shutting down');
+        process.exit(1);
+    }, 10000);
+};
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // Handle Unhandled Rejections
 process.on('unhandledRejection', err => {
   logger.error('UNHANDLED REJECTION! 💥 Shutting down...');
   logger.error(err.name, err.message);
+  // Optional: In production, you might want to restart via PM2 instead of just crashing,
+  // but exiting is the safest way to clear inconsistent state.
   server.close(() => {
     process.exit(1);
   });

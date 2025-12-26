@@ -17,21 +17,21 @@ const TicketRow = memo(({ ticket, index, onStatusChange, onShowQR, onEdit, onDel
             exit="exit"
             className="border-b border-white/5 hover:bg-white/5 transition-colors"
         >
-            <td className="p-4 text-slate-500 font-mono text-xs">{index}</td>
-            <td className="p-4"><StatusBadge status={ticket.status} /></td>
-            <td className="p-4 font-medium text-slate-200">
+            <td className="p-2 md:p-4 text-slate-500 font-mono text-[10px] md:text-xs">{index}</td>
+            <td className="p-2 md:p-4"><StatusBadge status={ticket.status} /></td>
+            <td className="p-2 md:p-4 font-medium text-slate-200 text-sm md:text-base break-words max-w-[120px] md:max-w-none">
                 {ticket.attendeeName}<br />
-                <span className="text-sm text-slate-500 selectable">{ticket.attendeeEmail}</span>
+                <span className="text-[10px] md:text-sm text-slate-500 selectable truncate block max-w-full">{ticket.attendeeEmail}</span>
             </td>
-            <td className="p-4 text-right">
-                <div className="flex items-center justify-end gap-2">
+            <td className="p-2 md:p-4 text-right">
+                <div className="flex flex-wrap items-center justify-end gap-2 md:gap-2 min-w-[140px]">
 
                     <motion.button
                         variants={buttonClick}
                         whileHover="hover"
                         whileTap="tap"
                         onClick={() => onShowQR(ticket.id, ticket.attendeeName)}
-                        className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                        className="p-3 md:p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 flex items-center justify-center touch-manipulation"
                         title={t('btnMark')}
                         aria-label="View QR Code"
                     >
@@ -44,12 +44,13 @@ const TicketRow = memo(({ ticket, index, onStatusChange, onShowQR, onEdit, onDel
                             whileHover="hover"
                             whileTap="tap"
                             onClick={() => onStatusChange(ticket, 'check-in')}
-                            className="px-3 py-1.5 animated-gradient-bg text-white text-xs font-bold rounded-lg flex items-center gap-1.5"
+                            className="px-4 py-2 md:px-3 md:py-1.5 animated-gradient-bg text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 min-h-[44px] md:min-h-0 touch-manipulation flex-grow md:flex-grow-0"
                             title={t('btnCapture')}
                             aria-label="Check In"
                         >
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                            {t('btnCapture').toUpperCase()}
+                            <svg className="w-4 h-4 md:w-3 md:h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                            <span className="md:hidden">CHECK IN</span>
+                            <span className="hidden md:inline">{t('btnCapture').toUpperCase()}</span>
                         </motion.button>
                     ) : (
                         <motion.button
@@ -57,11 +58,11 @@ const TicketRow = memo(({ ticket, index, onStatusChange, onShowQR, onEdit, onDel
                             whileHover="hover"
                             whileTap="tap"
                             onClick={() => onStatusChange(ticket, 'check-out')}
-                            className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 text-xs font-bold rounded-lg flex items-center gap-1.5 transition-colors"
+                            className="px-4 py-2 md:px-3 md:py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors min-h-[44px] md:min-h-0 touch-manipulation flex-grow md:flex-grow-0"
                             title="Check Out"
                             aria-label="Check Out"
                         >
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                            <svg className="w-4 h-4 md:w-3 md:h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                             OUT
                         </motion.button>
                     )}
@@ -71,7 +72,7 @@ const TicketRow = memo(({ ticket, index, onStatusChange, onShowQR, onEdit, onDel
                         whileHover="hover"
                         whileTap="tap"
                         onClick={() => onEdit(ticket)}
-                        className="p-2 text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 rounded-lg transition-colors"
+                        className="p-3 md:p-2 text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 rounded-lg transition-colors min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 flex items-center justify-center touch-manipulation"
                         title={t('btnRetcon')}
                         aria-label="Edit Ticket"
                     >
@@ -83,7 +84,7 @@ const TicketRow = memo(({ ticket, index, onStatusChange, onShowQR, onEdit, onDel
                         whileHover="hover"
                         whileTap="tap"
                         onClick={() => onDelete(ticket)}
-                        className="p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        className="p-3 md:p-2 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 flex items-center justify-center touch-manipulation"
                         title={t('btnPurge')}
                         aria-label="Delete Ticket"
                     >
@@ -93,6 +94,7 @@ const TicketRow = memo(({ ticket, index, onStatusChange, onShowQR, onEdit, onDel
             </td>
         </motion.tr>
     )
+
 });
 
 export default TicketRow;

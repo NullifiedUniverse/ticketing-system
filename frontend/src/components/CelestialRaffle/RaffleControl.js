@@ -20,10 +20,9 @@ const RaffleControl = () => {
     const [prizesInput, setPrizesInput] = useState(defaultPrizes.join('\n'));
     const [message, setMessage] = useState('');
     const [showImageUploader, setShowImageUploader] = useState(false);
-    
-    // Local state to simulate "Rolling" visual feedback on the controller
     const [isRolling, setIsRolling] = useState(false);
-
+    const [prizeTitle, setPrizeTitle] = useState('');
+    const [prizeName, setPrizeName] = useState('');
     const refreshState = useCallback(async () => {
         if (!selectedEvent) return;
         try {
@@ -40,7 +39,33 @@ const RaffleControl = () => {
         return () => clearInterval(interval);
     }, [refreshState]);
 
-    // ... (rest of the file) ...
+    // We'll create a new function to handle the form submission
+    const handleAddPrizeToQueue = (imageFilename = null) => {
+        if (!prizeName.trim()) {
+            setMessage("Prize Name is required.");
+            return;
+        }
+
+        let line = "";
+        if (prizeTitle.trim()) {
+            line += `${prizeTitle.trim()} | `;
+        }
+        line += prizeName.trim();
+        
+        if (imageFilename) {
+            line += ` | ${imageFilename}`;
+        }
+
+        setPrizesInput(prev => {
+            const cleanPrev = prev.trim();
+            return cleanPrev ? `${cleanPrev}\n${line}` : line;
+        });
+        
+        setPrizeName('');
+        setPrizeTitle('');
+        setShowImageUploader(false);
+        setMessage("Added to queue. Remember to click 'Update Queue' to save.");
+    };
 
     const handleSync = async () => {
         if (!selectedEvent) return;
@@ -54,6 +79,14 @@ const RaffleControl = () => {
         }
         setLoading(false);
     };
+
+    if (contextLoading) {
+        return (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center text-cyan-400 font-mono">
+                <div className="animate-pulse">LOADING CONTROL CONSOLE...</div>
+            </div>
+        );
+    }
 
     const handleUpdatePrizes = async () => {
         if (!selectedEvent) return;
@@ -151,19 +184,7 @@ const RaffleControl = () => {
         window.open('#raffle-display', 'RaffleDisplay', 'width=1920,height=1080');
     };
 
-    const onImageUploaded = (filename) => {
-        // Append to current prize input line? Or just append to bottom?
-        setPrizesInput(prev => {
-            const lines = prev.split('\n');
-            // If the last line is not empty and doesn't have pipe, append pipe
-            if (lines.length > 0 && lines[lines.length - 1].trim() !== '' && !lines[lines.length - 1].includes('|')) {
-                lines[lines.length - 1] = `${lines[lines.length - 1]} | ${filename}`;
-                return lines.join('\n');
-            } else {
-                return prev + `\nGrand Prize | New Item | ${filename}`;
-            }
-        });
-    };
+
 
     if (contextLoading) {
         return (
@@ -284,44 +305,73 @@ const RaffleControl = () => {
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="font-bold text-slate-300">Prize Queue</h3>
-                            <div className="flex gap-2">
+                            <button 
+                                onClick={handleUpdatePrizes}
+                                disabled={loading}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-bold transition-colors"
+                            >
+                                <Save size={14} /> Save Changes
+                            </button>
+                        </div>
+
+                        {/* Prize Builder Form */}
+                        <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700 space-y-3">
+                            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Add Single Prize</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 mb-1">TITLE (Optional)</label>
+                                    <input 
+                                        type="text" 
+                                        value={prizeTitle}
+                                        onChange={(e) => setPrizeTitle(e.target.value)}
+                                        placeholder="e.g. GRAND PRIZE"
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-cyan-500 outline-none transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-500 mb-1">PRIZE NAME (Required)</label>
+                                    <input 
+                                        type="text" 
+                                        value={prizeName}
+                                        onChange={(e) => setPrizeName(e.target.value)}
+                                        placeholder="e.g. iPhone 15 Pro"
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-cyan-500 outline-none transition-colors"
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="pt-2">
                                 <button
                                     onClick={() => setShowImageUploader(!showImageUploader)}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold transition-colors border border-slate-700"
-                                    title="Upload Prize Image"
+                                    className="text-xs flex items-center gap-2 text-cyan-400 hover:text-cyan-300 font-bold mb-2"
                                 >
-                                    <ImageIcon size={14} /> {showImageUploader ? 'Hide Upload' : 'Add Image'}
+                                    <ImageIcon size={14} /> {showImageUploader ? 'Cancel Image Upload' : 'Attach Image (Optional)'}
                                 </button>
-                                <button 
-                                    onClick={handleUpdatePrizes}
-                                    disabled={loading}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-bold transition-colors"
-                                >
-                                    <Save size={14} /> Update Queue
-                                </button>
+                                
+                                {showImageUploader ? (
+                                    <ImageUploader onUploadComplete={(filename) => handleAddPrizeToQueue(filename)} />
+                                ) : (
+                                    <button 
+                                        onClick={() => handleAddPrizeToQueue(null)}
+                                        disabled={!prizeName.trim()}
+                                        className="w-full py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg text-sm font-bold text-white shadow-lg shadow-cyan-900/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        Add to Queue
+                                    </button>
+                                )}
                             </div>
                         </div>
 
-                        {showImageUploader && (
-                            <ImageUploader onUploadComplete={onImageUploaded} />
-                        )}
-
-                        <textarea
-                            value={prizesInput}
-                            onChange={(e) => setPrizesInput(e.target.value)}
-                            className="w-full h-64 bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-300 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all resize-none"
-                            placeholder={`Enter prizes, one per line.\nFormats:\n- Prize Name\n- Prize Name | image.png\n- Prize Title | Prize Name | image.png`}
-                        />
-                        
-                        {/* Syntax Helper */}
-                        <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700 text-xs text-slate-400 space-y-1">
-                            <p className="font-bold text-slate-300 mb-1">📝 Prize Format Guide:</p>
-                            <ul className="list-disc list-inside space-y-0.5">
-                                <li>Simple: <code className="bg-slate-900 px-1 rounded text-cyan-400">Prize Name</code></li>
-                                <li>With Image: <code className="bg-slate-900 px-1 rounded text-cyan-400">Prize Name | image.png</code></li>
-                                <li>With Title: <code className="bg-slate-900 px-1 rounded text-cyan-400">GRAND PRIZE | iPhone 15 | phone.png</code></li>
-                            </ul>
-                            <p className="mt-2 opacity-75">Upload an image first, then its filename will be auto-appended.</p>
+                        <div className="relative">
+                            <div className="absolute top-2 right-2 text-[10px] text-slate-500 font-mono bg-slate-900/80 px-2 py-1 rounded pointer-events-none">
+                                Bulk Editor
+                            </div>
+                            <textarea
+                                value={prizesInput}
+                                onChange={(e) => setPrizesInput(e.target.value)}
+                                className="w-full h-48 bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono text-sm text-slate-300 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all resize-none"
+                                placeholder={`Enter prizes, one per line.\nFormats:\n- Prize Name\n- Prize Name | image.png\n- Prize Title | Prize Name | image.png`}
+                            />
                         </div>
                     </div>
 
