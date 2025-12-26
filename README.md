@@ -57,22 +57,32 @@ The system is designed to live anywhere—local venue WiFi, 4G cellular, or behi
 graph LR
     User((Attendee))
     
-    subgraph Venue ["📍 Venue Network"]
-        Server[Node.js Host]
-        LocalScan[Scanner A (Local)]
+    subgraph Venue ["📍 Venue Network (LAN)"]
+        direction TB
+        Server[Node.js Host]:::server
+        LocalScan[Scanner A (WiFi)]:::local
     end
     
     subgraph Cloud ["☁️ The Internet"]
-        Ngrok[Ngrok Tunnel]
-        RemoteScan[Scanner B (4G)]
+        direction TB
+        Ngrok[Ngrok Tunnel]:::cloud
+        RemoteScan[Scanner B (4G/LTE)]:::remote
     end
     
+    %% Interactions
     User --> LocalScan
     User --> RemoteScan
     
-    LocalScan -- "Local LAN (Fast)" --> Server
-    RemoteScan -- "Secure Tunnel" --> Ngrok
-    Ngrok --> Server
+    %% Network Traffic
+    LocalScan <==> |"HTTP (Low Latency)"| Server
+    RemoteScan <==> |"HTTPS (Secure Tunnel)"| Ngrok
+    Ngrok <==> |"Tunneling"| Server
+
+    %% Styles
+    classDef server fill:#37474f,stroke:#263238,stroke-width:2px,color:#fff
+    classDef local fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20
+    classDef remote fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1
+    classDef cloud fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c
 ```
 
 ---
