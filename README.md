@@ -10,12 +10,110 @@ A high-performance, full-stack event management suite featuring real-time synchr
 
 ```mermaid
 graph TD
-    A[Admin Dashboard - React] <--> B[Backend API - Node.js]
-    C[QR Scanner - Mobile/Web] <--> B
-    B <--> D[(Firestore Database)]
-    B --> E[SMTP Server]
-    B --> F[Ngrok/LAN Tunnel]
-    G[Celestial Raffle - Canvas] <--> B
+    subgraph Frontend ["✨ Reactive Frontend"]
+        A[Admin Dashboard]
+        C[QR Scanner PWA]
+        G[Celestial Raffle Display]
+    end
+    
+    subgraph Backend ["⚙️ Core Backend"]
+        B[Node.js API]
+        E[Email Service]
+        F[Network Manager]
+    end
+    
+    subgraph Data ["☁️ Persistence"]
+        D[(Firestore Database)]
+    end
+
+    A <--> B
+    C <--> B
+    G <--> B
+    B <--> D
+    B --> E
+    F -->|Tunneling| B
+    
+    style Frontend fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style Backend fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style Data fill:#e0f2f1,stroke:#1b5e20,stroke-width:2px
+```
+
+## 🧠 System Logic & Data Flow
+
+### 🎟️ The Ticket Lifecycle
+Visualizing the high-speed journey from issuance to check-in.
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant System as ⚙️ Core System
+    participant Attendee
+    participant Scanner as 📱 Smart Scanner
+    participant DB as ☁️ Firestore
+
+    Admin->>System: Issue Ticket (Batch/Single)
+    System->>DB: Store Ticket Data
+    System->>Attendee: Email QR Code
+    
+    Note right of Attendee: Event Day
+    
+    Attendee->>Scanner: Present QR Code
+    Scanner->>Scanner: Local Cache Check (0ms Latency)
+    Scanner->>System: Async Status Update
+    System->>DB: Persist Check-in
+    DB->>Admin: ⚡ Real-time Dashboard Update
+```
+
+### 🎲 Celestial Raffle Engine
+The physics-based state machine powering the cinematic reveal.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Rolling : Operator Clicks START
+    
+    state Rolling {
+        [*] --> Selection : RNG Algorithm
+        Selection --> Physics : Generate Starfield
+        Physics --> Trajectory : Calculate Comet Path
+    }
+    
+    Rolling --> Revealed : Animation Complete (8s)
+    Revealed --> Idle : Operator Clicks NEXT
+    
+    note right of Rolling
+        Visuals sync across 
+        all connected screens
+        instantly via WebSockets
+    end note
+```
+
+### 🌐 Smart Network Topology
+Automatic switching mechanism for uninterrupted operations.
+
+```mermaid
+graph LR
+    subgraph Cloud ["🌍 Cloud Layer"]
+        Ngrok[Ngrok Tunnel]
+        Firebase[Firebase DB]
+    end
+    
+    subgraph Venue ["🏢 Local Venue Layer"]
+        Server[Node.js Host]
+        Dash[Dashboard]
+        ScannerA[Scanner A (LAN)]
+        ScannerB[Scanner B (4G)]
+    end
+
+    Server <-->|.->| Ngrok
+    Server <--> Firebase
+    
+    ScannerA <-->|⚡ High Speed LAN| Server
+    ScannerB <-->|Backup WAN| Ngrok
+    Dash <--> Server
+    
+    style Server fill:#f9f,stroke:#333,stroke-width:4px
+    style Ngrok fill:#ccf,stroke:#333
 ```
 
 ## 🚀 Core Modules
